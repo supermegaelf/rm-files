@@ -24,7 +24,7 @@ echo -e "${NC}1. Preparing backup environment${NC}"
 echo -e "${GREEN}================================${NC}"
 echo
 
-SCRIPT_URL="https://raw.githubusercontent.com/supermegaelf/rm-scripts/main/rm-backup.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/supermegaelf/rm-files/main/scripts/rm-backup.sh"
 SCRIPT_DIR="/root/scripts"
 SCRIPT_PATH="$SCRIPT_DIR/rm-backup.sh"
 
