@@ -533,7 +533,7 @@ EOL
 # Download index.html
 echo
 echo "Downloading index.html..."
-wget -P /opt/remnawave/ https://raw.githubusercontent.com/supermegaelf/rm-pages/main/index.html
+wget -P /opt/remnawave/ https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/index.html
 
 echo -e "${GREEN}--------------------------------------------${NC}"
 echo -e "${NC}✓ Configuration files created successfully!${NC}"
