@@ -765,7 +765,10 @@ public_key=$(echo "$keys" | grep "Public key:" | awk '{print $3}')
 # Create Xray configuration
 echo
 echo "Creating Xray configuration..."
+
+# Generate necessary parameters
 short_id=$(openssl rand -hex 8)
+client_id=$(cat /proc/sys/kernel/random/uuid)
 config_file="/opt/remnawave/config.json"
 
 cat > "$config_file" <<EOL
@@ -788,7 +791,12 @@ cat > "$config_file" <<EOL
             "port": 443,
             "protocol": "vless",
             "settings": {
-                "clients": [],
+                "clients": [
+                    {
+                        "id": "$client_id",
+                        "flow": "xtls-rprx-vision"
+                    }
+                ],
                 "decryption": "none"
             },
             "sniffing": {
@@ -803,9 +811,9 @@ cat > "$config_file" <<EOL
                 "network": "tcp",
                 "security": "reality",
                 "realitySettings": {
+                    "dest": "/dev/shm/nginx.sock",
                     "show": false,
                     "xver": 1,
-                    "dest": "/dev/shm/nginx.sock",
                     "spiderX": "",
                     "shortIds": [
                         "$short_id"
