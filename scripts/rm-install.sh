@@ -978,6 +978,7 @@ echo
 echo "Remnawave URL:"
 echo "https://${PANEL_DOMAIN}/auth/login?${cookies_random1}=${cookies_random2}"
 echo
+echo "Credentials:"
 echo "Username: $SUPERADMIN_USERNAME"
 echo "Password: $SUPERADMIN_PASSWORD"
 echo
