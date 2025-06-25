@@ -991,10 +991,10 @@ echo
 elif [ "$INSTALL_TYPE" = "2" ]; then
 
 # Remnawave Node setup script
-echo
-echo -e "${PURPLE}=======================${NC}"
+
+echo -e "${PURPLE}==================${NC}"
 echo -e "${NC}NODE INSTALLATION${NC}"
-echo -e "${PURPLE}=======================${NC}"
+echo -e "${PURPLE}==================${NC}"
 echo
 
 set -e
