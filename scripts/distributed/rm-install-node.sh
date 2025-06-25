@@ -68,8 +68,11 @@ while [[ -z "$CERTIFICATE" ]]; do
     read -r CERTIFICATE
 done
 
+# Create remnawave directory first
+mkdir -p /opt/remnawave
+
 # Create variables file for persistence
-cat > node-vars.sh << 'EOF'
+cat > /opt/remnawave/node-vars.sh << 'EOF'
 # node-vars.sh
 export SELFSTEAL_DOMAIN="${SELFSTEAL_DOMAIN}"
 export PANEL_IP="${PANEL_IP}"
@@ -80,16 +83,19 @@ export CERTIFICATE='${CERTIFICATE}'
 EOF
 
 # Replace placeholders with actual values
-sed -i "s|\${SELFSTEAL_DOMAIN}|$SELFSTEAL_DOMAIN|g" node-vars.sh
-sed -i "s|\${PANEL_IP}|$PANEL_IP|g" node-vars.sh
-sed -i "s|\${CLOUDFLARE_API_KEY}|$CLOUDFLARE_API_KEY|g" node-vars.sh
-sed -i "s|\${CLOUDFLARE_EMAIL}|$CLOUDFLARE_EMAIL|g" node-vars.sh
+sed -i "s|\${SELFSTEAL_DOMAIN}|$SELFSTEAL_DOMAIN|g" /opt/remnawave/node-vars.sh
+sed -i "s|\${PANEL_IP}|$PANEL_IP|g" /opt/remnawave/node-vars.sh
+sed -i "s|\${CLOUDFLARE_API_KEY}|$CLOUDFLARE_API_KEY|g" /opt/remnawave/node-vars.sh
+sed -i "s|\${CLOUDFLARE_EMAIL}|$CLOUDFLARE_EMAIL|g" /opt/remnawave/node-vars.sh
 # For certificate, we need to escape it properly
 escaped_cert=$(printf '%s\n' "$CERTIFICATE" | sed 's/[[\.*^$()+?{|]/\\&/g')
-sed -i "s|\${CERTIFICATE}|$escaped_cert|g" node-vars.sh
+sed -i "s|\${CERTIFICATE}|$escaped_cert|g" /opt/remnawave/node-vars.sh
+
+# Set proper permissions
+chmod 600 /opt/remnawave/node-vars.sh
 
 echo
-echo -e "${GREEN}Variables saved to node-vars.sh${NC}"
+echo -e "${GREEN}Variables saved to /opt/remnawave/node-vars.sh${NC}"
 echo
 echo -e "${GREEN}Summary of configuration:${NC}"
 echo -e "Self-steal domain: ${CYAN}$SELFSTEAL_DOMAIN${NC}"
@@ -99,7 +105,7 @@ echo -e "Certificate: ${CYAN}[Loaded successfully]${NC}"
 echo
 
 # Load environment variables
-source node-vars.sh
+source /opt/remnawave/node-vars.sh
 
 echo -e "${GREEN}------------------------------------${NC}"
 echo -e "${NC}✓ Environment variables configured!${NC}"
@@ -185,9 +191,9 @@ echo -e "${NC}3. Creating structure and certificates${NC}"
 echo -e "${GREEN}=======================================${NC}"
 echo
 
-# Create directory structure
-echo "Creating directory structure..."
-mkdir -p /opt/remnawave && cd /opt/remnawave
+# Navigate to remnawave directory
+echo "Navigating to project directory..."
+cd /opt/remnawave
 
 # Create .env file
 echo "Creating .env file..."
