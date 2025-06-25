@@ -765,7 +765,10 @@ public_key=$(echo "$keys" | grep "Public key:" | awk '{print $3}')
 # Create Xray configuration
 echo
 echo "Creating Xray configuration..."
+
+# Generate necessary parameters
 short_id=$(openssl rand -hex 8)
+client_id=$(cat /proc/sys/kernel/random/uuid)
 config_file="/opt/remnawave/config.json"
 
 cat > "$config_file" <<EOL
@@ -788,7 +791,12 @@ cat > "$config_file" <<EOL
             "port": 443,
             "protocol": "vless",
             "settings": {
-                "clients": [],
+                "clients": [
+                    {
+                        "id": "$client_id",
+                        "flow": "xtls-rprx-vision"
+                    }
+                ],
                 "decryption": "none"
             },
             "sniffing": {
@@ -803,9 +811,9 @@ cat > "$config_file" <<EOL
                 "network": "tcp",
                 "security": "reality",
                 "realitySettings": {
+                    "dest": "/dev/shm/nginx.sock",
                     "show": false,
                     "xver": 1,
-                    "dest": "/dev/shm/nginx.sock",
                     "spiderX": "",
                     "shortIds": [
                         "$short_id"
@@ -971,8 +979,8 @@ echo "Remnawave URL:"
 echo "https://${PANEL_DOMAIN}/auth/login?${cookies_random1}=${cookies_random2}"
 echo
 echo "Credentials:"
-echo "Username: $SUPERADMIN_USERNAME"
-echo "Password: $SUPERADMIN_PASSWORD"
+echo "$SUPERADMIN_USERNAME"
+echo "$SUPERADMIN_PASSWORD"
 echo
 echo "To check logs, use:"
 echo "cd /opt/remnawave && docker compose logs -f"
@@ -1040,8 +1048,11 @@ while [[ -z "$CERTIFICATE" ]]; do
     read -r CERTIFICATE
 done
 
+# Create remnawave directory first
+mkdir -p /opt/remnawave
+
 # Create variables file for persistence
-cat > node-vars.sh << 'EOF'
+cat > /opt/remnawave/node-vars.sh << 'EOF'
 # node-vars.sh
 export SELFSTEAL_DOMAIN="${SELFSTEAL_DOMAIN}"
 export PANEL_IP="${PANEL_IP}"
@@ -1052,16 +1063,19 @@ export CERTIFICATE='${CERTIFICATE}'
 EOF
 
 # Replace placeholders with actual values
-sed -i "s|\${SELFSTEAL_DOMAIN}|$SELFSTEAL_DOMAIN|g" node-vars.sh
-sed -i "s|\${PANEL_IP}|$PANEL_IP|g" node-vars.sh
-sed -i "s|\${CLOUDFLARE_API_KEY}|$CLOUDFLARE_API_KEY|g" node-vars.sh
-sed -i "s|\${CLOUDFLARE_EMAIL}|$CLOUDFLARE_EMAIL|g" node-vars.sh
+sed -i "s|\${SELFSTEAL_DOMAIN}|$SELFSTEAL_DOMAIN|g" /opt/remnawave/node-vars.sh
+sed -i "s|\${PANEL_IP}|$PANEL_IP|g" /opt/remnawave/node-vars.sh
+sed -i "s|\${CLOUDFLARE_API_KEY}|$CLOUDFLARE_API_KEY|g" /opt/remnawave/node-vars.sh
+sed -i "s|\${CLOUDFLARE_EMAIL}|$CLOUDFLARE_EMAIL|g" /opt/remnawave/node-vars.sh
 # For certificate, we need to escape it properly
 escaped_cert=$(printf '%s\n' "$CERTIFICATE" | sed 's/[[\.*^$()+?{|]/\\&/g')
-sed -i "s|\${CERTIFICATE}|$escaped_cert|g" node-vars.sh
+sed -i "s|\${CERTIFICATE}|$escaped_cert|g" /opt/remnawave/node-vars.sh
+
+# Set proper permissions
+chmod 600 /opt/remnawave/node-vars.sh
 
 echo
-echo -e "${GREEN}Variables saved to node-vars.sh${NC}"
+echo -e "${GREEN}Variables saved to /opt/remnawave/node-vars.sh${NC}"
 echo
 echo -e "${GREEN}Summary of configuration:${NC}"
 echo -e "Self-steal domain: ${CYAN}$SELFSTEAL_DOMAIN${NC}"
@@ -1071,7 +1085,7 @@ echo -e "Certificate: ${CYAN}[Loaded successfully]${NC}"
 echo
 
 # Load environment variables
-source node-vars.sh
+source /opt/remnawave/node-vars.sh
 
 echo -e "${GREEN}------------------------------------${NC}"
 echo -e "${NC}✓ Environment variables configured!${NC}"
@@ -1157,9 +1171,9 @@ echo -e "${NC}3. Creating structure and certificates${NC}"
 echo -e "${GREEN}=======================================${NC}"
 echo
 
-# Create directory structure
-echo "Creating directory structure..."
-mkdir -p /opt/remnawave && cd /opt/remnawave
+# Navigate to remnawave directory
+echo "Navigating to project directory..."
+cd /opt/remnawave
 
 # Create .env file
 echo "Creating .env file..."
