@@ -700,7 +700,6 @@ EOL
 # Start containers
 echo
 echo "Starting Docker containers..."
-echo
 cd /opt/remnawave
 docker compose up -d
 sleep 20
@@ -955,7 +954,6 @@ host_response=$(curl -s -X POST "http://$domain_url/api/hosts" \
 # Restart containers
 echo
 echo "Restarting containers..."
-echo
 cd /opt/remnawave
 docker compose down
 sleep 1
