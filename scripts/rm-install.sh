@@ -86,16 +86,16 @@ while [[ -z "$SELFSTEAL_DOMAIN" ]]; do
     read -p "Self-steal domain (e.g., example.com): " SELFSTEAL_DOMAIN
 done
 
-read -p "Cloudflare API Key: " CLOUDFLARE_API_KEY
-while [[ -z "$CLOUDFLARE_API_KEY" ]]; do
-    echo -e "${RED}Cloudflare API Key cannot be empty!${NC}"
-    read -p "Cloudflare API Key: " CLOUDFLARE_API_KEY
-done
-
 read -p "Cloudflare Email: " CLOUDFLARE_EMAIL
 while [[ -z "$CLOUDFLARE_EMAIL" ]]; do
     echo -e "${RED}Cloudflare Email cannot be empty!${NC}"
     read -p "Cloudflare Email: " CLOUDFLARE_EMAIL
+done
+
+read -p "Cloudflare API Key: " CLOUDFLARE_API_KEY
+while [[ -z "$CLOUDFLARE_API_KEY" ]]; do
+    echo -e "${RED}Cloudflare API Key cannot be empty!${NC}"
+    read -p "Cloudflare API Key: " CLOUDFLARE_API_KEY
 done
 
 # Generate random values
