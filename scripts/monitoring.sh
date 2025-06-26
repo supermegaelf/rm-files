@@ -584,9 +584,8 @@ echo -e "${NC}✓ Monitoring installation completed successfully!${NC}"
 echo -e "${GREEN}==================================================${NC}"
 echo
 echo -e "${CYAN}Access URLs:${NC}"
-echo -e "Grafana: ${WHITE}https://grafana.$DOMAIN:9443${NC} (admin/admin)"
+echo -e "Grafana: ${WHITE}https://grafana.$DOMAIN:9443${NC}"
 echo -e "Prometheus: ${WHITE}https://prometheus.$DOMAIN:9443${NC}"
-echo -e "Node Exporter: ${WHITE}https://node-exporter.$DOMAIN:9443${NC}"
 echo
 echo -e "${CYAN}Verification Commands:${NC}"
 echo -e "Check targets:" 
