@@ -118,6 +118,15 @@ METRICS_PASS=$(tr -dc 'a-zA-Z' < /dev/urandom | fold -w 8 | head -n 1)
 JWT_AUTH_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
 JWT_API_TOKENS_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
 
+POSTGRES_USER=$(tr -dc 'a-zA-Z' < /dev/urandom | fold -w 10 | head -n 1)
+pg_password=""
+pg_password+=$(head /dev/urandom | tr -dc 'A-Z' | head -c 2)
+pg_password+=$(head /dev/urandom | tr -dc 'a-z' | head -c 2)
+pg_password+=$(head /dev/urandom | tr -dc '0-9' | head -c 2)
+pg_password+=$(head /dev/urandom | tr -dc 'A-Za-z0-9' | head -c $((16 - 6)))
+POSTGRES_PASSWORD=$(echo "$pg_password" | fold -w1 | shuf | tr -d '\n')
+POSTGRES_DB="remnawave"
+
 # Create variables file for persistence
 cat > remnawave-vars.sh << EOF
 # remnawave-vars.sh
@@ -136,6 +145,11 @@ export METRICS_USER="$METRICS_USER"
 export METRICS_PASS="$METRICS_PASS"
 export JWT_AUTH_SECRET="$JWT_AUTH_SECRET"
 export JWT_API_TOKENS_SECRET="$JWT_API_TOKENS_SECRET"
+
+# PostgreSQL credentials
+export POSTGRES_USER="$POSTGRES_USER"
+export POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
+export POSTGRES_DB="$POSTGRES_DB"
 EOF
 
 echo
@@ -146,6 +160,8 @@ echo -e "Panel domain: ${CYAN}$PANEL_DOMAIN${NC}"
 echo -e "Subscription domain: ${CYAN}$SUB_DOMAIN${NC}"
 echo -e "Self-steal domain: ${CYAN}$SELFSTEAL_DOMAIN${NC}"
 echo -e "Cloudflare email: ${CYAN}$CLOUDFLARE_EMAIL${NC}"
+echo -e "PostgreSQL user: ${CYAN}$POSTGRES_USER${NC}"
+echo -e "PostgreSQL database: ${CYAN}remnawave${NC}"
 echo
 
 # Load environment variables
@@ -346,7 +362,7 @@ API_INSTANCES=1
 
 ### DATABASE ###
 # FORMAT: postgresql://{user}:{password}@{host}:{port}/{database}
-DATABASE_URL="postgresql://postgres:postgres@remnawave-db:5432/postgres"
+DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@remnawave-db:5432/remnawave"
 
 ### REDIS ###
 REDIS_HOST=remnawave-redis
@@ -429,9 +445,9 @@ CLOUDFLARE_TOKEN=ey...
 ### Database ###
 ### For Postgres Docker container ###
 # NOT USED BY THE APP ITSELF
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=postgres
+POSTGRES_USER=$POSTGRES_USER
+POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+POSTGRES_DB=remnawave
 EOL
 
 # Create docker-compose.yml file
@@ -979,9 +995,14 @@ echo
 echo -e "${CYAN}Remnawave URL:${NC}"
 echo "https://${PANEL_DOMAIN}/auth/login?${cookies_random1}=${cookies_random2}"
 echo
-echo -e "${CYAN}Credentials:${NC}"
+echo -e "${CYAN}Pannel Credentials:${NC}"
 echo "$SUPERADMIN_USERNAME"
 echo "$SUPERADMIN_PASSWORD"
+echo
+echo -e "${CYAN}PostgreSQL Credentials:${NC}"
+echo "User: $POSTGRES_USER"
+echo "Password: $POSTGRES_PASSWORD"
+echo "Database: remnawave"
 echo
 echo -e "${CYAN}To check logs, use:${NC}"
 echo "cd /opt/remnawave && docker compose logs -f"
@@ -1023,18 +1044,18 @@ while [[ -z "$PANEL_IP" ]]; do
     read -p "Panel IP address: " PANEL_IP
 done
 
-# Cloudflare API Key
-read -p "Cloudflare API Key: " CLOUDFLARE_API_KEY
-while [[ -z "$CLOUDFLARE_API_KEY" ]]; do
-    echo -e "${RED}Cloudflare API Key cannot be empty!${NC}"
-    read -p "Cloudflare API Key: " CLOUDFLARE_API_KEY
-done
-
 # Cloudflare Email
 read -p "Cloudflare Email: " CLOUDFLARE_EMAIL
 while [[ -z "$CLOUDFLARE_EMAIL" ]]; do
     echo -e "${RED}Cloudflare Email cannot be empty!${NC}"
     read -p "Cloudflare Email: " CLOUDFLARE_EMAIL
+done
+
+# Cloudflare API Key
+read -p "Cloudflare API Key: " CLOUDFLARE_API_KEY
+while [[ -z "$CLOUDFLARE_API_KEY" ]]; do
+    echo -e "${RED}Cloudflare API Key cannot be empty!${NC}"
+    read -p "Cloudflare API Key: " CLOUDFLARE_API_KEY
 done
 
 # Certificate from panel
