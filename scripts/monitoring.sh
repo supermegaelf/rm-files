@@ -587,7 +587,6 @@ echo -e "${CYAN}Access URLs:${NC}"
 echo -e "Grafana: ${WHITE}https://grafana.$DOMAIN:9443${NC}"
 echo -e "Prometheus: ${WHITE}https://prometheus.$DOMAIN:9443${NC}"
 echo
-echo -e "${CYAN}Verification Commands:${NC}"
-echo -e "Check targets:" 
+echo -e "${CYAN}Check targets:${NC}"
 echo -e "${WHITE}curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health}'${NC}"
 echo
