@@ -699,6 +699,7 @@ EOL
 # Start containers
 echo
 echo "Starting Docker containers..."
+echo
 cd /opt/remnawave
 docker compose up -d
 sleep 20
