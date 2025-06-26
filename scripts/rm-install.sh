@@ -328,6 +328,7 @@ echo
 
 # Move variables file to configuration directory
 echo "Moving variables file..."
+echo
 mv /root/remnawave-vars.sh /opt/remnawave/
 
 # Create .env file
