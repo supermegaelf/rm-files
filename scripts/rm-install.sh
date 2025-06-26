@@ -975,14 +975,14 @@ echo -e "${GREEN}-----------------------------------------${NC}"
 echo -e "${NC}✓ Remnawave setup completed successfully!${NC}"
 echo -e "${GREEN}-----------------------------------------${NC}"
 echo
-echo "Remnawave URL:"
+echo -e "${CYAN}Remnawave URL:${NC}"
 echo "https://${PANEL_DOMAIN}/auth/login?${cookies_random1}=${cookies_random2}"
 echo
-echo "Credentials:"
+echo -e "${CYAN}Credentials:${NC}"
 echo "$SUPERADMIN_USERNAME"
 echo "$SUPERADMIN_PASSWORD"
 echo
-echo "To check logs, use:"
+echo -e "${CYAN}To check logs, use:${NC}"
 echo "cd /opt/remnawave && docker compose logs -f"
 echo
 
