@@ -12,9 +12,9 @@ NC='\033[0m'
 
 # Remnawave Node Monitoring Management Script
 echo
-echo -e "${PURPLE}====================================${NC}"
+echo -e "${PURPLE}==================================${NC}"
 echo -e "${NC}REMNAWAVE NODE MONITORING MANAGER${NC}"
-echo -e "${PURPLE}====================================${NC}"
+echo -e "${PURPLE}==================================${NC}"
 echo
 
 # Check if script is run with parameters
@@ -56,9 +56,9 @@ fi
 # Uninstall function
 if [ "$ACTION" = "uninstall" ]; then
    echo
-   echo -e "${PURPLE}===============================${NC}"
+   echo -e "${PURPLE}============================${NC}"
    echo -e "${NC}Node Monitoring Uninstaller${NC}"
-   echo -e "${PURPLE}===============================${NC}"
+   echo -e "${PURPLE}============================${NC}"
    echo
 
    # Check if monitoring is installed
@@ -157,9 +157,9 @@ if [ "$ACTION" = "uninstall" ]; then
    fi
 
    echo
-   echo -e "${GREEN}===============================================${NC}"
+   echo -e "${GREEN}============================================${NC}"
    echo -e "${NC}✓ Node monitoring uninstalled successfully!${NC}"
-   echo -e "${GREEN}===============================================${NC}"
+   echo -e "${GREEN}============================================${NC}"
    echo
    echo -e "${CYAN}Note: Remnawave node configuration has been restored.${NC}"
    echo
@@ -168,9 +168,9 @@ fi
 
 # Installation process
 echo
-echo -e "${PURPLE}==============================${NC}"
+echo -e "${PURPLE}=============================${NC}"
 echo -e "${NC}Node Monitoring Installation${NC}"
-echo -e "${PURPLE}==============================${NC}"
+echo -e "${PURPLE}=============================${NC}"
 echo
 
 # Check if monitoring is already installed
@@ -358,9 +358,9 @@ echo -e "${NC}✓ Monitoring setup completed!${NC}"
 echo -e "${GREEN}------------------------------${NC}"
 echo
 
-echo -e "${GREEN}=====================================${NC}"
+echo -e "${GREEN}===============================${NC}"
 echo -e "${NC}3. Updating node configuration${NC}"
-echo -e "${GREEN}=====================================${NC}"
+echo -e "${GREEN}===============================${NC}"
 echo
 
 # Update Remnawave node configuration
@@ -515,9 +515,9 @@ services:
 EOF
 
 echo
-echo -e "${GREEN}----------------------------------------${NC}"
+echo -e "${GREEN}---------------------------------------${NC}"
 echo -e "${NC}✓ Node configuration update completed!${NC}"
-echo -e "${GREEN}----------------------------------------${NC}"
+echo -e "${GREEN}---------------------------------------${NC}"
 echo
 
 echo -e "${GREEN}===================${NC}"
@@ -598,9 +598,9 @@ echo -e "${NC}✓ Final verification completed!${NC}"
 echo -e "${GREEN}--------------------------------${NC}"
 echo
 
-echo -e "${GREEN}======================================================${NC}"
+echo -e "${GREEN}=======================================================${NC}"
 echo -e "${NC}✓ Node monitoring installation completed successfully!${NC}"
-echo -e "${GREEN}======================================================${NC}"
+echo -e "${GREEN}=======================================================${NC}"
 echo
 echo -e "${CYAN}Access URLs:${NC}"
 echo -e "Grafana: ${WHITE}https://grafana.$SELFSTEAL_DOMAIN:9443${NC}"
