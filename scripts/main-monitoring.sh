@@ -12,9 +12,9 @@ NC='\033[0m'
 
 # Remnawave Panel Monitoring Management Script
 echo
-echo -e "${PURPLE}=====================================${NC}"
+echo -e "${PURPLE}===================================${NC}"
 echo -e "${NC}REMNAWAVE PANEL MONITORING MANAGER${NC}"
-echo -e "${PURPLE}=====================================${NC}"
+echo -e "${PURPLE}===================================${NC}"
 echo
 
 # Check if script is run with parameters
@@ -56,9 +56,9 @@ fi
 # Uninstall function
 if [ "$ACTION" = "uninstall" ]; then
    echo
-   echo -e "${PURPLE}================================${NC}"
+   echo -e "${PURPLE}=============================${NC}"
    echo -e "${NC}Panel Monitoring Uninstaller${NC}"
-   echo -e "${PURPLE}================================${NC}"
+   echo -e "${PURPLE}=============================${NC}"
    echo
 
    # Check if monitoring is installed
@@ -157,9 +157,9 @@ if [ "$ACTION" = "uninstall" ]; then
    fi
 
    echo
-   echo -e "${GREEN}=================================================${NC}"
+   echo -e "${GREEN}=============================================${NC}"
    echo -e "${NC}✓ Panel monitoring uninstalled successfully!${NC}"
-   echo -e "${GREEN}=================================================${NC}"
+   echo -e "${GREEN}=============================================${NC}"
    echo
    echo -e "${CYAN}Note: Remnawave panel configuration has been restored.${NC}"
    echo
@@ -168,9 +168,9 @@ fi
 
 # Installation process
 echo
-echo -e "${PURPLE}===============================${NC}"
+echo -e "${PURPLE}==============================${NC}"
 echo -e "${NC}Panel Monitoring Installation${NC}"
-echo -e "${PURPLE}===============================${NC}"
+echo -e "${PURPLE}==============================${NC}"
 echo
 
 # Check if monitoring is already installed
@@ -366,9 +366,9 @@ echo -e "${NC}✓ Monitoring setup completed!${NC}"
 echo -e "${GREEN}------------------------------${NC}"
 echo
 
-echo -e "${GREEN}======================================${NC}"
+echo -e "${GREEN}================================${NC}"
 echo -e "${NC}3. Updating panel configuration${NC}"
-echo -e "${GREEN}======================================${NC}"
+echo -e "${GREEN}================================${NC}"
 echo
 
 # Update Remnawave panel configuration
@@ -555,9 +555,9 @@ server {
 EOF
 
 echo
-echo -e "${GREEN}------------------------------------------${NC}"
+echo -e "${GREEN}----------------------------------------${NC}"
 echo -e "${NC}✓ Panel configuration update completed!${NC}"
-echo -e "${GREEN}------------------------------------------${NC}"
+echo -e "${GREEN}----------------------------------------${NC}"
 echo
 
 echo -e "${GREEN}===================${NC}"
