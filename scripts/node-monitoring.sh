@@ -10,11 +10,11 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
-# Remnawave Monitoring Management Script
+# Remnawave Node Monitoring Management Script
 echo
-echo -e "${PURPLE}=============================${NC}"
-echo -e "${NC}REMNAWAVE MONITORING MANAGER${NC}"
-echo -e "${PURPLE}=============================${NC}"
+echo -e "${PURPLE}====================================${NC}"
+echo -e "${NC}REMNAWAVE NODE MONITORING MANAGER${NC}"
+echo -e "${PURPLE}====================================${NC}"
 echo
 
 # Check if script is run with parameters
@@ -26,8 +26,8 @@ else
    # Interactive menu
    echo -e "${CYAN}Please select an action:${NC}"
    echo
-   echo -e "${GREEN}1.${NC} Install Monitoring"
-   echo -e "${RED}2.${NC} Uninstall Monitoring"
+   echo -e "${GREEN}1.${NC} Install Node Monitoring"
+   echo -e "${RED}2.${NC} Uninstall Node Monitoring"
    echo -e "${YELLOW}3.${NC} Exit"
    echo
    
@@ -56,14 +56,14 @@ fi
 # Uninstall function
 if [ "$ACTION" = "uninstall" ]; then
    echo
-   echo -e "${PURPLE}=======================${NC}"
-   echo -e "${NC}Monitoring Uninstaller${NC}"
-   echo -e "${PURPLE}=======================${NC}"
+   echo -e "${PURPLE}===============================${NC}"
+   echo -e "${NC}Node Monitoring Uninstaller${NC}"
+   echo -e "${PURPLE}===============================${NC}"
    echo
 
    # Check if monitoring is installed
    if [ ! -d "/opt/monitoring" ] && [ ! -f "/usr/local/bin/node_exporter" ]; then
-       echo -e "${YELLOW}Monitoring is not installed on this system.${NC}"
+       echo -e "${YELLOW}Node monitoring is not installed on this system.${NC}"
        exit 0
    fi
 
@@ -136,7 +136,7 @@ if [ "$ACTION" = "uninstall" ]; then
    ufw delete allow 9443/tcp 2>/dev/null && echo "✓ UFW rule removed" || echo "ℹ UFW rule not found"
 
    # Restore nginx configuration if backup exists
-   echo "Restoring nginx configuration..."
+   echo "Restoring node configuration..."
    if [ -f "/opt/remnawave/nginx.conf.backup" ]; then
        cd /opt/remnawave
        cp nginx.conf.backup nginx.conf
@@ -150,16 +150,16 @@ if [ "$ACTION" = "uninstall" ]; then
            # Restart remnawave containers
            docker compose down 2>/dev/null
            docker compose up -d 2>/dev/null
-           echo "✓ Remnawave containers restarted"
+           echo "✓ Remnawave node restarted"
        fi
    else
        echo "ℹ No nginx backup found to restore"
    fi
 
    echo
-   echo -e "${GREEN}=======================================${NC}"
-   echo -e "${NC}✓ Monitoring uninstalled successfully!${NC}"
-   echo -e "${GREEN}=======================================${NC}"
+   echo -e "${GREEN}===============================================${NC}"
+   echo -e "${NC}✓ Node monitoring uninstalled successfully!${NC}"
+   echo -e "${GREEN}===============================================${NC}"
    echo
    echo -e "${CYAN}Note: Remnawave node configuration has been restored.${NC}"
    echo
@@ -168,14 +168,14 @@ fi
 
 # Installation process
 echo
-echo -e "${PURPLE}========================${NC}"
-echo -e "${NC}Monitoring Installation${NC}"
-echo -e "${PURPLE}========================${NC}"
+echo -e "${PURPLE}==============================${NC}"
+echo -e "${NC}Node Monitoring Installation${NC}"
+echo -e "${PURPLE}==============================${NC}"
 echo
 
 # Check if monitoring is already installed
 if [ -d "/opt/monitoring" ] && [ -f "/usr/local/bin/node_exporter" ]; then
-   echo -e "${YELLOW}Monitoring appears to be already installed.${NC}"
+   echo -e "${YELLOW}Node monitoring appears to be already installed.${NC}"
    echo -e "${YELLOW}Do you want to reinstall? (y/N)${NC}"
    read -r REINSTALL
    
@@ -187,18 +187,38 @@ if [ -d "/opt/monitoring" ] && [ -f "/usr/local/bin/node_exporter" ]; then
    echo -e "${YELLOW}Proceeding with reinstallation...${NC}"
 fi
 
-# Interactive input for variables
-echo -e "${CYAN}Please enter the required information:${NC}"
+# Check if we're in node directory and load variables
+if [ ! -f "/opt/remnawave/node-vars.sh" ]; then
+    echo -e "${RED}Error: Node variables file not found at /opt/remnawave/node-vars.sh${NC}"
+    echo -e "${RED}This script must be run on a server with Remnawave node installed.${NC}"
+    exit 1
+fi
+
+# Load node variables
+echo -e "${CYAN}Loading node configuration...${NC}"
+cd /opt/remnawave
+source node-vars.sh
+
+# Display current configuration
+echo
+echo -e "${CYAN}Current node configuration:${NC}"
+echo -e "Selfsteal domain: ${WHITE}$SELFSTEAL_DOMAIN${NC}"
 echo
 
-# Request domain
-echo -e -n "${NC}Self-steal domain (e.g., example.com): ${NC}"
-read DOMAIN
+# Confirm configuration
+echo -e "${YELLOW}Use this configuration for monitoring? (Y/n)${NC}"
+read -r USE_CONFIG
 
-while [[ -z "$DOMAIN" ]]; do
-    echo -e "${RED}Domain cannot be empty!${NC}"
-    read -p "Domain: " DOMAIN
-done
+if [[ "$USE_CONFIG" =~ ^[Nn]$ ]]; then
+    echo -e "${CYAN}Please enter the required information:${NC}"
+    echo
+    
+    read -p "Selfsteal domain (e.g., example.com): " SELFSTEAL_DOMAIN
+    while [[ -z "$SELFSTEAL_DOMAIN" ]]; do
+        echo -e "${RED}Selfsteal domain cannot be empty!${NC}"
+        read -p "Selfsteal domain: " SELFSTEAL_DOMAIN
+    done
+fi
 
 set -e
 
@@ -338,9 +358,9 @@ echo -e "${NC}✓ Monitoring setup completed!${NC}"
 echo -e "${GREEN}------------------------------${NC}"
 echo
 
-echo -e "${GREEN}===============================${NC}"
+echo -e "${GREEN}=====================================${NC}"
 echo -e "${NC}3. Updating node configuration${NC}"
-echo -e "${GREEN}===============================${NC}"
+echo -e "${GREEN}=====================================${NC}"
 echo
 
 # Update Remnawave node configuration
@@ -367,13 +387,13 @@ ssl_session_timeout 1d;
 ssl_session_cache shared:MozSSL:10m;
 
 server {
-    server_name $DOMAIN;
+    server_name ${SELFSTEAL_DOMAIN};
     listen unix:/dev/shm/nginx.sock ssl proxy_protocol;
     http2 on;
 
-    ssl_certificate "/etc/nginx/ssl/$DOMAIN/fullchain.pem";
-    ssl_certificate_key "/etc/nginx/ssl/$DOMAIN/privkey.pem";
-    ssl_trusted_certificate "/etc/nginx/ssl/$DOMAIN/fullchain.pem";
+    ssl_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
+    ssl_certificate_key "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/privkey.pem";
+    ssl_trusted_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
 
     root /var/www/html;
     index index.html;
@@ -386,15 +406,14 @@ server {
     return 444;
 }
 
-# Мониторинг серверы на порту 9443 (HTTPS)
 server {
     listen 9443 ssl;
     http2 on;
-    server_name grafana.$DOMAIN;
+    server_name grafana.${SELFSTEAL_DOMAIN};
 
-    ssl_certificate "/etc/nginx/ssl/$DOMAIN/fullchain.pem";
-    ssl_certificate_key "/etc/nginx/ssl/$DOMAIN/privkey.pem";
-    ssl_trusted_certificate "/etc/nginx/ssl/$DOMAIN/fullchain.pem";
+    ssl_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
+    ssl_certificate_key "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/privkey.pem";
+    ssl_trusted_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -410,11 +429,11 @@ server {
 server {
     listen 9443 ssl;
     http2 on;
-    server_name prometheus.$DOMAIN;
+    server_name prometheus.${SELFSTEAL_DOMAIN};
 
-    ssl_certificate "/etc/nginx/ssl/$DOMAIN/fullchain.pem";
-    ssl_certificate_key "/etc/nginx/ssl/$DOMAIN/privkey.pem";
-    ssl_trusted_certificate "/etc/nginx/ssl/$DOMAIN/fullchain.pem";
+    ssl_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
+    ssl_certificate_key "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/privkey.pem";
+    ssl_trusted_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
 
     location / {
         proxy_pass http://127.0.0.1:9090;
@@ -428,11 +447,11 @@ server {
 server {
     listen 9443 ssl;
     http2 on;
-    server_name node-exporter.$DOMAIN;
+    server_name node-exporter.${SELFSTEAL_DOMAIN};
 
-    ssl_certificate "/etc/nginx/ssl/$DOMAIN/fullchain.pem";
-    ssl_certificate_key "/etc/nginx/ssl/$DOMAIN/privkey.pem";
-    ssl_trusted_certificate "/etc/nginx/ssl/$DOMAIN/fullchain.pem";
+    ssl_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
+    ssl_certificate_key "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/privkey.pem";
+    ssl_trusted_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
 
     location / {
         proxy_pass http://127.0.0.1:9100;
@@ -464,8 +483,8 @@ services:
     network_mode: host
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt/live/$DOMAIN/fullchain.pem:/etc/nginx/ssl/$DOMAIN/fullchain.pem:ro
-      - /etc/letsencrypt/live/$DOMAIN/privkey.pem:/etc/nginx/ssl/$DOMAIN/privkey.pem:ro
+      - /etc/letsencrypt/live/${SELFSTEAL_DOMAIN}/fullchain.pem:/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem:ro
+      - /etc/letsencrypt/live/${SELFSTEAL_DOMAIN}/privkey.pem:/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/privkey.pem:ro
       - /dev/shm:/dev/shm:rw
       - /var/www/html:/var/www/html:ro
     command: sh -c 'rm -f /dev/shm/nginx.sock && nginx -g "daemon off;"'
@@ -496,9 +515,9 @@ services:
 EOF
 
 echo
-echo -e "${GREEN}---------------------------------------${NC}"
+echo -e "${GREEN}----------------------------------------${NC}"
 echo -e "${NC}✓ Node configuration update completed!${NC}"
-echo -e "${GREEN}---------------------------------------${NC}"
+echo -e "${GREEN}----------------------------------------${NC}"
 echo
 
 echo -e "${GREEN}===================${NC}"
@@ -508,7 +527,7 @@ echo
 
 # UFW rule
 echo "Adding UFW rule..."
-ufw allow 9443/tcp comment "Monitoring HTTPS" > /dev/null
+ufw allow 9443/tcp comment "Node Monitoring HTTPS" > /dev/null
 
 # Start monitoring services
 echo "Starting monitoring services..."
@@ -579,13 +598,14 @@ echo -e "${NC}✓ Final verification completed!${NC}"
 echo -e "${GREEN}--------------------------------${NC}"
 echo
 
-echo -e "${GREEN}==================================================${NC}"
-echo -e "${NC}✓ Monitoring installation completed successfully!${NC}"
-echo -e "${GREEN}==================================================${NC}"
+echo -e "${GREEN}======================================================${NC}"
+echo -e "${NC}✓ Node monitoring installation completed successfully!${NC}"
+echo -e "${GREEN}======================================================${NC}"
 echo
 echo -e "${CYAN}Access URLs:${NC}"
-echo -e "Grafana: ${WHITE}https://grafana.$DOMAIN:9443${NC}"
-echo -e "Prometheus: ${WHITE}https://prometheus.$DOMAIN:9443${NC}"
+echo -e "Grafana: ${WHITE}https://grafana.$SELFSTEAL_DOMAIN:9443${NC}"
+echo -e "Prometheus: ${WHITE}https://prometheus.$SELFSTEAL_DOMAIN:9443${NC}"
+echo -e "Node Exporter: ${WHITE}https://node-exporter.$SELFSTEAL_DOMAIN:9443${NC}"
 echo
 echo -e "${CYAN}Check targets:${NC}"
 echo -e "${WHITE}curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health}'${NC}"
