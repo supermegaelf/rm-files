@@ -647,10 +647,6 @@ echo -e "Grafana: ${WHITE}https://grafana.$PANEL_DOMAIN:9443${NC} (admin/admin)"
 echo -e "Prometheus: ${WHITE}https://prometheus.$PANEL_DOMAIN:9443${NC}"
 echo -e "Node Exporter: ${WHITE}https://node-exporter.$PANEL_DOMAIN:9443${NC}"
 echo
-echo -e "${CYAN}Panel URLs:${NC}"
-echo -e "Panel: ${WHITE}https://$PANEL_DOMAIN/auth/login?${cookies_random1}=${cookies_random2}${NC}"
-echo -e "Subscription: ${WHITE}https://$SUB_DOMAIN${NC}"
-echo
 echo -e "${CYAN}Check targets:${NC}"
 echo -e "${WHITE}curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health}'${NC}"
 echo
