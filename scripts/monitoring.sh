@@ -192,7 +192,7 @@ echo -e "${CYAN}Please enter the required information:${NC}"
 echo
 
 # Request domain
-echo -e -n "${NC}Node domain (e.g., example.com): ${NC}"
+echo -e -n "${NC}Self-steal domain (e.g., example.com): ${NC}"
 read DOMAIN
 
 while [[ -z "$DOMAIN" ]]; do
