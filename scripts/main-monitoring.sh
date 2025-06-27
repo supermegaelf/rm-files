@@ -160,6 +160,7 @@ if [ "$ACTION" = "uninstall" ]; then
        fi
        
        # Clean up backup files
+       echo
        echo "Cleaning up backup files..."
        rm -f nginx.conf.backup docker-compose.yml.backup
        echo "✓ Backup files removed"
