@@ -64,6 +64,7 @@ if [ "$ACTION" = "uninstall" ]; then
    # Check if monitoring is installed
    if [ ! -d "/opt/monitoring" ] && [ ! -f "/usr/local/bin/node_exporter" ]; then
        echo -e "${YELLOW}Panel monitoring is not installed on this system.${NC}"
+       echo
        exit 0
    fi
 
@@ -90,11 +91,13 @@ if [ "$ACTION" = "uninstall" ]; then
    fi
 
    # Remove Docker volumes
+   echo
    echo "Removing Docker volumes..."
    docker volume rm grafana-storage 2>/dev/null && echo "✓ Grafana volume removed" || echo "ℹ Grafana volume not found"
    docker volume rm prom_data 2>/dev/null && echo "✓ Prometheus volume removed" || echo "ℹ Prometheus volume not found"
 
    # Remove monitoring directory
+   echo
    echo "Removing monitoring directory..."
    if [ -d "/opt/monitoring" ]; then
        rm -rf /opt/monitoring
@@ -104,6 +107,7 @@ if [ "$ACTION" = "uninstall" ]; then
    fi
 
    # Stop and remove Node Exporter
+   echo
    echo "Removing Node Exporter..."
    systemctl stop node_exporter 2>/dev/null && echo "✓ Node Exporter stopped" || echo "ℹ Node Exporter was not running"
    systemctl disable node_exporter 2>/dev/null && echo "✓ Node Exporter disabled" || echo "ℹ Node Exporter was not enabled"
@@ -132,10 +136,12 @@ if [ "$ACTION" = "uninstall" ]; then
    fi
 
    # Remove UFW rule
+   echo
    echo "Removing UFW rules..."
    ufw delete allow 9443/tcp 2>/dev/null && echo "✓ UFW rule removed" || echo "ℹ UFW rule not found"
 
    # Restore nginx configuration if backup exists
+   echo
    echo "Restoring panel configuration..."
    if [ -f "/opt/remnawave/nginx.conf.backup" ]; then
        cd /opt/remnawave
@@ -152,6 +158,11 @@ if [ "$ACTION" = "uninstall" ]; then
            docker compose up -d 2>/dev/null
            echo "✓ Remnawave panel restarted"
        fi
+       
+       # Clean up backup files
+       echo "Cleaning up backup files..."
+       rm -f nginx.conf.backup docker-compose.yml.backup
+       echo "✓ Backup files removed"
    else
        echo "ℹ No nginx backup found to restore"
    fi
@@ -202,6 +213,7 @@ source remnawave-vars.sh
 # Display current configuration
 echo
 echo -e "${CYAN}Current panel configuration:${NC}"
+echo
 echo -e "Panel domain: ${WHITE}$PANEL_DOMAIN${NC}"
 echo -e "Subscription domain: ${WHITE}$SUB_DOMAIN${NC}"
 echo -e "Cookie auth: ${WHITE}${cookies_random1}=${cookies_random2}${NC}"
@@ -220,7 +232,6 @@ fi
 
 echo -e "Metrics user: ${WHITE}$METRICS_USER${NC}"
 echo -e "Metrics password: ${WHITE}$METRICS_PASS${NC}"
-echo -e "Metrics configured: ${GREEN}✓${NC}"
 echo
 
 # Confirm configuration
@@ -300,6 +311,7 @@ echo
 
 # Create monitoring structure
 echo "Creating monitoring structure..."
+echo
 mkdir -p /opt/monitoring/prometheus
 cd /opt/monitoring
 
@@ -723,9 +735,6 @@ volumes:
     external: false
     name: remnawave-redis-data
 EOL
-
-echo "✓ Docker-compose.yml updated with metrics port"
-echo
 
 echo
 echo -e "${GREEN}----------------------------------------${NC}"
