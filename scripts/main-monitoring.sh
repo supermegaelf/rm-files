@@ -836,7 +836,6 @@ echo
 echo -e "${CYAN}Access URLs:${NC}"
 echo -e "Grafana: ${WHITE}https://grafana.$PANEL_DOMAIN:9443${NC}"
 echo -e "Prometheus: ${WHITE}https://prometheus.$PANEL_DOMAIN:9443${NC}"
-echo -e "Node Exporter: ${WHITE}https://node-exporter.$PANEL_DOMAIN:9443${NC}"
 echo
 echo -e "${CYAN}Test Remnawave metrics:${NC}"
 echo -e "${WHITE}curl -u '$METRICS_USER:$METRICS_PASS' http://localhost:3001/metrics${NC}"
