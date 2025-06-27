@@ -312,7 +312,6 @@ echo
 
 # Create monitoring structure
 echo "Creating monitoring structure..."
-echo
 mkdir -p /opt/monitoring/prometheus
 cd /opt/monitoring
 
