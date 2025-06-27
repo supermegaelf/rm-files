@@ -64,6 +64,7 @@ if [ "$ACTION" = "uninstall" ]; then
    # Check if monitoring is installed
    if [ ! -d "/opt/monitoring" ] && [ ! -f "/usr/local/bin/node_exporter" ]; then
        echo -e "${YELLOW}Panel monitoring is not installed on this system.${NC}"
+       echo
        exit 0
    fi
 
@@ -90,11 +91,13 @@ if [ "$ACTION" = "uninstall" ]; then
    fi
 
    # Remove Docker volumes
+   echo
    echo "Removing Docker volumes..."
    docker volume rm grafana-storage 2>/dev/null && echo "✓ Grafana volume removed" || echo "ℹ Grafana volume not found"
    docker volume rm prom_data 2>/dev/null && echo "✓ Prometheus volume removed" || echo "ℹ Prometheus volume not found"
 
    # Remove monitoring directory
+   echo
    echo "Removing monitoring directory..."
    if [ -d "/opt/monitoring" ]; then
        rm -rf /opt/monitoring
@@ -104,6 +107,7 @@ if [ "$ACTION" = "uninstall" ]; then
    fi
 
    # Stop and remove Node Exporter
+   echo
    echo "Removing Node Exporter..."
    systemctl stop node_exporter 2>/dev/null && echo "✓ Node Exporter stopped" || echo "ℹ Node Exporter was not running"
    systemctl disable node_exporter 2>/dev/null && echo "✓ Node Exporter disabled" || echo "ℹ Node Exporter was not enabled"
@@ -132,10 +136,12 @@ if [ "$ACTION" = "uninstall" ]; then
    fi
 
    # Remove UFW rule
+   echo
    echo "Removing UFW rules..."
    ufw delete allow 9443/tcp 2>/dev/null && echo "✓ UFW rule removed" || echo "ℹ UFW rule not found"
 
    # Restore nginx configuration if backup exists
+   echo
    echo "Restoring panel configuration..."
    if [ -f "/opt/remnawave/nginx.conf.backup" ]; then
        cd /opt/remnawave
@@ -152,6 +158,12 @@ if [ "$ACTION" = "uninstall" ]; then
            docker compose up -d 2>/dev/null
            echo "✓ Remnawave panel restarted"
        fi
+       
+       # Clean up backup files
+       echo
+       echo "Cleaning up backup files..."
+       rm -f nginx.conf.backup docker-compose.yml.backup
+       echo "✓ Backup files removed"
    else
        echo "ℹ No nginx backup found to restore"
    fi
@@ -202,9 +214,25 @@ source remnawave-vars.sh
 # Display current configuration
 echo
 echo -e "${CYAN}Current panel configuration:${NC}"
+echo
 echo -e "Panel domain: ${WHITE}$PANEL_DOMAIN${NC}"
 echo -e "Subscription domain: ${WHITE}$SUB_DOMAIN${NC}"
 echo -e "Cookie auth: ${WHITE}${cookies_random1}=${cookies_random2}${NC}"
+echo
+
+# Extract Remnawave metrics credentials
+echo "Extracting Remnawave metrics credentials..."
+METRICS_USER=$(grep "METRICS_USER=" /opt/remnawave/.env | cut -d'=' -f2)
+METRICS_PASS=$(grep "METRICS_PASS=" /opt/remnawave/.env | cut -d'=' -f2)
+
+if [[ -z "$METRICS_USER" || -z "$METRICS_PASS" ]]; then
+    echo -e "${RED}Error: Could not find Remnawave metrics credentials in .env file${NC}"
+    echo -e "${RED}Make sure METRICS_USER and METRICS_PASS are set in /opt/remnawave/.env${NC}"
+    exit 1
+fi
+
+echo -e "Metrics user: ${WHITE}$METRICS_USER${NC}"
+echo -e "Metrics password: ${WHITE}$METRICS_PASS${NC}"
 echo
 
 # Confirm configuration
@@ -288,7 +316,7 @@ mkdir -p /opt/monitoring/prometheus
 cd /opt/monitoring
 
 # Create Prometheus configuration
-cat > prometheus/prometheus.yml << 'EOF'
+cat > prometheus/prometheus.yml << EOF
 global:
   scrape_interval: 15s
   scrape_timeout: 10s
@@ -304,6 +332,17 @@ scrape_configs:
       - targets: ['127.0.0.1:9100']
     scrape_interval: 15s
     scrape_timeout: 5s
+
+  - job_name: 'remnawave'
+    scheme: http
+    metrics_path: /metrics
+    static_configs:
+      - targets: ['127.0.0.1:3001']
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    basic_auth:
+      username: $METRICS_USER
+      password: $METRICS_PASS
 EOF
 
 # Create Docker Compose for monitoring
@@ -319,7 +358,7 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_HTTP_PORT=3001
+      - GF_SERVER_HTTP_PORT=3002
     logging:
       driver: 'json-file'
       options:
@@ -493,7 +532,7 @@ server {
     ssl_trusted_certificate "/etc/nginx/ssl/${PANEL_DOMAIN}/fullchain.pem";
 
     location / {
-        proxy_pass http://127.0.0.1:3001;
+        proxy_pass http://127.0.0.1:3002;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -553,6 +592,149 @@ server {
     return 444;
 }
 EOF
+
+# Update docker-compose.yml to include metrics port
+echo "Updating docker-compose.yml for metrics..."
+
+# Extract base domains for SSL certificates
+PANEL_BASE_DOMAIN=$(echo "$PANEL_DOMAIN" | awk -F'.' '{if (NF > 2) {print $(NF-1)"."$NF} else {print $0}}')
+SUB_BASE_DOMAIN=$(echo "$SUB_DOMAIN" | awk -F'.' '{if (NF > 2) {print $(NF-1)"."$NF} else {print $0}}')
+
+# Create new docker-compose.yml with metrics port
+cat > docker-compose.yml << EOL
+services:
+  remnawave-db:
+    image: postgres:17
+    container_name: 'remnawave-db'
+    hostname: remnawave-db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=\${POSTGRES_USER}
+      - POSTGRES_PASSWORD=\${POSTGRES_PASSWORD}
+      - POSTGRES_DB=\${POSTGRES_DB}
+      - TZ=UTC
+    ports:
+      - '127.0.0.1:6767:5432'
+    volumes:
+      - remnawave-db-data:/var/lib/postgresql/data
+    networks:
+      - remnawave-network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U \$\${POSTGRES_USER} -d \$\${POSTGRES_DB}']
+      interval: 3s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '30m'
+        max-file: '5'
+
+  remnawave:
+    image: remnawave/backend:latest
+    container_name: remnawave
+    hostname: remnawave
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - '127.0.0.1:3000:3000'
+      - '127.0.0.1:3001:3001'
+    networks:
+      - remnawave-network
+    depends_on:
+      remnawave-db:
+        condition: service_healthy
+      remnawave-redis:
+        condition: service_healthy
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '30m'
+        max-file: '5'
+
+  remnawave-redis:
+    image: valkey/valkey:8.1.1-alpine
+    container_name: remnawave-redis
+    hostname: remnawave-redis
+    restart: always
+    networks:
+      - remnawave-network
+    volumes:
+      - remnawave-redis-data:/data
+    healthcheck:
+      test: [ "CMD", "valkey-cli", "ping" ]
+      interval: 3s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '30m'
+        max-file: '5'
+
+  remnawave-nginx:
+    image: nginx:1.26
+    container_name: remnawave-nginx
+    hostname: remnawave-nginx
+    restart: always
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - /etc/letsencrypt/live/$PANEL_BASE_DOMAIN/fullchain.pem:/etc/nginx/ssl/$PANEL_DOMAIN/fullchain.pem:ro
+      - /etc/letsencrypt/live/$PANEL_BASE_DOMAIN/privkey.pem:/etc/nginx/ssl/$PANEL_DOMAIN/privkey.pem:ro
+      - /etc/letsencrypt/live/$SUB_BASE_DOMAIN/fullchain.pem:/etc/nginx/ssl/$SUB_DOMAIN/fullchain.pem:ro
+      - /etc/letsencrypt/live/$SUB_BASE_DOMAIN/privkey.pem:/etc/nginx/ssl/$SUB_DOMAIN/privkey.pem:ro
+    network_mode: host
+    depends_on:
+      - remnawave
+      - remnawave-subscription-page
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '30m'
+        max-file: '5'
+
+  remnawave-subscription-page:
+    image: remnawave/subscription-page:latest
+    container_name: remnawave-subscription-page
+    hostname: remnawave-subscription-page
+    restart: always
+    environment:
+      - REMNAWAVE_PANEL_URL=http://remnawave:3000
+      - APP_PORT=3010
+      - META_TITLE=Remnawave Subscription
+      - META_DESCRIPTION=page
+    ports:
+      - '127.0.0.1:3010:3010'
+    networks:
+      - remnawave-network
+    volumes:
+      - ./index.html:/opt/app/frontend/index.html
+      - ./assets:/opt/app/frontend/assets
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '30m'
+        max-file: '5'
+
+networks:
+  remnawave-network:
+    name: remnawave-network
+    driver: bridge
+    external: false
+
+volumes:
+  remnawave-db-data:
+    driver: local
+    external: false
+    name: remnawave-db-data
+  remnawave-redis-data:
+    driver: local
+    external: false
+    name: remnawave-redis-data
+EOL
 
 echo
 echo -e "${GREEN}----------------------------------------${NC}"
@@ -632,6 +814,15 @@ else
    echo -e "${YELLOW}⚠ Some Prometheus targets may be down${NC}"
 fi
 
+# Test Remnawave metrics endpoint
+echo "Checking Remnawave metrics..."
+if curl -s -u "$METRICS_USER:$METRICS_PASS" http://127.0.0.1:3001/metrics 2>/dev/null | grep -q "# HELP"; then
+   echo -e "${GREEN}✓ Remnawave metrics are accessible${NC}"
+else
+   echo -e "${YELLOW}⚠ Remnawave metrics endpoint is not responding${NC}"
+   echo -e "${CYAN}  Check if Remnawave container is running and METRICS_PORT=3001${NC}"
+fi
+
 echo
 echo -e "${GREEN}--------------------------------${NC}"
 echo -e "${NC}✓ Final verification completed!${NC}"
@@ -645,8 +836,10 @@ echo
 echo -e "${CYAN}Access URLs:${NC}"
 echo -e "Grafana: ${WHITE}https://grafana.$PANEL_DOMAIN:9443${NC}"
 echo -e "Prometheus: ${WHITE}https://prometheus.$PANEL_DOMAIN:9443${NC}"
-echo -e "Node Exporter: ${WHITE}https://node-exporter.$PANEL_DOMAIN:9443${NC}"
 echo
-echo -e "${CYAN}Check targets:${NC}"
+echo -e "${CYAN}Test Remnawave metrics:${NC}"
+echo -e "${WHITE}curl -u '$METRICS_USER:$METRICS_PASS' http://localhost:3001/metrics${NC}"
+echo
+echo -e "${CYAN}Check all targets:${NC}"
 echo -e "${WHITE}curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health}'${NC}"
 echo
