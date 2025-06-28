@@ -1437,9 +1437,9 @@ rm -rf simple-web-templates-main/ sni-templates-main/
 
 # Verifying node operation
 if curl -s --fail --max-time 10 "https://$SELFSTEAL_DOMAIN" | grep -q "html"; then
-    echo "Node successfully launched!"
+    echo -e "${GREEN}Node successfully launched!${NC}"
 else
-    echo "Node is not accessible. Check configuration."
+    echo -e "${RED}Node is not accessible. Check configuration.${NC}"
 fi
 EOF
 
