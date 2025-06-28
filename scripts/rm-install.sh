@@ -19,8 +19,8 @@ echo
 echo -e "${CYAN}Please select installation type:${NC}"
 echo
 echo -e "${GREEN}1.${NC} Install Panel"
-echo -e "${GREEN}2.${NC} Install Node (Separated)"
-echo -e "${GREEN}3.${NC} Exit"
+echo -e "${GREEN}2.${NC} Install Node"
+echo -e "${RED}3.${NC} Exit"
 echo
 read -p "Enter your choice (1, 2, or 3): " INSTALL_TYPE
 
@@ -168,7 +168,7 @@ echo
 source remnawave-vars.sh
 
 echo -e "${GREEN}------------------------------------${NC}"
-echo -e "${NC}✓ Environment variables configured!${NC}"
+echo -e "${GREEN}✓${NC} Environment variables configured!"
 echo -e "${GREEN}------------------------------------${NC}"
 echo
 
@@ -240,7 +240,7 @@ systemctl restart unattended-upgrades
 
 echo
 echo -e "${GREEN}----------------------------------${NC}"
-echo -e "${NC}✓ Package installation completed!${NC}"
+echo -e "${GREEN}✓${NC} Package installation completed!"
 echo -e "${GREEN}----------------------------------${NC}"
 echo
 
@@ -333,7 +333,7 @@ echo "renew_hook = sh -c 'cd /opt/remnawave && docker compose down remnawave-ngi
 
 echo
 echo -e "${GREEN}----------------------------------------------${NC}"
-echo -e "${NC}✓ Structure and certificates setup completed!${NC}"
+echo -e "${GREEN}✓${NC} Structure and certificates setup completed!"
 echo -e "${GREEN}----------------------------------------------${NC}"
 echo
 
@@ -593,7 +593,7 @@ echo "Downloading index.html..."
 wget -P /opt/remnawave/ https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/index.html
 
 echo -e "${GREEN}--------------------------------------------${NC}"
-echo -e "${NC}✓ Configuration files created successfully!${NC}"
+echo -e "${GREEN}✓${NC} Configuration files created successfully!"
 echo -e "${GREEN}--------------------------------------------${NC}"
 echo
 
@@ -732,7 +732,7 @@ done
 
 echo
 echo -e "${GREEN}--------------------------------------------------------${NC}"
-echo -e "${NC}✓ Nginx configured and containers started successfully!${NC}"
+echo -e "${GREEN}✓${NC} Nginx configured and containers started successfully!"
 echo -e "${GREEN}--------------------------------------------------------${NC}"
 echo
 
@@ -892,7 +892,7 @@ rm -f "$config_file"
 
 echo
 echo -e "${GREEN}-------------------------------${NC}"
-echo -e "${NC}✓ API configuration completed!${NC}"
+echo -e "${GREEN}✓${NC} API configuration completed!"
 echo -e "${GREEN}-------------------------------${NC}"
 echo
 
@@ -989,7 +989,7 @@ echo "$alias_line" >> "$bashrc_file"
 
 echo
 echo -e "${GREEN}-----------------------------------------${NC}"
-echo -e "${NC}✓ Remnawave setup completed successfully!${NC}"
+echo -e "${GREEN}✓${NC} Remnawave setup completed successfully!"
 echo -e "${GREEN}-----------------------------------------${NC}"
 echo
 echo -e "${CYAN}Remnawave URL:${NC}"
@@ -1110,7 +1110,7 @@ echo
 source /opt/remnawave/node-vars.sh
 
 echo -e "${GREEN}------------------------------------${NC}"
-echo -e "${NC}✓ Environment variables configured!${NC}"
+echo -e "${GREEN}✓${NC} Environment variables configured!"
 echo -e "${GREEN}------------------------------------${NC}"
 echo
 
@@ -1184,7 +1184,7 @@ systemctl restart unattended-upgrades
 
 echo
 echo -e "${GREEN}----------------------------------${NC}"
-echo -e "${NC}✓ Package installation completed!${NC}"
+echo -e "${GREEN}✓${NC} Package installation completed!"
 echo -e "${GREEN}----------------------------------${NC}"
 echo
 
@@ -1265,7 +1265,7 @@ echo "renew_hook = sh -c 'cd /opt/remnawave && docker compose down remnawave-ngi
 
 echo
 echo -e "${GREEN}----------------------------------------------${NC}"
-echo -e "${NC}✓ Structure and certificates setup completed!${NC}"
+echo -e "${GREEN}✓${NC} Structure and certificates setup completed!"
 echo -e "${GREEN}----------------------------------------------${NC}"
 echo
 
@@ -1356,7 +1356,7 @@ EOL
 
 echo
 echo -e "${GREEN}--------------------------------------------${NC}"
-echo -e "${NC}✓ Configuration files created successfully!${NC}"
+echo -e "${GREEN}✓${NC} Configuration files created successfully!"
 echo -e "${GREEN}--------------------------------------------${NC}"
 echo
 
@@ -1375,7 +1375,7 @@ sleep 3
 
 echo
 echo -e "${GREEN}----------------------------------------${NC}"
-echo -e "${NC}✓ UFW installed and containers started!${NC}"
+echo -e "${GREEN}✓${NC} UFW installed and containers started!"
 echo -e "${GREEN}----------------------------------------${NC}"
 echo
 
@@ -1448,7 +1448,7 @@ chmod +x install_template.sh
 
 echo
 echo -e "${GREEN}-------------------------------------${NC}"
-echo -e "${NC}✓ Node setup completed successfully!${NC}"
+echo -e "${GREEN}✓${NC} Node setup completed successfully!"
 echo -e "${GREEN}-------------------------------------${NC}"
 echo
 
