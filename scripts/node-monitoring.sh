@@ -10,11 +10,11 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
-# Remnawave Node Monitoring Management Script
+# Remnawave Node Monitoring Setup Script
 echo
-echo -e "${PURPLE}==================================${NC}"
-echo -e "${NC}REMNAWAVE NODE MONITORING MANAGER${NC}"
-echo -e "${PURPLE}==================================${NC}"
+echo -e "${PURPLE}================================${NC}"
+echo -e "${NC}REMNAWAVE NODE MONITORING SETUP${NC}"
+echo -e "${PURPLE}================================${NC}"
 echo
 
 # Check if script is run with parameters
@@ -26,9 +26,9 @@ else
    # Interactive menu
    echo -e "${CYAN}Please select an action:${NC}"
    echo
-   echo -e "${GREEN}1.${NC} Install Node Monitoring"
-   echo -e "${RED}2.${NC} Uninstall Node Monitoring"
-   echo -e "${YELLOW}3.${NC} Exit"
+   echo -e "${GREEN}1.${NC} Install"
+   echo -e "${YELLOW}2.${NC} Uninstall"
+   echo -e "${RED}3.${NC} Exit"
    echo
    
    while true; do
@@ -56,19 +56,20 @@ fi
 # Uninstall function
 if [ "$ACTION" = "uninstall" ]; then
    echo
-   echo -e "${PURPLE}============================${NC}"
-   echo -e "${NC}Node Monitoring Uninstaller${NC}"
-   echo -e "${PURPLE}============================${NC}"
+   echo -e "${PURPLE}==========================${NC}"
+   echo -e "${NC}Node Exporter Uninstaller${NC}"
+   echo -e "${PURPLE}==========================${NC}"
    echo
 
-   # Check if monitoring is installed
-   if [ ! -d "/opt/monitoring" ] && [ ! -f "/usr/local/bin/node_exporter" ]; then
-       echo -e "${YELLOW}Node monitoring is not installed on this system.${NC}"
+   # Check if Node Exporter is installed
+   if [ ! -f "/usr/local/bin/node_exporter" ]; then
+       echo -e "${YELLOW}Node Exporter is not installed on this system.${NC}"
+       echo
        exit 0
-   fi
+   fiф
 
    # Confirmation
-   echo -e "${YELLOW}Are you sure you want to continue? (y/N)${NC}"
+   echo -e "${YELLOW}Are you sure you want to uninstall Node Exporter? (y/N)${NC}"
    read -r CONFIRM
 
    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
@@ -77,48 +78,29 @@ if [ "$ACTION" = "uninstall" ]; then
    fi
 
    echo
-   echo -e "${GREEN}=============================${NC}"
-   echo -e "${NC}Removing monitoring services${NC}"
-   echo -e "${GREEN}=============================${NC}"
+   echo -e "${GREEN}=======================${NC}"
+   echo -e "${NC}Removing Node Exporter${NC}"
+   echo -e "${GREEN}=======================${NC}"
    echo
 
-   # Stop and remove Docker containers
-   echo "Stopping and removing monitoring containers..."
-   cd /opt/monitoring 2>/dev/null
-   if [ -f "docker-compose.yml" ]; then
-       docker compose down 2>/dev/null && echo "✓ Monitoring containers stopped" || echo "ℹ Containers were not running"
-   fi
-
-   # Remove Docker volumes
-   echo "Removing Docker volumes..."
-   docker volume rm grafana-storage 2>/dev/null && echo "✓ Grafana volume removed" || echo "ℹ Grafana volume not found"
-   docker volume rm prom_data 2>/dev/null && echo "✓ Prometheus volume removed" || echo "ℹ Prometheus volume not found"
-
-   # Remove monitoring directory
-   echo "Removing monitoring directory..."
-   if [ -d "/opt/monitoring" ]; then
-       rm -rf /opt/monitoring
-       echo "✓ Monitoring directory removed"
-   else
-       echo "ℹ Monitoring directory not found"
-   fi
-
    # Stop and remove Node Exporter
-   echo "Removing Node Exporter..."
-   systemctl stop node_exporter 2>/dev/null && echo "✓ Node Exporter stopped" || echo "ℹ Node Exporter was not running"
-   systemctl disable node_exporter 2>/dev/null && echo "✓ Node Exporter disabled" || echo "ℹ Node Exporter was not enabled"
+   echo "Stopping Node Exporter service..."
+   systemctl stop node_exporter 2>/dev/null && echo -e "${GREEN}✓${NC} Node Exporter stopped" || echo "ℹ Node Exporter was not running"
+   systemctl disable node_exporter 2>/dev/null && echo -e "${GREEN}✓${NC} Node Exporter disabled" || echo "ℹ Node Exporter was not enabled"
 
+   echo
+   echo "Removing Node Exporter files..."
    if [ -f "/etc/systemd/system/node_exporter.service" ]; then
        rm -f /etc/systemd/system/node_exporter.service
        systemctl daemon-reload
-       echo "✓ Node Exporter service removed"
+       echo -e "${GREEN}✓${NC} Node Exporter service removed"
    else
        echo "ℹ Node Exporter service file not found"
    fi
 
    if [ -f "/usr/local/bin/node_exporter" ]; then
        rm -f /usr/local/bin/node_exporter
-       echo "✓ Node Exporter binary removed"
+       echo -e "${GREEN}✓${NC} Node Exporter binary removed"
    else
        echo "ℹ Node Exporter binary not found"
    fi
@@ -126,56 +108,62 @@ if [ "$ACTION" = "uninstall" ]; then
    # Remove user
    if id "node_exporter" &>/dev/null; then
        userdel node_exporter 2>/dev/null
-       echo "✓ Node Exporter user removed"
+       echo -e "${GREEN}✓${NC} Node Exporter user removed"
    else
        echo "ℹ Node Exporter user not found"
    fi
 
-   # Remove UFW rule
+   # Remove UFW rules - improved version
+   echo
    echo "Removing UFW rules..."
-   ufw delete allow 9443/tcp 2>/dev/null && echo "✓ UFW rule removed" || echo "ℹ UFW rule not found"
-
-   # Restore nginx configuration if backup exists
-   echo "Restoring node configuration..."
-   if [ -f "/opt/remnawave/nginx.conf.backup" ]; then
-       cd /opt/remnawave
-       cp nginx.conf.backup nginx.conf
-       echo "✓ Nginx configuration restored from backup"
-       
-       # Restore docker-compose.yml if backup exists
-       if [ -f "/opt/remnawave/docker-compose.yml.backup" ]; then
-           cp docker-compose.yml.backup docker-compose.yml
-           echo "✓ Docker compose configuration restored from backup"
-           
-           # Restart remnawave containers
-           docker compose down 2>/dev/null
-           docker compose up -d 2>/dev/null
-           echo "✓ Remnawave node restarted"
-       fi
+   
+   # Method 1: Try to remove rules by rule number
+   UFW_RULES=$(ufw status numbered | grep -E "9100.*Panel Prometheus" | awk '{print $1}' | sed 's/\[//g' | sed 's/\]//g' | sort -nr)
+   
+   if [ -n "$UFW_RULES" ]; then
+       for rule_num in $UFW_RULES; do
+           echo "Removing UFW rule #$rule_num..."
+           echo "y" | ufw delete $rule_num 2>/dev/null && echo -e "${GREEN}✓${NC} UFW rule #$rule_num removed" || echo "ℹ Could not remove rule #$rule_num"
+       done
    else
-       echo "ℹ No nginx backup found to restore"
+       # Method 2: Try to remove by pattern if numbered approach fails
+       echo "Attempting to remove UFW rules by pattern..."
+       ufw status numbered | grep -E "9100.*tcp" | while read line; do
+           if echo "$line" | grep -q "9100"; then
+               # Extract rule number
+               rule_num=$(echo "$line" | awk '{print $1}' | sed 's/\[//g' | sed 's/\]//g')
+               if [ -n "$rule_num" ]; then
+                   echo "Removing UFW rule #$rule_num..."
+                   echo "y" | ufw delete $rule_num 2>/dev/null && echo -e "${GREEN}✓${NC} UFW rule #$rule_num removed" || echo "ℹ Could not remove rule #$rule_num"
+               fi
+           fi
+       done
+   fi
+   
+   # Method 3: Generic fallback
+   if ufw status | grep -q ":9100"; then
+       echo "Attempting generic UFW rule removal..."
+       ufw delete allow 9100 2>/dev/null && echo -e "${GREEN}✓${NC} Generic UFW rule removed" || echo "ℹ Generic UFW rule not found"
    fi
 
    echo
-   echo -e "${GREEN}============================================${NC}"
-   echo -e "${NC}✓ Node monitoring uninstalled successfully!${NC}"
-   echo -e "${GREEN}============================================${NC}"
-   echo
-   echo -e "${CYAN}Note: Remnawave node configuration has been restored.${NC}"
+   echo -e "${GREEN}==========================================${NC}"
+   echo -e "${GREEN}✓${NC} Node Exporter uninstalled successfully!"
+   echo -e "${GREEN}==========================================${NC}"
    echo
    exit 0
 fi
 
 # Installation process
 echo
-echo -e "${PURPLE}=============================${NC}"
-echo -e "${NC}Node Monitoring Installation${NC}"
-echo -e "${PURPLE}=============================${NC}"
+echo -e "${PURPLE}===========================${NC}"
+echo -e "${NC}Node Exporter Installation${NC}"
+echo -e "${PURPLE}===========================${NC}"
 echo
 
-# Check if monitoring is already installed
-if [ -d "/opt/monitoring" ] && [ -f "/usr/local/bin/node_exporter" ]; then
-   echo -e "${YELLOW}Node monitoring appears to be already installed.${NC}"
+# Check if Node Exporter is already installed
+if [ -f "/usr/local/bin/node_exporter" ]; then
+   echo -e "${YELLOW}Node Exporter appears to be already installed.${NC}"
    echo -e "${YELLOW}Do you want to reinstall? (y/N)${NC}"
    read -r REINSTALL
    
@@ -187,37 +175,24 @@ if [ -d "/opt/monitoring" ] && [ -f "/usr/local/bin/node_exporter" ]; then
    echo -e "${YELLOW}Proceeding with reinstallation...${NC}"
 fi
 
-# Check if we're in node directory and load variables
-if [ ! -f "/opt/remnawave/node-vars.sh" ]; then
-    echo -e "${RED}Error: Node variables file not found at /opt/remnawave/node-vars.sh${NC}"
-    echo -e "${RED}This script must be run on a server with Remnawave node installed.${NC}"
-    exit 1
-fi
-
-# Load node variables
-echo -e "${CYAN}Loading node configuration...${NC}"
-cd /opt/remnawave
-source node-vars.sh
-
-# Display current configuration
+# Get Panel IP for UFW rule
+echo -e "${CYAN}Please enter the required information:${NC}"
 echo
-echo -e "${CYAN}Current node configuration:${NC}"
-echo -e "Selfsteal domain: ${WHITE}$SELFSTEAL_DOMAIN${NC}"
-echo
+read -p "Panel IP address: " PANEL_IP
 
-# Confirm configuration
-echo -e "${YELLOW}Use this configuration for monitoring? (Y/n)${NC}"
-read -r USE_CONFIG
+while [[ -z "$PANEL_IP" ]]; do
+    echo -e "${RED}Panel IP cannot be empty!${NC}"
+    read -p "Panel IP: " PANEL_IP
+done
 
-if [[ "$USE_CONFIG" =~ ^[Nn]$ ]]; then
-    echo -e "${CYAN}Please enter the required information:${NC}"
-    echo
-    
-    read -p "Selfsteal domain (e.g., example.com): " SELFSTEAL_DOMAIN
-    while [[ -z "$SELFSTEAL_DOMAIN" ]]; do
-        echo -e "${RED}Selfsteal domain cannot be empty!${NC}"
-        read -p "Selfsteal domain: " SELFSTEAL_DOMAIN
-    done
+# Validate IP format (basic check)
+if [[ ! $PANEL_IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+    echo -e "${YELLOW}Warning: IP format looks unusual. Continue anyway? (y/N)${NC}"
+    read -r CONTINUE
+    if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
+        echo -e "${CYAN}Installation cancelled.${NC}"
+        exit 0
+    fi
 fi
 
 set -e
@@ -229,18 +204,20 @@ echo -e "${GREEN}============================${NC}"
 echo
 
 # Download and install Node Exporter
-echo "Downloading Node Exporter..."
+echo "Downloading Node Exporter v1.9.1..."
+cd /tmp
 wget -q https://github.com/prometheus/node_exporter/releases/download/v1.9.1/node_exporter-1.9.1.linux-amd64.tar.gz
 tar xvf node_exporter-1.9.1.linux-amd64.tar.gz > /dev/null
-cp node_exporter-1.9.1.linux-amd64/node_exporter /usr/local/bin/
+sudo cp node_exporter-1.9.1.linux-amd64/node_exporter /usr/local/bin/
 rm -rf node_exporter-1.9.1.linux-amd64*
 
-# Create user and service
 echo "Creating Node Exporter user and service..."
-useradd --no-create-home --shell /bin/false node_exporter 2>/dev/null || true
-chown node_exporter:node_exporter /usr/local/bin/node_exporter
+# Create user
+sudo useradd --no-create-home --shell /bin/false node_exporter 2>/dev/null || true
+sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter
 
-cat > /etc/systemd/system/node_exporter.service << 'EOF'
+# Create systemd service
+sudo tee /etc/systemd/system/node_exporter.service > /dev/null << 'EOF'
 [Unit]
 Description=Node Exporter
 Wants=network-online.target
@@ -250,7 +227,7 @@ After=network-online.target
 User=node_exporter
 Group=node_exporter
 Type=simple
-ExecStart=/usr/local/bin/node_exporter
+ExecStart=/usr/local/bin/node_exporter --web.listen-address=0.0.0.0:9100
 Restart=always
 RestartSec=3
 
@@ -258,355 +235,71 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
-# Start Node Exporter
-systemctl daemon-reload
-systemctl enable node_exporter
-systemctl start node_exporter
-
 echo
-echo -e "${GREEN}----------------------------------------${NC}"
-echo -e "${NC}✓ Node Exporter installation completed!${NC}"
-echo -e "${GREEN}----------------------------------------${NC}"
+echo -e "${GREEN}========================${NC}"
+echo -e "${NC}2. Configuring Firewall${NC}"
+echo -e "${GREEN}========================${NC}"
 echo
 
-echo -e "${GREEN}=========================${NC}"
-echo -e "${NC}2. Setting up monitoring${NC}"
-echo -e "${GREEN}=========================${NC}"
-echo
-
-# Create monitoring structure
-echo "Creating monitoring structure..."
-mkdir -p /opt/monitoring/prometheus
-cd /opt/monitoring
-
-# Create Prometheus configuration
-cat > prometheus/prometheus.yml << 'EOF'
-global:
-  scrape_interval: 15s
-  scrape_timeout: 10s
-  evaluation_interval: 15s
-
-scrape_configs:
-  - job_name: 'prometheus'
-    static_configs:
-      - targets: ['127.0.0.1:9090']
-
-  - job_name: 'node-exporter'
-    static_configs:
-      - targets: ['127.0.0.1:9100']
-    scrape_interval: 15s
-    scrape_timeout: 5s
-EOF
-
-# Create Docker Compose for monitoring
-cat > docker-compose.yml << 'EOF'
-services:
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    restart: unless-stopped
-    network_mode: host
-    volumes:
-      - grafana-storage:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_SERVER_HTTP_PORT=3000
-    logging:
-      driver: 'json-file'
-      options:
-        max-size: '30m'
-        max-file: '5'
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    restart: unless-stopped
-    network_mode: host
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prom_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-      - '--web.listen-address=0.0.0.0:9090'
-    logging:
-      driver: 'json-file'
-      options:
-        max-size: '30m'
-        max-file: '5'
-
-volumes:
-  grafana-storage:
-    external: true
-  prom_data:
-    external: true
-EOF
-
-# Create Docker volumes
-echo "Creating Docker volumes..."
-docker volume create grafana-storage > /dev/null
-docker volume create prom_data > /dev/null
+# Configure UFW to allow Panel access
+echo "Configuring UFW firewall..."
+echo "Adding rule to allow Panel ($PANEL_IP) access to Node Exporter..."
+sudo ufw allow from $PANEL_IP to any port 9100 proto tcp comment "Panel Prometheus access to Node Exporter"
 
 echo
-echo -e "${GREEN}------------------------------${NC}"
-echo -e "${NC}✓ Monitoring setup completed!${NC}"
-echo -e "${GREEN}------------------------------${NC}"
+echo -e "${GREEN}=====================${NC}"
+echo -e "${NC}3. Starting Services${NC}"
+echo -e "${GREEN}=====================${NC}"
 echo
 
-echo -e "${GREEN}===============================${NC}"
-echo -e "${NC}3. Updating node configuration${NC}"
-echo -e "${GREEN}===============================${NC}"
-echo
+# Start and enable Node Exporter
+echo "Starting Node Exporter service..."
+sudo systemctl daemon-reload
+sudo systemctl enable node_exporter
+sudo systemctl start node_exporter
 
-# Update Remnawave node configuration
-cd /opt/remnawave
-
-# Backup current configurations
-echo "Creating configuration backups..."
-cp nginx.conf nginx.conf.backup 2>/dev/null || true
-cp docker-compose.yml docker-compose.yml.backup 2>/dev/null || true
-
-# Update nginx.conf
-echo "Updating nginx configuration..."
-cat > nginx.conf << EOF
-map \$http_upgrade \$connection_upgrade {
-    default upgrade;
-    ""      close;
-}
-
-ssl_protocols TLSv1.2 TLSv1.3;
-ssl_ecdh_curve X25519:prime256v1:secp384r1;
-ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305;
-ssl_prefer_server_ciphers on;
-ssl_session_timeout 1d;
-ssl_session_cache shared:MozSSL:10m;
-
-server {
-    server_name ${SELFSTEAL_DOMAIN};
-    listen unix:/dev/shm/nginx.sock ssl proxy_protocol;
-    http2 on;
-
-    ssl_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
-    ssl_certificate_key "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/privkey.pem";
-    ssl_trusted_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
-
-    root /var/www/html;
-    index index.html;
-}
-
-server {
-    listen unix:/dev/shm/nginx.sock ssl proxy_protocol default_server;
-    server_name _;
-    ssl_reject_handshake on;
-    return 444;
-}
-
-server {
-    listen 9443 ssl;
-    http2 on;
-    server_name grafana.${SELFSTEAL_DOMAIN};
-
-    ssl_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
-    ssl_certificate_key "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/privkey.pem";
-    ssl_trusted_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection \$connection_upgrade;
-    }
-}
-
-server {
-    listen 9443 ssl;
-    http2 on;
-    server_name prometheus.${SELFSTEAL_DOMAIN};
-
-    ssl_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
-    ssl_certificate_key "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/privkey.pem";
-    ssl_trusted_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
-
-    location / {
-        proxy_pass http://127.0.0.1:9090;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-
-server {
-    listen 9443 ssl;
-    http2 on;
-    server_name node-exporter.${SELFSTEAL_DOMAIN};
-
-    ssl_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
-    ssl_certificate_key "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/privkey.pem";
-    ssl_trusted_certificate "/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem";
-
-    location / {
-        proxy_pass http://127.0.0.1:9100;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-
-server {
-    listen 9443 ssl default_server;
-    http2 on;
-    server_name _;
-    ssl_reject_handshake on;
-    return 444;
-}
-EOF
-
-# Update docker-compose.yml
-echo "Updating Docker Compose configuration..."
-cat > docker-compose.yml << EOF
-services:
-  remnawave-nginx:
-    image: nginx:1.26
-    container_name: remnawave-nginx
-    hostname: remnawave-nginx
-    restart: always
-    network_mode: host
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - /etc/letsencrypt/live/${SELFSTEAL_DOMAIN}/fullchain.pem:/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/fullchain.pem:ro
-      - /etc/letsencrypt/live/${SELFSTEAL_DOMAIN}/privkey.pem:/etc/nginx/ssl/${SELFSTEAL_DOMAIN}/privkey.pem:ro
-      - /dev/shm:/dev/shm:rw
-      - /var/www/html:/var/www/html:ro
-    command: sh -c 'rm -f /dev/shm/nginx.sock && nginx -g "daemon off;"'
-    depends_on:
-      - remnanode
-    logging:
-      driver: 'json-file'
-      options:
-        max-size: '30m'
-        max-file: '5'
-
-  remnanode:
-    image: remnawave/node:latest
-    container_name: remnanode
-    hostname: remnanode
-    restart: always
-    network_mode: host
-    env_file:
-      - path: /opt/remnawave/.env-node
-        required: false
-    volumes:
-      - /dev/shm:/dev/shm:rw
-    logging:
-      driver: 'json-file'
-      options:
-        max-size: '30m'
-        max-file: '5'
-EOF
+# Wait a moment for service to start
+sleep 3
 
 echo
-echo -e "${GREEN}---------------------------------------${NC}"
-echo -e "${NC}✓ Node configuration update completed!${NC}"
-echo -e "${GREEN}---------------------------------------${NC}"
-echo
-
-echo -e "${GREEN}===================${NC}"
-echo -e "${NC}4. UFW and startup${NC}"
-echo -e "${GREEN}===================${NC}"
-echo
-
-# UFW rule
-echo "Adding UFW rule..."
-ufw allow 9443/tcp comment "Node Monitoring HTTPS" > /dev/null
-
-# Start monitoring services
-echo "Starting monitoring services..."
-cd /opt/monitoring
-docker compose up -d > /dev/null
-
-# Restart Remnawave node
-echo "Restarting Remnawave node..."
-cd /opt/remnawave
-docker compose down > /dev/null 2>&1
-docker compose up -d > /dev/null
-
-echo
-echo -e "${GREEN}------------------------------${NC}"
-echo -e "${NC}✓ Services startup completed!${NC}"
-echo -e "${GREEN}------------------------------${NC}"
-echo
-
 echo -e "${GREEN}======================${NC}"
-echo -e "${NC}5. Final verification${NC}"
+echo -e "${NC}4. Final Verification${NC}"
 echo -e "${GREEN}======================${NC}"
 echo
 
-# Wait for services to start
-echo "Waiting for services to start..."
-sleep 15
-
-# Verify Node Exporter
+# Verify Node Exporter status
+echo "Checking Node Exporter status..."
 if systemctl is-active --quiet node_exporter; then
-   echo -e "${GREEN}✓ Node Exporter is running${NC}"
+   echo -e "${GREEN}✓${NC} Node Exporter is running"
 else
-   echo -e "${RED}✗ Node Exporter is not running${NC}"
+   echo -e "${RED}✗${NC} Node Exporter failed to start"
+   echo "Check logs with: journalctl -u node_exporter -f"
+   exit 1
 fi
 
-# Verify Docker containers
-if docker ps | grep -q "grafana\|prometheus"; then
-   echo -e "${GREEN}✓ Monitoring containers are running${NC}"
+# Test if metrics endpoint is accessible
+echo "Testing metrics endpoint..."
+if curl -s --max-time 5 http://localhost:9100/metrics | head -n 5 > /dev/null; then
+   echo -e "${GREEN}✓${NC} Node Exporter metrics are accessible"
 else
-   echo -e "${RED}✗ Monitoring containers are not running${NC}"
+   echo -e "${YELLOW}⚠ Could not access metrics endpoint locally${NC}"
 fi
 
-# Verify nginx
-if docker ps | grep -q "remnawave-nginx"; then
-   echo -e "${GREEN}✓ Nginx container is running${NC}"
-else
-   echo -e "${RED}✗ Nginx container is not running${NC}"
-fi
-
-# Check ports
-if ss -tlnp | grep -q 9443; then
-   echo -e "${GREEN}✓ Port 9443 is listening${NC}"
-else
-   echo -e "${YELLOW}⚠ Port 9443 is not listening${NC}"
-fi
-
-# Test Prometheus targets
-echo "Checking Prometheus targets..."
-sleep 5
-if curl -s http://localhost:9090/api/v1/targets 2>/dev/null | grep -q '"health":"up"'; then
-   echo -e "${GREEN}✓ Prometheus targets are healthy${NC}"
-else
-   echo -e "${YELLOW}⚠ Some Prometheus targets may be down${NC}"
-fi
+# Show service status
+echo "Node Exporter service status:"
+systemctl status node_exporter --no-pager -l
 
 echo
-echo -e "${GREEN}--------------------------------${NC}"
-echo -e "${NC}✓ Final verification completed!${NC}"
-echo -e "${GREEN}--------------------------------${NC}"
+echo -e "${GREEN}===============================================${NC}"
+echo -e "${NC}✓${NC} Node Exporter installation completed!"
+echo -e "${GREEN}===============================================${NC}"
 echo
-
-echo -e "${GREEN}=======================================================${NC}"
-echo -e "${NC}✓ Node monitoring installation completed successfully!${NC}"
-echo -e "${GREEN}=======================================================${NC}"
+echo -e "${CYAN}Configuration Summary:${NC}"
+echo -e "Panel IP allowed: ${WHITE}$PANEL_IP${NC}"
 echo
-echo -e "${CYAN}Access URLs:${NC}"
-echo -e "Grafana: ${WHITE}https://grafana.$SELFSTEAL_DOMAIN:9443${NC}"
-echo -e "Prometheus: ${WHITE}https://prometheus.$SELFSTEAL_DOMAIN:9443${NC}"
-echo -e "Node Exporter: ${WHITE}https://node-exporter.$SELFSTEAL_DOMAIN:9443${NC}"
+echo -e "${CYAN}Test connectivity from Panel:${NC}"
+echo -e "${WHITE}curl http://$(hostname -I | awk '{print $1}'):9100/metrics${NC}"
 echo
-echo -e "${CYAN}Check targets:${NC}"
-echo -e "${WHITE}curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health}'${NC}"
+echo -e "${CYAN}Logs:${NC}"
+echo -e "${NC}journalctl -u node_exporter -f${NC}"
 echo
