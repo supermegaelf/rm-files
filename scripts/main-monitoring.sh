@@ -26,9 +26,9 @@ else
    # Interactive menu
    echo -e "${CYAN}Please select an action:${NC}"
    echo
-   echo -e "${GREEN}1.${NC} Install Panel Monitoring"
-   echo -e "${RED}2.${NC} Uninstall Panel Monitoring"
-   echo -e "${YELLOW}3.${NC} Exit"
+   echo -e "${GREEN}1.${NC} Install"
+   echo -e "${YELLOW}2.${NC} Uninstall"
+   echo -e "${RED}3.${NC} Exit"
    echo
    
    while true; do
@@ -170,7 +170,7 @@ if [ "$ACTION" = "uninstall" ]; then
 
    echo
    echo -e "${GREEN}=============================================${NC}"
-   echo -e "${NC}✓ Panel monitoring uninstalled successfully!${NC}"
+   echo -e "${GREEN}✓${NC} Panel monitoring uninstalled successfully!"
    echo -e "${GREEN}=============================================${NC}"
    echo
    echo -e "${CYAN}Note: Remnawave panel configuration has been restored.${NC}"
@@ -207,7 +207,7 @@ if [ ! -f "/opt/remnawave/remnawave-vars.sh" ]; then
 fi
 
 # Load panel variables
-echo -e "${CYAN}Loading panel configuration...${NC}"
+echo -e "${NC}Loading panel configuration...${NC}"
 cd /opt/remnawave
 source remnawave-vars.sh
 
@@ -301,7 +301,7 @@ systemctl start node_exporter
 
 echo
 echo -e "${GREEN}----------------------------------------${NC}"
-echo -e "${NC}✓ Node Exporter installation completed!${NC}"
+echo -e "${GREEN}✓${NC} Node Exporter installation completed!"
 echo -e "${GREEN}----------------------------------------${NC}"
 echo
 
@@ -401,7 +401,7 @@ docker volume create prom_data > /dev/null
 
 echo
 echo -e "${GREEN}------------------------------${NC}"
-echo -e "${NC}✓ Monitoring setup completed!${NC}"
+echo -e "${GREEN}✓${NC} Monitoring setup completed!"
 echo -e "${GREEN}------------------------------${NC}"
 echo
 
@@ -738,7 +738,7 @@ EOL
 
 echo
 echo -e "${GREEN}----------------------------------------${NC}"
-echo -e "${NC}✓ Panel configuration update completed!${NC}"
+echo -e "${GREEN}✓${NC} Panel configuration update completed!"
 echo -e "${GREEN}----------------------------------------${NC}"
 echo
 
@@ -757,6 +757,7 @@ cd /opt/monitoring
 docker compose up -d > /dev/null
 
 # Restart Remnawave panel
+echo
 echo "Restarting Remnawave panel..."
 cd /opt/remnawave
 docker compose down > /dev/null 2>&1
@@ -764,7 +765,7 @@ docker compose up -d > /dev/null
 
 echo
 echo -e "${GREEN}------------------------------${NC}"
-echo -e "${NC}✓ Services startup completed!${NC}"
+echo -e "${GREEN}✓${NC} Services startup completed!"
 echo -e "${GREEN}------------------------------${NC}"
 echo
 
@@ -779,45 +780,45 @@ sleep 15
 
 # Verify Node Exporter
 if systemctl is-active --quiet node_exporter; then
-   echo -e "${GREEN}✓ Node Exporter is running${NC}"
+   echo -e "${GREEN}✓${NC} Node Exporter is running"
 else
-   echo -e "${RED}✗ Node Exporter is not running${NC}"
+   echo -e "${RED}✗${NC} Node Exporter is not running"
 fi
 
 # Verify Docker containers
 if docker ps | grep -q "grafana\|prometheus"; then
-   echo -e "${GREEN}✓ Monitoring containers are running${NC}"
+   echo -e "${GREEN}✓${NC} Monitoring containers are running"
 else
-   echo -e "${RED}✗ Monitoring containers are not running${NC}"
+   echo -e "${RED}✗${NC} Monitoring containers are not running"
 fi
 
 # Verify nginx
 if docker ps | grep -q "remnawave-nginx"; then
-   echo -e "${GREEN}✓ Nginx container is running${NC}"
+   echo -e "${GREEN}✓${NC} Nginx container is running"
 else
-   echo -e "${RED}✗ Nginx container is not running${NC}"
+   echo -e "${RED}✗${NC} Nginx container is not running"
 fi
 
 # Check ports
 if ss -tlnp | grep -q 9443; then
-   echo -e "${GREEN}✓ Port 9443 is listening${NC}"
+   echo -e "${GREEN}✓${NC} Port 9443 is listening"
 else
-   echo -e "${YELLOW}⚠ Port 9443 is not listening${NC}"
+   echo -e "${YELLOW}⚠${NC} Port 9443 is not listening"
 fi
 
 # Test Prometheus targets
 echo "Checking Prometheus targets..."
 sleep 5
 if curl -s http://localhost:9090/api/v1/targets 2>/dev/null | grep -q '"health":"up"'; then
-   echo -e "${GREEN}✓ Prometheus targets are healthy${NC}"
+   echo -e "${GREEN}✓${NC} Prometheus targets are healthy"
 else
-   echo -e "${YELLOW}⚠ Some Prometheus targets may be down${NC}"
+   echo -e "${YELLOW}⚠${NC} Some Prometheus targets may be down"
 fi
 
 # Test Remnawave metrics endpoint
 echo "Checking Remnawave metrics..."
 if curl -s -u "$METRICS_USER:$METRICS_PASS" http://127.0.0.1:3001/metrics 2>/dev/null | grep -q "# HELP"; then
-   echo -e "${GREEN}✓ Remnawave metrics are accessible${NC}"
+   echo -e "${GREEN}✓${NC} Remnawave metrics are accessible"
 else
    echo -e "${YELLOW}⚠ Remnawave metrics endpoint is not responding${NC}"
    echo -e "${CYAN}  Check if Remnawave container is running and METRICS_PORT=3001${NC}"
@@ -825,12 +826,12 @@ fi
 
 echo
 echo -e "${GREEN}--------------------------------${NC}"
-echo -e "${NC}✓ Final verification completed!${NC}"
+echo -e "${GREEN}✓${NC} Final verification completed!"
 echo -e "${GREEN}--------------------------------${NC}"
 echo
 
 echo -e "${GREEN}========================================================${NC}"
-echo -e "${NC}✓ Panel monitoring installation completed successfully!${NC}"
+echo -e "${GREEN}✓${NC} Panel monitoring installation completed successfully!"
 echo -e "${GREEN}========================================================${NC}"
 echo
 echo -e "${CYAN}Access URLs:${NC}"
