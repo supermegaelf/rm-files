@@ -12,9 +12,9 @@ NC='\033[0m'
 
 # Remnawave Panel Monitoring Management Script
 echo
-echo -e "${PURPLE}===================================${NC}"
-echo -e "${NC}REMNAWAVE PANEL MONITORING MANAGER${NC}"
-echo -e "${PURPLE}===================================${NC}"
+echo -e "${PURPLE}===========================${NC}"
+echo -e "${NC}REMNAWAVE PANEL MONITORING${NC}"
+echo -e "${PURPLE}===========================${NC}"
 echo
 
 # Function to check monitoring status
