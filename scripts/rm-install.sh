@@ -156,12 +156,12 @@ echo
 echo -e "${GREEN}Variables saved to remnawave-vars.sh${NC}"
 echo
 echo -e "${GREEN}Summary of configuration:${NC}"
-echo -e "Panel domain: ${CYAN}$PANEL_DOMAIN${NC}"
-echo -e "Subscription domain: ${CYAN}$SUB_DOMAIN${NC}"
-echo -e "Self-steal domain: ${CYAN}$SELFSTEAL_DOMAIN${NC}"
-echo -e "Cloudflare email: ${CYAN}$CLOUDFLARE_EMAIL${NC}"
-echo -e "PostgreSQL user: ${CYAN}$POSTGRES_USER${NC}"
-echo -e "PostgreSQL database: ${CYAN}remnawave${NC}"
+echo -e "${CYAN}Panel domain:${NC} $PANEL_DOMAIN"
+echo -e "${CYAN}Subscription domain:${NC} $SUB_DOMAIN"
+echo -e "${CYAN}Self-steal domain:${NC} $SELFSTEAL_DOMAIN"
+echo -e "${CYAN}Cloudflare email:${NC} $CLOUDFLARE_EMAIL"
+echo -e "${CYAN}PostgreSQL user:${NC} $POSTGRES_USER"
+echo -e "${CYAN}PostgreSQL database:${NC} remnawave"
 echo
 
 # Load environment variables
