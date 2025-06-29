@@ -212,9 +212,9 @@ add_nodes() {
 
     # Backup current configuration
     echo
-    echo -e "${GREEN}==============================${NC}"
+    echo -e "${GREEN}==================================${NC}"
     echo -e "${NC}Updating Prometheus Configuration${NC}"
-    echo -e "${GREEN}==============================${NC}"
+    echo -e "${GREEN}==================================${NC}"
     echo
 
     # Create monitoring structure
@@ -272,9 +272,9 @@ EOF
 EOF
 
     echo
-    echo -e "${GREEN}============================${NC}"
+    echo -e "${GREEN}==============================${NC}"
     echo -e "${NC}Restarting Prometheus Service${NC}"
-    echo -e "${GREEN}============================${NC}"
+    echo -e "${GREEN}==============================${NC}"
     echo
 
     # Restart Prometheus container
@@ -295,9 +295,9 @@ EOF
     fi
 
     echo
-    echo -e "${GREEN}========================${NC}"
+    echo -e "${GREEN}=========================${NC}"
     echo -e "${NC}Verification and Testing${NC}"
-    echo -e "${GREEN}========================${NC}"
+    echo -e "${GREEN}=========================${NC}"
     echo
 
     # Test Prometheus API
@@ -321,9 +321,9 @@ EOF
     fi
 
     echo
-    echo -e "${GREEN}======================================${NC}"
+    echo -e "${GREEN}========================================${NC}"
     echo -e "${GREEN}✓${NC} Node addition completed successfully!"
-    echo -e "${GREEN}======================================${NC}"
+    echo -e "${GREEN}========================================${NC}"
     echo
     echo -e "${CYAN}Summary:${NC}"
     echo -e "Added ${WHITE}${#NODES[@]}${NC} node(s) to monitoring"
