@@ -309,24 +309,16 @@ EOF
         echo -e "${RED}✗${NC} Prometheus API is not responding"
     fi
 
-    # Check targets status
-    echo
-    echo "Checking target status..."
-    TARGETS_RESPONSE=$(curl -s http://localhost:9090/api/v1/targets 2>/dev/null)
-    if [[ -n "$TARGETS_RESPONSE" ]]; then
-        echo -e "${CYAN}Target Health Status:${NC}"
-        echo "$TARGETS_RESPONSE" | jq -r '.data.activeTargets[] | "\(.labels.job) - \(.labels.instance): \(.health)"' 2>/dev/null || echo "Install jq for detailed output"
-    else
-        echo -e "${YELLOW}Could not retrieve target status${NC}"
-    fi
-
     echo
     echo -e "${GREEN}========================================${NC}"
     echo -e "${GREEN}✓${NC} Node addition completed successfully!"
     echo -e "${GREEN}========================================${NC}"
     echo
     echo -e "${CYAN}Summary:${NC}"
-    echo -e "Added ${WHITE}${#NODES[@]}${NC} node(s) to monitoring"
+    echo -e "Added ${CYAN}${#NODES[@]}${NC} node(s) to monitoring"
+    echo
+    echo -e "${CYAN}Check all targets:${NC}"
+    echo -e "${WHITE}curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health}'${NC}"
     echo
 }
 
