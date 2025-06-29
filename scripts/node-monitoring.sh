@@ -291,7 +291,7 @@ systemctl status node_exporter --no-pager -l
 
 echo
 echo -e "${GREEN}===============================================${NC}"
-echo -e "${NC}✓${NC} Node Exporter installation completed!"
+echo -e "${GREEN}✓${NC} Node Exporter installation completed!"
 echo -e "${GREEN}===============================================${NC}"
 echo
 echo -e "${CYAN}Configuration Summary:${NC}"
