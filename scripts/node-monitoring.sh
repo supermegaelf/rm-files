@@ -66,7 +66,7 @@ if [ "$ACTION" = "uninstall" ]; then
        echo -e "${YELLOW}Node Exporter is not installed on this system.${NC}"
        echo
        exit 0
-   fiф
+   fi
 
    # Confirmation
    echo -e "${YELLOW}Are you sure you want to uninstall Node Exporter? (y/N)${NC}"
