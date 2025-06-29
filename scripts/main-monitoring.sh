@@ -1096,21 +1096,21 @@ uninstall_monitoring() {
     echo "Stopping and removing monitoring containers..."
     cd /opt/monitoring 2>/dev/null
     if [ -f "docker-compose.yml" ]; then
-        docker compose down 2>/dev/null && echo "✓ Monitoring containers stopped" || echo "ℹ Containers were not running"
+        docker compose down 2>/dev/null && echo -e "${GREEN}✓${NC} Monitoring containers stopped" || echo "ℹ Containers were not running"
     fi
 
     # Remove Docker volumes
     echo
     echo "Removing Docker volumes..."
-    docker volume rm grafana-storage 2>/dev/null && echo "✓ Grafana volume removed" || echo "ℹ Grafana volume not found"
-    docker volume rm prom_data 2>/dev/null && echo "✓ Prometheus volume removed" || echo "ℹ Prometheus volume not found"
+    docker volume rm grafana-storage 2>/dev/null && echo -e "${GREEN}✓${NC} Grafana volume removed" || echo "ℹ Grafana volume not found"
+    docker volume rm prom_data 2>/dev/null && echo -e "${GREEN}✓${NC} Prometheus volume removed" || echo "ℹ Prometheus volume not found"
 
     # Remove monitoring directory
     echo
     echo "Removing monitoring directory..."
     if [ -d "/opt/monitoring" ]; then
         rm -rf /opt/monitoring
-        echo "✓ Monitoring directory removed"
+        echo -e "${GREEN}✓${NC} Monitoring directory removed"
     else
         echo "ℹ Monitoring directory not found"
     fi
@@ -1118,20 +1118,20 @@ uninstall_monitoring() {
     # Stop and remove Node Exporter
     echo
     echo "Removing Node Exporter..."
-    systemctl stop node_exporter 2>/dev/null && echo "✓ Node Exporter stopped" || echo "ℹ Node Exporter was not running"
-    systemctl disable node_exporter 2>/dev/null && echo "✓ Node Exporter disabled" || echo "ℹ Node Exporter was not enabled"
+    systemctl stop node_exporter 2>/dev/null && echo -e "${GREEN}✓${NC} Node Exporter stopped" || echo "ℹ Node Exporter was not running"
+    systemctl disable node_exporter 2>/dev/null && echo -e "${GREEN}✓${NC} Node Exporter disabled" || echo "ℹ Node Exporter was not enabled"
 
     if [ -f "/etc/systemd/system/node_exporter.service" ]; then
         rm -f /etc/systemd/system/node_exporter.service
         systemctl daemon-reload
-        echo "✓ Node Exporter service removed"
+        echo -e "${GREEN}✓${NC} Node Exporter service removed"
     else
         echo "ℹ Node Exporter service file not found"
     fi
 
     if [ -f "/usr/local/bin/node_exporter" ]; then
         rm -f /usr/local/bin/node_exporter
-        echo "✓ Node Exporter binary removed"
+        echo -e "${GREEN}✓${NC} Node Exporter binary removed"
     else
         echo "ℹ Node Exporter binary not found"
     fi
@@ -1139,7 +1139,7 @@ uninstall_monitoring() {
     # Remove user
     if id "node_exporter" &>/dev/null; then
         userdel node_exporter 2>/dev/null
-        echo "✓ Node Exporter user removed"
+        echo -e "${GREEN}✓${NC} Node Exporter user removed"
     else
         echo "ℹ Node Exporter user not found"
     fi
@@ -1155,24 +1155,24 @@ uninstall_monitoring() {
     if [ -f "/opt/remnawave/nginx.conf.backup" ]; then
         cd /opt/remnawave
         cp nginx.conf.backup nginx.conf
-        echo "✓ Nginx configuration restored from backup"
+        echo -e "${GREEN}✓${NC} Nginx configuration restored from backup"
         
         # Restore docker-compose.yml if backup exists
         if [ -f "/opt/remnawave/docker-compose.yml.backup" ]; then
             cp docker-compose.yml.backup docker-compose.yml
-            echo "✓ Docker compose configuration restored from backup"
+            echo -e "${GREEN}✓${NC} Docker compose configuration restored from backup"
             
             # Restart remnawave containers
             docker compose down 2>/dev/null
             docker compose up -d 2>/dev/null
-            echo "✓ Remnawave panel restarted"
+            echo -e "${GREEN}✓${NC} Remnawave panel restarted"
         fi
         
         # Clean up backup files
         echo
         echo "Cleaning up backup files..."
         rm -f nginx.conf.backup docker-compose.yml.backup
-        echo "✓ Backup files removed"
+        echo -e "${GREEN}✓${NC} Backup files removed"
     else
         echo "ℹ No nginx backup found to restore"
     fi
