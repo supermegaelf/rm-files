@@ -12,9 +12,9 @@ NC='\033[0m'
 
 # Remnawave Node Monitoring Setup Script
 echo
-echo -e "${PURPLE}================================${NC}"
-echo -e "${NC}REMNAWAVE NODE MONITORING SETUP${NC}"
-echo -e "${PURPLE}================================${NC}"
+echo -e "${PURPLE}==================================${NC}"
+echo -e "${NC}REMNAWAVE NODE MONITORING MANAGER${NC}"
+echo -e "${PURPLE}==================================${NC}"
 echo
 
 # Check if script is run with parameters
