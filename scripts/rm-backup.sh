@@ -26,12 +26,12 @@ if [ -z "$TG_BOT_TOKEN" ] || [ -z "$TG_CHAT_ID" ]; then
     echo -e "${CYAN}Please enter the required information:${NC}"
     echo
     
-    read -p "$(echo "PostgreSQL username: ")" POSTGRES_USER
-    read -sp "$(echo "PostgreSQL password: ")" POSTGRES_PASSWORD
-    echo
-    read -p "$(echo "PostgreSQL database: ")" POSTGRES_DB
-    read -p "$(echo "Telegram Bot Token: ")" TG_BOT_TOKEN
-    read -p "$(echo "Telegram Chat ID: ")" TG_CHAT_ID
+    read -p "$(echo -e "${GREEN}PostgreSQL username: ${NC}")" POSTGRES_USER
+    read -p "$(echo -e "${GREEN}PostgreSQL password: ${NC}")" POSTGRES_PASSWORD
+    read -p "$(echo -e "${GREEN}PostgreSQL database (default is remnawave, press Enter to use it): ${NC}")" POSTGRES_DB_INPUT
+    POSTGRES_DB=${POSTGRES_DB_INPUT:-remnawave}
+    read -p "$(echo -e "${GREEN}Telegram Bot Token: ${NC}")" TG_BOT_TOKEN
+    read -p "$(echo -e "${GREEN}Telegram Chat ID: ${NC}")" TG_CHAT_ID
 
     if [[ ! "$TG_BOT_TOKEN" =~ ^[0-9]+:[A-Za-z0-9_-]+$ ]]; then
         echo -e "${RED}Error: Invalid Telegram Bot Token format${NC}"
