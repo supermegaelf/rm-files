@@ -117,6 +117,7 @@ METRICS_USER=$(tr -dc 'a-zA-Z' < /dev/urandom | fold -w 8 | head -n 1)
 METRICS_PASS=$(tr -dc 'a-zA-Z' < /dev/urandom | fold -w 8 | head -n 1)
 JWT_AUTH_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
 JWT_API_TOKENS_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
+WEBHOOK_SECRET_HEADER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c 64)
 
 POSTGRES_USER=$(tr -dc 'a-zA-Z' < /dev/urandom | fold -w 10 | head -n 1)
 pg_password=""
@@ -145,6 +146,7 @@ export METRICS_USER="$METRICS_USER"
 export METRICS_PASS="$METRICS_PASS"
 export JWT_AUTH_SECRET="$JWT_AUTH_SECRET"
 export JWT_API_TOKENS_SECRET="$JWT_API_TOKENS_SECRET"
+export WEBHOOK_SECRET_HEADER="$WEBHOOK_SECRET_HEADER"
 
 # PostgreSQL credentials
 export POSTGRES_USER="$POSTGRES_USER"
@@ -413,11 +415,11 @@ METRICS_USER=$METRICS_USER
 METRICS_PASS=$METRICS_PASS
 
 ### WEBHOOK ###
-WEBHOOK_ENABLED=false
+WEBHOOK_ENABLED=true
 ### Only https:// is allowed
-WEBHOOK_URL=https://webhook.site/1234567890
+WEBHOOK_URL=https://bot.$PANEL_DOMAIN/notify_user
 ### This secret is used to sign the webhook payload, must be exact 64 characters. Only a-z, 0-9, A-Z are allowed.
-WEBHOOK_SECRET_HEADER=vsmu67Kmg6R8FjIOF1WUY8LWBHie4scdEqrfsKmyf4IAf8dY3nFS0wwYHkhh6ZvQ
+WEBHOOK_SECRET_HEADER=$WEBHOOK_SECRET_HEADER
 
 ### HWID DEVICE DETECTION AND LIMITATION ###
 # Don't enable this if you don't know what you are doing.
@@ -656,6 +658,21 @@ server {
 
     add_header Set-Cookie \$set_cookie_header;
 
+    location /api/ {
+        proxy_http_version 1.1;
+        proxy_pass http://remnawave;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
     location / {
         if (\$authorized = 0) {
             return 404;
@@ -889,6 +906,33 @@ update_response=$(curl -s -X PUT "http://$domain_url/api/xray" \
 
 # Remove temporary config file
 rm -f "$config_file"
+
+# Create API token for bot
+echo
+echo "Creating API token for bot..."
+token_response=$(curl -s -X POST "http://$domain_url/api/tokens" \
+    -H "Authorization: Bearer $token" \
+    -H "Content-Type: application/json" \
+    -H "Host: $PANEL_DOMAIN" \
+    -H "X-Forwarded-For: 127.0.0.1" \
+    -H "X-Forwarded-Proto: https" \
+    -d '{
+        "tokenName": "Bot API Token",
+        "tokenDescription": "API token for bot integration and webhook notifications"
+    }')
+
+REMNAWAVE_TOKEN=$(echo "$token_response" | jq -r '.response.token')
+
+if [ "$REMNAWAVE_TOKEN" != "null" ] && [ -n "$REMNAWAVE_TOKEN" ]; then
+    
+    # Add token to variables file
+    echo "" >> /opt/remnawave/remnawave-vars.sh
+    echo "# API Token" >> /opt/remnawave/remnawave-vars.sh
+    echo "export REMNAWAVE_TOKEN=\"$REMNAWAVE_TOKEN\"" >> /opt/remnawave/remnawave-vars.sh
+else
+    echo "Failed to create API token"
+    echo "Response: $token_response"
+fi
 
 echo
 echo -e "${GREEN}-------------------------------${NC}"
