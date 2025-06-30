@@ -46,7 +46,7 @@ echo -e "${NC}2. Downloading backup script${NC}"
 echo -e "${GREEN}=============================${NC}"
 echo
 
-echo -e "${CYAN}Downloading rm-backup.sh from $SCRIPT_URL...${NC}"
+echo -e "${NC}Downloading rm-backup.sh from $SCRIPT_URL...${NC}"
 wget -O "$SCRIPT_PATH" "$SCRIPT_URL"
 if [ $? -ne 0 ]; then
     echo -e "${RED}Error: Failed to download rm-backup.sh${NC}"
