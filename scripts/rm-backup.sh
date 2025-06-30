@@ -64,9 +64,9 @@ if [[ ! "$TG_CHAT_ID" =~ ^-?[0-9]+$ ]]; then
     exit 1
 fi
 
-echo -e "${GREEN}========================${NC}"
+echo -e "${GREEN}======================${NC}"
 echo -e "${NC}1. System preparation${NC}"
-echo -e "${GREEN}========================${NC}"
+echo -e "${GREEN}======================${NC}"
 echo
 
 TEMP_DIR=$(mktemp -d)
@@ -79,14 +79,14 @@ BACKUP_FILE="$TEMP_DIR/rm-backup-$(date +%d.%m.%Y_%H.%M).tar.gz"
 echo -e "${GREEN}✓${NC} Temporary directory created: $TEMP_DIR"
 
 echo
-echo -e "${GREEN}---------------------------------${NC}"
+echo -e "${GREEN}--------------------------------${NC}"
 echo -e "${GREEN}✓${NC} System preparation completed!"
-echo -e "${GREEN}---------------------------------${NC}"
+echo -e "${GREEN}--------------------------------${NC}"
 echo
 
-echo -e "${GREEN}===========================${NC}"
+echo -e "${GREEN}=============================${NC}"
 echo -e "${NC}2. Checking Docker container${NC}"
-echo -e "${GREEN}===========================${NC}"
+echo -e "${GREEN}=============================${NC}"
 echo
 
 POSTGRES_CONTAINER_NAME="remnawave-db"
@@ -99,14 +99,14 @@ fi
 echo -e "${GREEN}✓${NC} Container $POSTGRES_CONTAINER_NAME is running"
 
 echo
-echo -e "${GREEN}-----------------------------------${NC}"
+echo -e "${GREEN}------------------------------------${NC}"
 echo -e "${GREEN}✓${NC} Docker container check completed!"
-echo -e "${GREEN}-----------------------------------${NC}"
+echo -e "${GREEN}------------------------------------${NC}"
 echo
 
-echo -e "${GREEN}===============================${NC}"
+echo -e "${GREEN}============================${NC}"
 echo -e "${NC}3. Creating database backup${NC}"
-echo -e "${GREEN}===============================${NC}"
+echo -e "${GREEN}============================${NC}"
 echo
 
 # Create database backup directory
@@ -127,14 +127,14 @@ rm -f /tmp/remnawave_error.log
 echo -e "${GREEN}✓${NC} PostgreSQL database backup created"
 
 echo
-echo -e "${GREEN}-------------------------------------${NC}"
+echo -e "${GREEN}--------------------------------------${NC}"
 echo -e "${GREEN}✓${NC} Database backup creation completed!"
-echo -e "${GREEN}-------------------------------------${NC}"
+echo -e "${GREEN}--------------------------------------${NC}"
 echo
 
-echo -e "${GREEN}=========================${NC}"
+echo -e "${GREEN}===========================${NC}"
 echo -e "${NC}4. Creating backup archive${NC}"
-echo -e "${GREEN}=========================${NC}"
+echo -e "${GREEN}===========================${NC}"
 echo
 
 # Create compressed backup archive
@@ -161,14 +161,14 @@ mv "$TEMP_DIR/backup-remnawave.tar.gz" "$BACKUP_FILE"
 echo -e "${GREEN}✓${NC} Archive compressed successfully"
 
 echo
-echo -e "${GREEN}-----------------------------------${NC}"
+echo -e "${GREEN}-------------------------------------${NC}"
 echo -e "${GREEN}✓${NC} Backup archive creation completed!"
-echo -e "${GREEN}-----------------------------------${NC}"
+echo -e "${GREEN}-------------------------------------${NC}"
 echo
 
-echo -e "${GREEN}========================${NC}"
+echo -e "${GREEN}=======================${NC}"
 echo -e "${NC}5. Sending to Telegram${NC}"
-echo -e "${GREEN}========================${NC}"
+echo -e "${GREEN}=======================${NC}"
 echo
 
 # Send to Telegram
@@ -190,14 +190,14 @@ else
 fi
 
 echo
-echo -e "${GREEN}--------------------------------${NC}"
+echo -e "${GREEN}-----------------------------${NC}"
 echo -e "${GREEN}✓${NC} Telegram upload completed!"
-echo -e "${GREEN}--------------------------------${NC}"
+echo -e "${GREEN}-----------------------------${NC}"
 echo
 
-echo -e "${GREEN}=====================${NC}"
+echo -e "${GREEN}===================${NC}"
 echo -e "${NC}6. Cleanup process${NC}"
-echo -e "${GREEN}=====================${NC}"
+echo -e "${GREEN}===================${NC}"
 echo
 
 # Clean up temporary files
@@ -205,17 +205,16 @@ rm -rf "$TEMP_DIR"
 echo -e "${GREEN}✓${NC} Temporary files cleaned up"
 
 echo
-echo -e "${GREEN}---------------------------${NC}"
+echo -e "${GREEN}-----------------------------${NC}"
 echo -e "${GREEN}✓${NC} Cleanup process completed!"
-echo -e "${GREEN}---------------------------${NC}"
+echo -e "${GREEN}-----------------------------${NC}"
 echo
 
-echo -e "${GREEN}==========================================${NC}"
+echo -e "${GREEN}=========================================${NC}"
 echo -e "${GREEN}✓${NC} Backup process completed successfully!"
-echo -e "${GREEN}==========================================${NC}"
+echo -e "${GREEN}=========================================${NC}"
 echo
 echo -e "${CYAN}Backup Information:${NC}"
 echo -e "Archive name: ${WHITE}rm-backup-$(date +%d.%m.%Y_%H.%M).tar.gz${NC}"
 echo -e "Database: ${WHITE}$POSTGRES_DB${NC}"
 echo -e "Telegram Chat ID: ${WHITE}$TG_CHAT_ID${NC}"
-echo
