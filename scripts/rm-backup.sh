@@ -10,9 +10,15 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
-POSTGRES_USER="postgres"
-POSTGRES_PASSWORD="postgres"
-POSTGRES_DB="postgres"
+# Load PostgreSQL credentials from remnawave-vars.sh
+if [ -f "/opt/remnawave/remnawave-vars.sh" ]; then
+    source /opt/remnawave/remnawave-vars.sh
+else
+    echo -e "${RED}Error: remnawave-vars.sh not found${NC}"
+    exit 1
+fi
+
+POSTGRES_DB="remnawave"
 TG_BOT_TOKEN=""
 TG_CHAT_ID=""
 
@@ -26,10 +32,6 @@ if [ -z "$TG_BOT_TOKEN" ] || [ -z "$TG_CHAT_ID" ]; then
     echo -e "${CYAN}Please enter the required information:${NC}"
     echo
     
-    read -p "$(echo "PostgreSQL username: ")" POSTGRES_USER
-    read -p "$(echo "PostgreSQL password: ")" POSTGRES_PASSWORD
-    read -p "$(echo "PostgreSQL database (default is remnawave, press Enter to use it): ")" POSTGRES_DB_INPUT
-    POSTGRES_DB=${POSTGRES_DB_INPUT:-remnawave}
     read -p "$(echo "Telegram Bot Token: ")" TG_BOT_TOKEN
     read -p "$(echo "Telegram Chat ID: ")" TG_CHAT_ID
 
