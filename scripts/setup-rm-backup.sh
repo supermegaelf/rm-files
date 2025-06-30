@@ -112,8 +112,8 @@ echo -e "${GREEN}✓${NC} Setup completed successfully!"
 echo -e "${GREEN}--------------------------------${NC}"
 echo
 echo -e "${CYAN}Backup script location:"
-echo -e "${GREEN}$SCRIPT_PATH${NC}"
+echo -e "${NC}$SCRIPT_PATH${NC}"
 echo
 echo -e "${CYAN}Backup schedule:"
-echo -e "${GREEN}Hourly execution${NC}"
+echo -e "${NC}Hourly execution${NC}"
 echo
