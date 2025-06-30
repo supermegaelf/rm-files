@@ -10,6 +10,10 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
+POSTGRES_DB="remnawave"
+TG_BOT_TOKEN=""
+TG_CHAT_ID=""
+
 # Load PostgreSQL credentials from remnawave-vars.sh
 if [ -f "/opt/remnawave/remnawave-vars.sh" ]; then
     source /opt/remnawave/remnawave-vars.sh
@@ -17,10 +21,6 @@ else
     echo -e "${RED}Error: remnawave-vars.sh not found${NC}"
     exit 1
 fi
-
-POSTGRES_DB="remnawave"
-TG_BOT_TOKEN=""
-TG_CHAT_ID=""
 
 echo
 echo -e "${PURPLE}=================${NC}"
