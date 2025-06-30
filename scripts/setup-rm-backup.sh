@@ -13,7 +13,7 @@ NC='\033[0m'
 # Remnawave backup setup script
 echo
 echo -e "${PURPLE}=======================${NC}"
-echo -e "${NC}Remnawave Backup Setup${NC}"
+echo -e "${NC}REMNAWAVE BACKUP SETUP${NC}"
 echo -e "${PURPLE}=======================${NC}"
 echo
 
@@ -35,7 +35,7 @@ if [ ! -d "$SCRIPT_DIR" ]; then
         echo -e "${RED}Error: Failed to create directory $SCRIPT_DIR${NC}"
         exit 1
     fi
-    echo -e "${GREEN}✓ Directory created successfully${NC}"
+    echo -e "${GREEN}✓${NC} Directory created successfully"
 else
     echo -e "${YELLOW}Directory $SCRIPT_DIR already exists${NC}"
 fi
@@ -53,7 +53,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-echo -e "${CYAN}Setting permissions...${NC}"
+echo -e "${NC}Setting permissions...${NC}"
 chmod 700 "$SCRIPT_PATH"
 if [ $? -ne 0 ]; then
     echo -e "${RED}Error: Failed to set permissions on $SCRIPT_PATH${NC}"
@@ -62,7 +62,7 @@ fi
 
 echo
 echo -e "${GREEN}-----------------------------------------${NC}"
-echo -e "${NC}✓ Backup script downloaded successfully!${NC}"
+echo -e "${GREEN}✓${NC} Backup script downloaded successfully!"
 echo -e "${GREEN}-----------------------------------------${NC}"
 echo
 
@@ -80,7 +80,7 @@ fi
 
 echo
 echo -e "${GREEN}-----------------------------------------------${NC}"
-echo -e "${NC}✓ Backup configuration completed successfully!${NC}"
+echo -e "${GREEN}✓${NC} Backup configuration completed successfully!"
 echo -e "${GREEN}-----------------------------------------------${NC}"
 echo
 
@@ -89,28 +89,31 @@ echo -e "${NC}4. Verifying installation${NC}"
 echo -e "${GREEN}==========================${NC}"
 echo
 
-echo -e "${CYAN}Verifying cron setup...${NC}"
+echo -e "${NC}Verifying cron setup...${NC}"
 if grep -q "$SCRIPT_PATH" /etc/crontab; then
-    echo -e "${GREEN}✓ Cron job successfully added to /etc/crontab${NC}"
+    echo -e "${GREEN}✓${NC} Cron job successfully added to /etc/crontab"
 else
     echo -e "${RED}Error: Cron job was not added to /etc/crontab${NC}"
     exit 1
 fi
 
 echo
-echo -e "${CYAN}Restarting cron service...${NC}"
+echo -e "${NC}Restarting cron service...${NC}"
 systemctl restart cron 2>/dev/null || service cron restart 2>/dev/null
 if [ $? -ne 0 ]; then
     echo -e "${YELLOW}Warning: Failed to restart cron service, changes may not apply until next reboot${NC}"
 else
-    echo -e "${GREEN}✓ Cron service restarted successfully${NC}"
+    echo -e "${GREEN}✓${NC} Cron service restarted successfully"
 fi
 
 echo
 echo -e "${GREEN}--------------------------------${NC}"
-echo -e "${NC}✓ Setup completed successfully!${NC}"
+echo -e "${GREEN}✓${NC} Setup completed successfully!"
 echo -e "${GREEN}--------------------------------${NC}"
 echo
-echo -e "${CYAN}Backup script location: ${WHITE}$SCRIPT_PATH${NC}"
-echo -e "${CYAN}Backup schedule: ${WHITE}Hourly execution${NC}"
+echo -e "${CYAN}Backup script location:"
+echo -e "${GREEN}$SCRIPT_PATH${NC}"
+echo
+echo -e "${CYAN}Backup schedule:"
+echo -e "${GREEN}Hourly execution${NC}"
 echo
