@@ -155,13 +155,10 @@ add_nodes() {
     source remnawave-vars.sh
 
     # Collect node information
-    echo
-    echo -e "${CYAN}Please enter the required information:${NC}"
-    echo
-
     NODES=()
     while true; do
-        read -p "Node IP (or press Enter to finish): " NODE_IP
+        echo -ne "${CYAN}Node IP (or press Enter to finish): ${NC}"
+        read NODE_IP
         if [[ -z "$NODE_IP" ]]; then
             break
         fi
