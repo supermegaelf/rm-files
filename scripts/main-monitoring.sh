@@ -499,6 +499,7 @@ EOF
     fi
 
     # Create Prometheus configuration with or without external nodes
+    echo
     echo "Creating Prometheus configuration..."
     echo
     cat > prometheus/prometheus.yml << EOF
