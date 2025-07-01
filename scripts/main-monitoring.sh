@@ -146,7 +146,9 @@ add_nodes() {
     read -r PROCEED
 
     if [[ "$PROCEED" =~ ^[Nn]$ ]]; then
+        echo
         echo -e "${CYAN}Operation cancelled.${NC}"
+        echo
         return 0
     fi
 
