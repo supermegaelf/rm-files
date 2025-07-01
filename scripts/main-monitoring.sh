@@ -285,6 +285,7 @@ EOF
     docker compose restart prometheus
 
     # Wait for Prometheus to start
+    echo
     echo "Waiting for Prometheus to start..."
     sleep 10
 
