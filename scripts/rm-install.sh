@@ -1068,7 +1068,6 @@ echo
 
 # Interactive input for variables
 # Self-steal domain
-echo
 echo -ne "${CYAN}Self-steal domain (e.g., example.com): ${NC}"
 read SELFSTEAL_DOMAIN
 while [[ -z "$SELFSTEAL_DOMAIN" ]]; do
