@@ -1222,9 +1222,11 @@ main_menu() {
     
     while true; do
         if [ "$monitoring_installed" = "true" ]; then
-            read -p "Enter your choice (1-4): " CHOICE
+            echo -ne "${CYAN}Enter your choice (1-4): ${NC}"
+            read CHOICE
         else
-            read -p "Enter your choice (1-3): " CHOICE
+            echo -ne "${CYAN}Enter your choice (1-3): ${NC}"
+            read CHOICE
         fi
         
         case $CHOICE in
