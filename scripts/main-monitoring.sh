@@ -1157,7 +1157,7 @@ uninstall_monitoring() {
     # Remove UFW rule
     echo
     echo "Removing UFW rules..."
-    ufw delete allow 9443/tcp 2>/dev/null && echo "✓ UFW rule removed" || echo "ℹ UFW rule not found"
+    ufw delete allow 9443/tcp 2>/dev/null && echo -e "${GREEN}✓${NC} UFW rule removed" || echo "ℹ UFW rule not found"
 
     # Restore nginx configuration if backup exists
     echo
