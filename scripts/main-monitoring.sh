@@ -450,6 +450,7 @@ EOF
     # Collect external nodes before creating configuration
     echo
     echo -ne "${YELLOW}Do you want to add external nodes to monitoring? (y/N): ${NC}"
+    echo
     read -r ADD_EXTERNAL_NODES
     
     EXTERNAL_NODES=()
@@ -498,8 +499,8 @@ EOF
     fi
 
     # Create Prometheus configuration with or without external nodes
-    echo
     echo "Creating Prometheus configuration..."
+    echo
     cat > prometheus/prometheus.yml << EOF
 global:
   scrape_interval: 15s
@@ -597,7 +598,6 @@ EOF
 
     # Create Docker volumes
     echo "Creating Docker volumes..."
-    echo
     docker volume create grafana-storage > /dev/null
     docker volume create prom_data > /dev/null
 
