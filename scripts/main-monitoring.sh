@@ -458,10 +458,6 @@ EOF
     
     EXTERNAL_NODES=()
     if [[ ! "$ADD_EXTERNAL_NODES" =~ ^[Nn]$ ]]; then
-        echo
-        echo -e "${CYAN}Please enter your external node information:${NC}"
-        echo
-
         while true; do
             read -p "Node IP (or press Enter to finish): " NODE_IP
             if [[ -z "$NODE_IP" ]]; then
