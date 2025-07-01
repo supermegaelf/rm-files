@@ -142,7 +142,7 @@ add_nodes() {
     cat /opt/monitoring/prometheus/prometheus.yml
     echo
 
-    echo -ne "${YELLOW}Do you want to add nodes to this configuration? (Y/n): ${NC}"
+    echo -ne "${YELLOW}Do you want to add nodes to this configuration? (y/N): ${NC}"
     read -r PROCEED
 
     if [[ "$PROCEED" =~ ^[Nn]$ ]]; then
@@ -352,14 +352,6 @@ install_monitoring() {
     echo -e "${NC}Loading panel configuration...${NC}"
     cd /opt/remnawave
     source remnawave-vars.sh
-
-    # Display current configuration
-    echo
-    echo -e "${CYAN}Current panel configuration:${NC}"
-    echo
-    echo -e "Panel domain: ${WHITE}$PANEL_DOMAIN${NC}"
-    echo -e "Subscription domain: ${WHITE}$SUB_DOMAIN${NC}"
-    echo
 
     # Extract Remnawave metrics credentials
     echo "Extracting Remnawave metrics credentials..."
