@@ -364,12 +364,8 @@ install_monitoring() {
         return 1
     fi
 
-    echo -e "Metrics user: ${WHITE}$METRICS_USER${NC}"
-    echo -e "Metrics password: ${WHITE}$METRICS_PASS${NC}"
-    echo
-
     # Confirm configuration
-    echo -ne "${YELLOW}Use this configuration for monitoring? (Y/n): ${NC}"
+    echo -ne "${YELLOW}Are you sure you want to continue? (y/N): ${NC}"
     read -r USE_CONFIG
 
     if [[ "$USE_CONFIG" =~ ^[Nn]$ ]]; then
