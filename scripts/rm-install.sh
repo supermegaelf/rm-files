@@ -1234,6 +1234,7 @@ echo
 
 # Navigate to remnawave directory
 echo "Navigating to project directory..."
+echo
 cd /opt/remnawave
 
 # Create .env file
@@ -1400,7 +1401,7 @@ echo -e "${GREEN}--------------------------------------------${NC}"
 echo
 
 echo -e "${GREEN}===========================================${NC}"
-echo -e "${NC}6. Configuring UFW and starting containers${NC}"
+echo -e "${NC}5. Configuring UFW and starting containers${NC}"
 echo -e "${GREEN}===========================================${NC}"
 
 # Configure UFW and start containers
@@ -1419,7 +1420,7 @@ echo -e "${GREEN}----------------------------------------${NC}"
 echo
 
 echo -e "${GREEN}====================================${NC}"
-echo -e "${NC}7. Setting a random masking pattern${NC}"
+echo -e "${NC}6. Setting a random masking pattern${NC}"
 echo -e "${GREEN}====================================${NC}"
 
 # Set a random masking pattern
