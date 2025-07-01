@@ -451,8 +451,8 @@ EOF
     # Collect external nodes before creating configuration
     echo
     echo -ne "${YELLOW}Do you want to add external nodes to monitoring? (y/N): ${NC}"
-    echo
     read -r ADD_EXTERNAL_NODES
+    echo
     
     EXTERNAL_NODES=()
     if [[ ! "$ADD_EXTERNAL_NODES" =~ ^[Nn]$ ]]; then
