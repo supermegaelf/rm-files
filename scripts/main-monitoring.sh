@@ -597,6 +597,7 @@ EOF
 
     # Create Docker volumes
     echo "Creating Docker volumes..."
+    echo
     docker volume create grafana-storage > /dev/null
     docker volume create prom_data > /dev/null
 
@@ -616,11 +617,13 @@ EOF
 
     # Backup current configurations
     echo "Creating configuration backups..."
+    echo
     cp nginx.conf nginx.conf.backup 2>/dev/null || true
     cp docker-compose.yml docker-compose.yml.backup 2>/dev/null || true
 
     # Update nginx.conf
     echo "Updating nginx configuration..."
+    echo
     cat > nginx.conf << EOF
 upstream remnawave {
     server 127.0.0.1:3000;
