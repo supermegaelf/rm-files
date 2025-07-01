@@ -142,7 +142,7 @@ add_nodes() {
     cat /opt/monitoring/prometheus/prometheus.yml
     echo
 
-    echo -e "${YELLOW}Do you want to add nodes to this configuration? (Y/n)${NC}"
+    echo -ne "${YELLOW}Do you want to add nodes to this configuration? (Y/n): ${NC}"
     read -r PROCEED
 
     if [[ "$PROCEED" =~ ^[Nn]$ ]]; then
@@ -179,7 +179,7 @@ add_nodes() {
                 echo
                 echo -e "${YELLOW}Warning: Cannot reach $NODE_IP:9100${NC}"
                 echo
-                echo -e "${YELLOW}Add anyway? (y/N)${NC}"
+                echo -ne "${YELLOW}Add anyway? (y/N): ${NC}"
                 read -r ADD_ANYWAY
                 if [[ "$ADD_ANYWAY" =~ ^[Yy]$ ]]; then
                     NODES+=("$NODE_IP:9100")
@@ -202,7 +202,7 @@ add_nodes() {
     done
 
     echo
-    echo -e "${YELLOW}Continue with adding these nodes? (Y/n)${NC}"
+    echo -ne "${YELLOW}Continue with adding these nodes? (Y/n): ${NC}"
     read -r CONFIRM
 
     if [[ "$CONFIRM" =~ ^[Nn]$ ]]; then
@@ -377,7 +377,7 @@ install_monitoring() {
     echo
 
     # Confirm configuration
-    echo -e "${YELLOW}Use this configuration for monitoring? (Y/n)${NC}"
+    echo -ne "${YELLOW}Use this configuration for monitoring? (Y/n): ${NC}"
     read -r USE_CONFIG
 
     if [[ "$USE_CONFIG" =~ ^[Nn]$ ]]; then
@@ -458,7 +458,7 @@ EOF
 
     # Collect external nodes before creating configuration
     echo
-    echo -e "${YELLOW}Do you want to add external nodes to monitoring? (Y/n)${NC}"
+    echo -ne "${YELLOW}Do you want to add external nodes to monitoring? (Y/n): ${NC}"
     read -r ADD_EXTERNAL_NODES
     
     EXTERNAL_NODES=()
@@ -486,7 +486,7 @@ EOF
                     echo
                     echo -e "${YELLOW}Warning: Cannot reach $NODE_IP:9100${NC}"
                     echo
-                    echo -e "${YELLOW}Add anyway? (y/N)${NC}"
+                    echo -ne "${YELLOW}Add anyway? (y/N): ${NC}"
                     read -r ADD_ANYWAY
                     if [[ "$ADD_ANYWAY" =~ ^[Yy]$ ]]; then
                         EXTERNAL_NODES+=("$NODE_IP:9100")
@@ -1093,7 +1093,7 @@ uninstall_monitoring() {
     fi
 
     # Confirmation
-    echo -e "${YELLOW}Are you sure you want to continue? (y/N)${NC}"
+    echo -ne "${YELLOW}Are you sure you want to continue? (y/N): ${NC}"
     read -r CONFIRM
 
     if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
