@@ -202,7 +202,7 @@ add_nodes() {
     done
 
     echo
-    echo -ne "${YELLOW}Continue with adding these nodes? (Y/n): ${NC}"
+    echo -ne "${YELLOW}Continue with adding these nodes? (y/N): ${NC}"
     read -r CONFIRM
 
     if [[ "$CONFIRM" =~ ^[Nn]$ ]]; then
@@ -448,7 +448,7 @@ EOF
 
     # Collect external nodes before creating configuration
     echo
-    echo -ne "${YELLOW}Do you want to add external nodes to monitoring? (Y/n): ${NC}"
+    echo -ne "${YELLOW}Do you want to add external nodes to monitoring? (y/N): ${NC}"
     read -r ADD_EXTERNAL_NODES
     
     EXTERNAL_NODES=()
