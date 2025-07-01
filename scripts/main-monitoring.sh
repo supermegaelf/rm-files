@@ -183,7 +183,9 @@ add_nodes() {
                 fi
             fi
         else
+            echo
             echo -e "${RED}Invalid IP format: $NODE_IP${NC}"
+            echo
         fi
     done
 
