@@ -22,7 +22,8 @@ echo -e "${GREEN}1.${NC} Install Panel"
 echo -e "${GREEN}2.${NC} Install Node"
 echo -e "${RED}3.${NC} Exit"
 echo
-read -p "Enter your choice (1, 2, or 3): " INSTALL_TYPE
+echo -ne "${CYAN}Enter your choice (1, 2, or 3): ${NC}"
+read INSTALL_TYPE
 
 case $INSTALL_TYPE in
     1)
@@ -65,37 +66,44 @@ echo -e "${GREEN}=========================${NC}"
 echo
 
 # Interactive input for variables
-echo -e "${CYAN}Please enter the required information:${NC}"
-echo
-
-read -p "Panel domain (e.g., example.com): " PANEL_DOMAIN
+echo -ne "${CYAN}Panel domain (e.g., example.com): ${NC}"
+read PANEL_DOMAIN
 while [[ -z "$PANEL_DOMAIN" ]]; do
     echo -e "${RED}Panel domain cannot be empty!${NC}"
-    read -p "Panel domain (e.g., example.com): " PANEL_DOMAIN
+    echo -ne "${CYAN}Panel domain (e.g., example.com): ${NC}"
+read PANEL_DOMAIN
 done
 
-read -p "Subscription domain (e.g., example.com): " SUB_DOMAIN
+echo -ne "${CYAN}Subscription domain (e.g., example.com): ${NC}"
+read SUB_DOMAIN
 while [[ -z "$SUB_DOMAIN" ]]; do
     echo -e "${RED}Subscription domain cannot be empty!${NC}"
-    read -p "Subscription domain (e.g., example.com): " SUB_DOMAIN
+    echo -ne "${CYAN}Subscription domain (e.g., example.com): ${NC}"
+read SUB_DOMAIN
 done
 
-read -p "Self-steal domain (e.g., example.com): " SELFSTEAL_DOMAIN
+echo -ne "${CYAN}Self-steal domain (e.g., example.com): ${NC}"
+read SELFSTEAL_DOMAIN
 while [[ -z "$SELFSTEAL_DOMAIN" ]]; do
     echo -e "${RED}Self-steal domain cannot be empty!${NC}"
-    read -p "Self-steal domain (e.g., example.com): " SELFSTEAL_DOMAIN
+    echo -ne "${CYAN}Self-steal domain (e.g., example.com): ${NC}"
+read SELFSTEAL_DOMAIN
 done
 
-read -p "Cloudflare Email: " CLOUDFLARE_EMAIL
+echo -ne "${CYAN}Cloudflare Email: ${NC}"
+read CLOUDFLARE_EMAIL
 while [[ -z "$CLOUDFLARE_EMAIL" ]]; do
     echo -e "${RED}Cloudflare Email cannot be empty!${NC}"
-    read -p "Cloudflare Email: " CLOUDFLARE_EMAIL
+    echo -ne "${CYAN}Cloudflare Email: ${NC}"
+read CLOUDFLARE_EMAIL
 done
 
-read -p "Cloudflare API Key: " CLOUDFLARE_API_KEY
+echo -ne "${CYAN}Cloudflare API Key: ${NC}"
+read CLOUDFLARE_API_KEY
 while [[ -z "$CLOUDFLARE_API_KEY" ]]; do
     echo -e "${RED}Cloudflare API Key cannot be empty!${NC}"
-    read -p "Cloudflare API Key: " CLOUDFLARE_API_KEY
+    echo -ne "${CYAN}Cloudflare API Key: ${NC}"
+read CLOUDFLARE_API_KEY
 done
 
 # Generate random values
@@ -157,14 +165,6 @@ EOF
 echo
 echo -e "${GREEN}Variables saved to remnawave-vars.sh${NC}"
 echo
-echo -e "${GREEN}Summary of configuration:${NC}"
-echo -e "${CYAN}Panel domain:${NC} $PANEL_DOMAIN"
-echo -e "${CYAN}Subscription domain:${NC} $SUB_DOMAIN"
-echo -e "${CYAN}Self-steal domain:${NC} $SELFSTEAL_DOMAIN"
-echo -e "${CYAN}Cloudflare email:${NC} $CLOUDFLARE_EMAIL"
-echo -e "${CYAN}PostgreSQL user:${NC} $POSTGRES_USER"
-echo -e "${CYAN}PostgreSQL database:${NC} remnawave"
-echo
 
 # Load environment variables
 source remnawave-vars.sh
@@ -181,64 +181,64 @@ echo
 
 # Update package list and install basic packages
 echo "Installing basic packages..."
-apt-get update -y
-apt-get install -y ca-certificates curl jq ufw wget gnupg unzip nano dialog git certbot python3-certbot-dns-cloudflare unattended-upgrades locales dnsutils coreutils grep gawk
+apt-get update -y > /dev/null 2>&1
+apt-get install -y ca-certificates curl jq ufw wget gnupg unzip nano dialog git certbot python3-certbot-dns-cloudflare unattended-upgrades locales dnsutils coreutils grep gawk > /dev/null 2>&1
 
 # Install and enable cron
 echo
 echo "Installing and enabling cron..."
-apt-get install -y cron
-systemctl start cron
-systemctl enable cron
+apt-get install -y cron > /dev/null 2>&1
+systemctl start cron > /dev/null 2>&1
+systemctl enable cron > /dev/null 2>&1
 
 # Configure locales
 echo
 echo "Configuring locales..."
-echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-locale-gen
-update-locale LANG=en_US.UTF-8
+echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen 2>/dev/null
+locale-gen > /dev/null 2>&1
+update-locale LANG=en_US.UTF-8 > /dev/null 2>&1
 
 # Set timezone
 echo
 echo "Setting timezone to Europe/Moscow..."
-timedatectl set-timezone Europe/Moscow
+timedatectl set-timezone Europe/Moscow > /dev/null 2>&1
 
 # Add Docker repository
 echo
 echo "Adding Docker repository..."
-install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null
-chmod a+r /etc/apt/keyrings/docker.asc
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+install -m 0755 -d /etc/apt/keyrings > /dev/null 2>&1
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null 2>&1
+chmod a+r /etc/apt/keyrings/docker.asc > /dev/null 2>&1
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null 2>&1
 
 # Install Docker
 echo
 echo "Installing Docker..."
-apt-get update
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+apt-get update > /dev/null 2>&1
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin > /dev/null 2>&1
 
 # Configure TCP BBR
 echo
 echo "Configuring TCP BBR..."
-echo "net.core.default_qdisc = fq" >> /etc/sysctl.conf
-echo "net.ipv4.tcp_congestion_control = bbr" >> /etc/sysctl.conf
-sysctl -p
+echo "net.core.default_qdisc = fq" >> /etc/sysctl.conf 2>/dev/null
+echo "net.ipv4.tcp_congestion_control = bbr" >> /etc/sysctl.conf 2>/dev/null
+sysctl -p > /dev/null 2>&1
 
 # Configure UFW firewall
 echo
 echo "Configuring UFW firewall..."
-ufw --force reset
-ufw allow 22/tcp comment 'SSH'
-ufw allow 443/tcp comment 'HTTPS'
-ufw --force enable
+ufw --force reset > /dev/null 2>&1
+ufw allow 22/tcp comment 'SSH' > /dev/null 2>&1
+ufw allow 443/tcp comment 'HTTPS' > /dev/null 2>&1
+ufw --force enable > /dev/null 2>&1
 
 # Configure unattended upgrades
 echo
 echo "Configuring unattended upgrades..."
-echo 'Unattended-Upgrade::Mail "root";' >> /etc/apt/apt.conf.d/50unattended-upgrades
-echo unattended-upgrades unattended-upgrades/enable_auto_updates boolean true | debconf-set-selections
-dpkg-reconfigure -f noninteractive unattended-upgrades
-systemctl restart unattended-upgrades
+echo 'Unattended-Upgrade::Mail "root";' >> /etc/apt/apt.conf.d/50unattended-upgrades 2>/dev/null
+echo unattended-upgrades unattended-upgrades/enable_auto_updates boolean true | debconf-set-selections > /dev/null 2>&1
+dpkg-reconfigure -f noninteractive unattended-upgrades > /dev/null 2>&1
+systemctl restart unattended-upgrades > /dev/null 2>&1
 
 echo
 echo -e "${GREEN}----------------------------------${NC}"
@@ -592,7 +592,8 @@ EOL
 # Download index.html
 echo
 echo "Downloading index.html..."
-wget -P /opt/remnawave/ https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/index.html
+wget -P /opt/remnawave/ https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/index.html > /dev/null 2>&1
+echo
 
 echo -e "${GREEN}--------------------------------------------${NC}"
 echo -e "${GREEN}✓${NC} Configuration files created successfully!"
@@ -661,14 +662,14 @@ server {
     location /api/ {
         proxy_http_version 1.1;
         proxy_pass http://remnawave;
-        proxy_set_header Host $host;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection $connection_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_set_header X-Forwarded-Host $host;
-        proxy_set_header X-Forwarded-Port $server_port;
+        proxy_set_header Host \$host;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \$connection_upgrade;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Port \$server_port;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
     }
@@ -1032,9 +1033,9 @@ alias_line="alias rr='remnawave_reverse'"
 echo "$alias_line" >> "$bashrc_file"
 
 echo
-echo -e "${GREEN}-----------------------------------------${NC}"
+echo -e "${GREEN}------------------------------------------${NC}"
 echo -e "${GREEN}✓${NC} Remnawave setup completed successfully!"
-echo -e "${GREEN}-----------------------------------------${NC}"
+echo -e "${GREEN}------------------------------------------${NC}"
 echo
 echo -e "${CYAN}Remnawave URL:${NC}"
 echo "https://${PANEL_DOMAIN}/auth/login?${cookies_random1}=${cookies_random2}"
@@ -1042,11 +1043,6 @@ echo
 echo -e "${CYAN}Pannel Credentials:${NC}"
 echo "$SUPERADMIN_USERNAME"
 echo "$SUPERADMIN_PASSWORD"
-echo
-echo -e "${CYAN}PostgreSQL Credentials:${NC}"
-echo "User: $POSTGRES_USER"
-echo "Password: $POSTGRES_PASSWORD"
-echo "Database: remnawave"
 echo
 echo -e "${CYAN}To check logs, use:${NC}"
 echo "cd /opt/remnawave && docker compose logs -f"
@@ -1071,46 +1067,52 @@ echo -e "${GREEN}=========================${NC}"
 echo
 
 # Interactive input for variables
-echo -e "${CYAN}Please enter the required information:${NC}"
-echo
-
 # Self-steal domain
-read -p "Self-steal domain (e.g., example.com): " SELFSTEAL_DOMAIN
+echo
+echo -ne "${CYAN}Self-steal domain (e.g., example.com): ${NC}"
+read SELFSTEAL_DOMAIN
 while [[ -z "$SELFSTEAL_DOMAIN" ]]; do
     echo -e "${RED}Self-steal domain cannot be empty!${NC}"
-    read -p "Self-steal domain (e.g., example.com): " SELFSTEAL_DOMAIN
+    echo -ne "${CYAN}Self-steal domain (e.g., example.com): ${NC}"
+read SELFSTEAL_DOMAIN
 done
 
 # Panel IP
-read -p "Panel IP address: " PANEL_IP
+echo -ne "${CYAN}Panel IP address: ${NC}"
+read PANEL_IP
 while [[ -z "$PANEL_IP" ]]; do
     echo -e "${RED}Panel IP cannot be empty!${NC}"
-    read -p "Panel IP address: " PANEL_IP
+    echo -ne "${CYAN}Panel IP address: ${NC}"
+read PANEL_IP
 done
 
 # Cloudflare Email
-read -p "Cloudflare Email: " CLOUDFLARE_EMAIL
+echo -ne "${CYAN}Cloudflare Email: ${NC}"
+read CLOUDFLARE_EMAIL
 while [[ -z "$CLOUDFLARE_EMAIL" ]]; do
     echo -e "${RED}Cloudflare Email cannot be empty!${NC}"
-    read -p "Cloudflare Email: " CLOUDFLARE_EMAIL
+    echo -ne "${CYAN}Cloudflare Email: ${NC}"
+read CLOUDFLARE_EMAIL
 done
 
 # Cloudflare API Key
-read -p "Cloudflare API Key: " CLOUDFLARE_API_KEY
+echo -ne "${CYAN}Cloudflare API Key: ${NC}"
+read CLOUDFLARE_API_KEY
 while [[ -z "$CLOUDFLARE_API_KEY" ]]; do
     echo -e "${RED}Cloudflare API Key cannot be empty!${NC}"
-    read -p "Cloudflare API Key: " CLOUDFLARE_API_KEY
+    echo -ne "${CYAN}Cloudflare API Key: ${NC}"
+read CLOUDFLARE_API_KEY
 done
 
 # Certificate from panel
 echo
 echo -e "${YELLOW}Please paste the certificate from the panel:${NC}"
 echo -e "${CYAN}(Include the entire SSL_CERT=\"...\" line)${NC}"
-echo -e "${CYAN}Press Enter when done:${NC}"
+echo -ne "${CYAN}Press Enter when done: ${NC}"
 read -r CERTIFICATE
 while [[ -z "$CERTIFICATE" ]]; do
     echo -e "${RED}Certificate cannot be empty!${NC}"
-    echo -e "${CYAN}Please paste the entire SSL_CERT=\"...\" line:${NC}"
+    echo -ne "${CYAN}Please paste the entire SSL_CERT=\"...\" line: ${NC}"
     read -r CERTIFICATE
 done
 
@@ -1143,12 +1145,6 @@ chmod 600 /opt/remnawave/node-vars.sh
 echo
 echo -e "${GREEN}Variables saved to /opt/remnawave/node-vars.sh${NC}"
 echo
-echo -e "${GREEN}Summary of configuration:${NC}"
-echo -e "Self-steal domain: ${CYAN}$SELFSTEAL_DOMAIN${NC}"
-echo -e "Panel IP: ${CYAN}$PANEL_IP${NC}"
-echo -e "Cloudflare email: ${CYAN}$CLOUDFLARE_EMAIL${NC}"
-echo -e "Certificate: ${CYAN}[Loaded successfully]${NC}"
-echo
 
 # Load environment variables
 source /opt/remnawave/node-vars.sh
@@ -1167,64 +1163,64 @@ echo
 
 # Update package list and install basic packages
 echo "Installing basic packages..."
-apt-get update -y
-apt-get install -y ca-certificates curl jq ufw wget gnupg unzip nano dialog git certbot python3-certbot-dns-cloudflare unattended-upgrades locales dnsutils coreutils grep gawk
+apt-get update -y > /dev/null 2>&1
+apt-get install -y ca-certificates curl jq ufw wget gnupg unzip nano dialog git certbot python3-certbot-dns-cloudflare unattended-upgrades locales dnsutils coreutils grep gawk > /dev/null 2>&1
 
 # Install and enable cron
 echo
 echo "Installing and enabling cron..."
-apt-get install -y cron
-systemctl start cron
-systemctl enable cron
+apt-get install -y cron > /dev/null 2>&1
+systemctl start cron > /dev/null 2>&1
+systemctl enable cron > /dev/null 2>&1
 
 # Configure locales
 echo
 echo "Configuring locales..."
-echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-locale-gen
-update-locale LANG=en_US.UTF-8
+echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen 2>/dev/null
+locale-gen > /dev/null 2>&1
+update-locale LANG=en_US.UTF-8 > /dev/null 2>&1
 
 # Set timezone
 echo
 echo "Setting timezone to Europe/Moscow..."
-timedatectl set-timezone Europe/Moscow
+timedatectl set-timezone Europe/Moscow > /dev/null 2>&1
 
 # Add Docker repository
 echo
 echo "Adding Docker repository..."
-install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null
-chmod a+r /etc/apt/keyrings/docker.asc
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+install -m 0755 -d /etc/apt/keyrings > /dev/null 2>&1
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null 2>&1
+chmod a+r /etc/apt/keyrings/docker.asc > /dev/null 2>&1
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null 2>&1
 
 # Install Docker
 echo
 echo "Installing Docker..."
-apt-get update
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+apt-get update > /dev/null 2>&1
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin > /dev/null 2>&1
 
 # Configure TCP BBR
 echo
 echo "Configuring TCP BBR..."
-echo "net.core.default_qdisc = fq" >> /etc/sysctl.conf
-echo "net.ipv4.tcp_congestion_control = bbr" >> /etc/sysctl.conf
-sysctl -p
+echo "net.core.default_qdisc = fq" >> /etc/sysctl.conf 2>/dev/null
+echo "net.ipv4.tcp_congestion_control = bbr" >> /etc/sysctl.conf 2>/dev/null
+sysctl -p > /dev/null 2>&1
 
 # Configure UFW firewall
 echo
 echo "Configuring UFW firewall..."
-ufw --force reset
-ufw allow 22/tcp comment 'SSH'
-ufw allow 443/tcp comment 'HTTPS'
-ufw --force enable
+ufw --force reset > /dev/null 2>&1
+ufw allow 22/tcp comment 'SSH' > /dev/null 2>&1
+ufw allow 443/tcp comment 'HTTPS' > /dev/null 2>&1
+ufw --force enable > /dev/null 2>&1
 
 # Configure unattended upgrades
 echo
 echo "Configuring unattended upgrades..."
-echo 'Unattended-Upgrade::Mail "root";' >> /etc/apt/apt.conf.d/50unattended-upgrades
-echo unattended-upgrades unattended-upgrades/enable_auto_updates boolean true | debconf-set-selections
-dpkg-reconfigure -f noninteractive unattended-upgrades
-systemctl restart unattended-upgrades
+echo 'Unattended-Upgrade::Mail "root";' >> /etc/apt/apt.conf.d/50unattended-upgrades 2>/dev/null
+echo unattended-upgrades unattended-upgrades/enable_auto_updates boolean true | debconf-set-selections > /dev/null 2>&1
+dpkg-reconfigure -f noninteractive unattended-upgrades > /dev/null 2>&1
+systemctl restart unattended-upgrades > /dev/null 2>&1
 
 echo
 echo -e "${GREEN}----------------------------------${NC}"
