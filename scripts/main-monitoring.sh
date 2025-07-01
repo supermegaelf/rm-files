@@ -397,6 +397,7 @@ install_monitoring() {
 
     # Download and install Node Exporter
     echo "Downloading Node Exporter..."
+    echo
     wget -q https://github.com/prometheus/node_exporter/releases/download/v1.9.1/node_exporter-1.9.1.linux-amd64.tar.gz
     tar xvf node_exporter-1.9.1.linux-amd64.tar.gz > /dev/null
     cp node_exporter-1.9.1.linux-amd64/node_exporter /usr/local/bin/
