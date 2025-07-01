@@ -160,6 +160,7 @@ add_nodes() {
     # Collect node information
     NODES=()
     while true; do
+        echo
         echo -ne "${CYAN}Node IP (or press Enter to finish): ${NC}"
         read NODE_IP
         if [[ -z "$NODE_IP" ]]; then
