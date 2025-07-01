@@ -350,11 +350,13 @@ install_monitoring() {
 
     # Load panel variables
     echo -e "${NC}Loading panel configuration...${NC}"
+    echo
     cd /opt/remnawave
     source remnawave-vars.sh
 
     # Extract Remnawave metrics credentials
     echo "Extracting Remnawave metrics credentials..."
+    echo
     METRICS_USER=$(grep "METRICS_USER=" /opt/remnawave/.env | cut -d'=' -f2)
     METRICS_PASS=$(grep "METRICS_PASS=" /opt/remnawave/.env | cut -d'=' -f2)
 
