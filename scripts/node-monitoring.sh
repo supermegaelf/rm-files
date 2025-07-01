@@ -32,7 +32,8 @@ else
    echo
    
    while true; do
-       read -p "Enter your choice (1-3): " CHOICE
+       echo -ne "${CYAN}Enter your choice (1-3): ${NC}"
+       read CHOICE
        case $CHOICE in
            1)
                ACTION="install"
@@ -69,11 +70,13 @@ if [ "$ACTION" = "uninstall" ]; then
    fi
 
    # Confirmation
-   echo -e "${YELLOW}Are you sure you want to uninstall Node Exporter? (y/N)${NC}"
+   echo -ne "${YELLOW}Are you sure you want to uninstall Node Exporter? (y/N): ${NC}"
    read -r CONFIRM
 
    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+       echo
        echo -e "${CYAN}Uninstallation cancelled.${NC}"
+       echo
        exit 0
    fi
 
@@ -127,6 +130,7 @@ if [ "$ACTION" = "uninstall" ]; then
        done
    else
        # Method 2: Try to remove by pattern if numbered approach fails
+       echo
        echo "Attempting to remove UFW rules by pattern..."
        ufw status numbered | grep -E "9100.*tcp" | while read line; do
            if echo "$line" | grep -q "9100"; then
@@ -164,7 +168,7 @@ echo
 # Check if Node Exporter is already installed
 if [ -f "/usr/local/bin/node_exporter" ]; then
    echo -e "${YELLOW}Node Exporter appears to be already installed.${NC}"
-   echo -e "${YELLOW}Do you want to reinstall? (y/N)${NC}"
+   echo -ne "${YELLOW}Do you want to reinstall? (y/N): ${NC}"
    read -r REINSTALL
    
    if [[ ! "$REINSTALL" =~ ^[Yy]$ ]]; then
@@ -176,9 +180,8 @@ if [ -f "/usr/local/bin/node_exporter" ]; then
 fi
 
 # Get Panel IP for UFW rule
-echo -e "${CYAN}Please enter the required information:${NC}"
-echo
-read -p "Panel IP address: " PANEL_IP
+echo -ne "${CYAN}Panel IP address: ${NC}"
+read PANEL_IP
 
 while [[ -z "$PANEL_IP" ]]; do
     echo -e "${RED}Panel IP cannot be empty!${NC}"
@@ -187,7 +190,7 @@ done
 
 # Validate IP format (basic check)
 if [[ ! $PANEL_IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-    echo -e "${YELLOW}Warning: IP format looks unusual. Continue anyway? (y/N)${NC}"
+    echo -ne "${YELLOW}Warning: IP format looks unusual. Continue anyway? (y/N): ${NC}"
     read -r CONTINUE
     if [[ ! "$CONTINUE" =~ ^[Yy]$ ]]; then
         echo -e "${CYAN}Installation cancelled.${NC}"
