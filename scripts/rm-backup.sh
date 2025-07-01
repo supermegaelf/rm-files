@@ -29,11 +29,11 @@ echo -e "${PURPLE}=================${NC}"
 echo
 
 if [ -z "$TG_BOT_TOKEN" ] || [ -z "$TG_CHAT_ID" ]; then
-    echo -e "${CYAN}Please enter the required information:${NC}"
-    echo
     
-    read -p "$(echo "Telegram Bot Token: ")" TG_BOT_TOKEN
-    read -p "$(echo "Telegram Chat ID: ")" TG_CHAT_ID
+    echo -ne "${CYAN}Telegram Bot Token: ${NC}"
+    read TG_BOT_TOKEN
+    echo -ne "${CYAN}Telegram Chat ID: ${NC}"
+    read TG_CHAT_ID
 
     if [[ ! "$TG_BOT_TOKEN" =~ ^[0-9]+:[A-Za-z0-9_-]+$ ]]; then
         echo -e "${RED}Error: Invalid Telegram Bot Token format${NC}"
