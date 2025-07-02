@@ -469,15 +469,11 @@ EOF
             # Basic IP validation
             if [[ $NODE_IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
                 # Test connectivity
-                echo -n "Testing connectivity to $NODE_IP:9100... "
+                echo "Testing connectivity to $NODE_IP:9100..."
                 echo
                 if curl -s --max-time 5 http://$NODE_IP:9100/metrics > /dev/null 2>&1; then
-                    echo -e "${GREEN}✓${NC}"
-                    echo
                     EXTERNAL_NODES+=("$NODE_IP:9100")
                 else
-                    echo -e "${RED}✗${NC}"
-                    echo
                     echo -e "${YELLOW}Warning: Cannot reach $NODE_IP:9100${NC}"
                     echo
                     echo -ne "${YELLOW}Add anyway? (y/N): ${NC}"
@@ -488,6 +484,7 @@ EOF
                 fi
             else
                 echo -e "${RED}Invalid IP format: $NODE_IP${NC}"
+                echo
             fi
         done
 
