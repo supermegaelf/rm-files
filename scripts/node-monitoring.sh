@@ -168,8 +168,10 @@ echo
 # Check if Node Exporter is already installed
 if [ -f "/usr/local/bin/node_exporter" ]; then
    echo -e "${YELLOW}Node Exporter appears to be already installed.${NC}"
+   echo
    echo -ne "${YELLOW}Do you want to reinstall? (y/N): ${NC}"
    read -r REINSTALL
+   echo
    
    if [[ ! "$REINSTALL" =~ ^[Yy]$ ]]; then
        echo -e "${CYAN}Installation cancelled.${NC}"
@@ -177,6 +179,7 @@ if [ -f "/usr/local/bin/node_exporter" ]; then
    fi
    
    echo -e "${YELLOW}Proceeding with reinstallation...${NC}"
+   echo
 fi
 
 # Get Panel IP for UFW rule
