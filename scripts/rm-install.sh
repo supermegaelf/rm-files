@@ -592,7 +592,7 @@ EOL
 # Download index.html
 echo
 echo "Downloading index.html..."
-wget -P /opt/remnawave/ https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/sub/index.html > /dev/null 2>&1
+wget -P /opt/remnawave/ https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/sub-redirect/index.html > /dev/null 2>&1
 echo
 
 echo -e "${GREEN}--------------------------------------------${NC}"
