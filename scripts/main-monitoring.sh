@@ -196,7 +196,6 @@ add_nodes() {
         return 0
     fi
 
-    echo
     echo -e "${CYAN}Nodes to be added:${NC}"
     for node in "${NODES[@]}"; do
         echo -e "${WHITE}$node${NC}"
