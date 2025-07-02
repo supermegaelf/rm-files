@@ -539,6 +539,7 @@ services:
       - /etc/letsencrypt/live/$PANEL_BASE_DOMAIN/privkey.pem:/etc/nginx/ssl/$PANEL_DOMAIN/privkey.pem:ro
       - /etc/letsencrypt/live/$SUB_BASE_DOMAIN/fullchain.pem:/etc/nginx/ssl/$SUB_DOMAIN/fullchain.pem:ro
       - /etc/letsencrypt/live/$SUB_BASE_DOMAIN/privkey.pem:/etc/nginx/ssl/$SUB_DOMAIN/privkey.pem:ro
+      - ./redirect.html:/opt/remnawave/redirect.html:ro
     network_mode: host
     depends_on:
       - remnawave
@@ -721,6 +722,23 @@ server {
 
     location @redirect {
         return 404;
+    }
+}
+
+server {
+    server_name redirect.$PANEL_DOMAIN;
+    listen 443 ssl;
+    http2 on;
+
+    ssl_certificate "/etc/nginx/ssl/$PANEL_DOMAIN/fullchain.pem";
+    ssl_certificate_key "/etc/nginx/ssl/$PANEL_DOMAIN/privkey.pem";
+    ssl_trusted_certificate "/etc/nginx/ssl/$PANEL_DOMAIN/fullchain.pem";
+
+    root /opt/remnawave;
+    index redirect.html;
+
+    location / {
+        try_files \$uri \$uri/ /redirect.html;
     }
 }
 
