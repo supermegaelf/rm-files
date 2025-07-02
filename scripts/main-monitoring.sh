@@ -144,7 +144,6 @@ add_nodes() {
 
     echo -ne "${YELLOW}Do you want to add nodes to this configuration? (y/N): ${NC}"
     read -r PROCEED
-    echo
 
     if [[ "$PROCEED" =~ ^[Nn]$ ]]; then
         echo
