@@ -457,11 +457,11 @@ EOF
     echo
     echo -ne "${YELLOW}Do you want to add external nodes to monitoring? (y/N): ${NC}"
     read -r ADD_EXTERNAL_NODES
+    echo
     
     EXTERNAL_NODES=()
     if [[ ! "$ADD_EXTERNAL_NODES" =~ ^[Nn]$ ]]; then
         while true; do
-            echo
             echo -ne "${CYAN}Node IP (or press Enter to finish): ${NC}"
             read NODE_IP
             echo
