@@ -496,7 +496,6 @@ EOF
         done
 
         if [ ${#EXTERNAL_NODES[@]} -gt 0 ]; then
-            echo
             echo -e "${CYAN}External nodes to be added:${NC}"
             for node in "${EXTERNAL_NODES[@]}"; do
                 echo -e "${WHITE}$node${NC}"
