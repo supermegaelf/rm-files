@@ -455,7 +455,6 @@ EOF
     echo
     echo -ne "${YELLOW}Do you want to add external nodes to monitoring? (y/N): ${NC}"
     read -r ADD_EXTERNAL_NODES
-    echo
     
     EXTERNAL_NODES=()
     if [[ ! "$ADD_EXTERNAL_NODES" =~ ^[Nn]$ ]]; then
@@ -974,6 +973,7 @@ EOL
     ufw allow 9443/tcp comment "Panel Monitoring HTTPS" > /dev/null
 
     # Start monitoring services
+    echo
     echo "Starting monitoring services..."
     cd /opt/monitoring
     docker compose up -d > /dev/null
