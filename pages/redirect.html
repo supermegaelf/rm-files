@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirect</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            text-align: center;
+        }
+        p {
+            font-size: 25px;
+            color: #000000;
+        }
+    </style>
+    <script>
+        function getParameterByName(name, url = window.location.href) {
+            name = name.replace(/[\[\]]/g, '\\$&');
+            let regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const happUrl = getParameterByName('happ_url');
+            const messageElement = document.getElementById('message');
+
+            if (happUrl) {
+                window.location.href = happUrl;
+                messageElement.innerHTML = '<p>Подписка добавляется... 🏄🏼‍♂️ Вы можете закрыть эту вкладку ✅</p>';
+            } else {
+                messageElement.innerHTML = '<p>Ошибка: ссылка на подписку не найдена 🚫</p>';
+            }
+        });
+    </script>
+</head>
+<body>
+    <div id="message">
+        <p>Перенаправление... 🔄</p>
+    </div>
+</body>
+</html>
