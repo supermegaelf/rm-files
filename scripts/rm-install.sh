@@ -596,6 +596,11 @@ echo "Downloading index.html..."
 wget -P /opt/remnawave/ https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/sub-redirect/index.html > /dev/null 2>&1
 echo
 
+# Download redirect.html
+echo "Downloading redirect.html..."
+wget -P /opt/remnawave/ https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/redirect/redirect.html > /dev/null 2>&1
+echo
+
 echo -e "${GREEN}--------------------------------------------${NC}"
 echo -e "${GREEN}✓${NC} Configuration files created successfully!"
 echo -e "${GREEN}--------------------------------------------${NC}"
