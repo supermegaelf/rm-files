@@ -171,18 +171,16 @@ add_nodes() {
         # Basic IP validation
         if [[ $NODE_IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
             # Test connectivity
-            echo -n "Testing connectivity to $NODE_IP:9100... "
+            echo -n "Testing connectivity to $NODE_IP:9100..."
             if curl -s --max-time 5 http://$NODE_IP:9100/metrics > /dev/null 2>&1; then
-                echo -e "${GREEN}✓${NC}"
                 echo
                 NODES+=("$NODE_IP:9100")
             else
-                echo -e "${RED}✗${NC}"
-                echo
                 echo -e "${YELLOW}Warning: Cannot reach $NODE_IP:9100${NC}"
                 echo
                 echo -ne "${YELLOW}Add anyway? (y/N): ${NC}"
                 read -r ADD_ANYWAY
+                echo
                 if [[ "$ADD_ANYWAY" =~ ^[Yy]$ ]]; then
                     NODES+=("$NODE_IP:9100")
                 fi
