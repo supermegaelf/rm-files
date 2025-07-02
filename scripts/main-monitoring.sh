@@ -472,7 +472,9 @@ EOF
             # Basic IP validation
             if [[ $NODE_IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
                 # Test connectivity
+                echo
                 echo -n "Testing connectivity to $NODE_IP:9100... "
+                echo
                 if curl -s --max-time 5 http://$NODE_IP:9100/metrics > /dev/null 2>&1; then
                     echo -e "${GREEN}✓${NC}"
                     echo
