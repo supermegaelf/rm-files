@@ -594,9 +594,10 @@ EOL
 echo
 echo "Downloading index.html..."
 wget -P /opt/remnawave/ https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/sub-redirect/index.html > /dev/null 2>&1
-echo
+sed -i "s/redirect\.example\.com/redirect.$PANEL_DOMAIN/g" /opt/remnawave/index.html
 
 # Download redirect.html
+echo
 echo "Downloading redirect.html..."
 wget -P /opt/remnawave/ https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/redirect/redirect.html > /dev/null 2>&1
 echo
