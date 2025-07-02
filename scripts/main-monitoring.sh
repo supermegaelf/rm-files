@@ -471,7 +471,6 @@ EOF
             if [[ $NODE_IP =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
                 # Test connectivity
                 echo "Testing connectivity to $NODE_IP:9100..."
-                echo
                 if curl -s --max-time 5 http://$NODE_IP:9100/metrics > /dev/null 2>&1; then
                     EXTERNAL_NODES+=("$NODE_IP:9100")
                 else
