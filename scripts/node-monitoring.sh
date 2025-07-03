@@ -175,6 +175,7 @@ if [ -f "/usr/local/bin/node_exporter" ]; then
    
    if [[ ! "$REINSTALL" =~ ^[Yy]$ ]]; then
        echo -e "${CYAN}Installation cancelled.${NC}"
+       echo
        exit 0
    fi
    
