@@ -832,9 +832,11 @@ config_file="/opt/remnawave/config.json"
 
 cat > "$config_file" <<EOL
 {
-    "log": {
-        "loglevel": "warning"
-    },
+  	"log": {
+    	"error": "/var/log/remnanode/error.log",
+    	"access": "/var/log/remnanode/access.log",
+    	"loglevel": "warning"
+  	},
     "dns": {
         "queryStrategy": "ForceIPv4",
         "servers": [
@@ -1374,6 +1376,7 @@ services:
         required: false
     volumes:
       - /dev/shm:/dev/shm:rw
+      - '/var/log/remnanode:/var/log/remnanode'
     logging:
       driver: 'json-file'
       options:
