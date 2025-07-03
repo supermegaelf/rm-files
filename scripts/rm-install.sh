@@ -184,6 +184,40 @@ echo "Installing basic packages..."
 apt-get update -y > /dev/null 2>&1
 apt-get install -y ca-certificates curl jq ufw wget gnupg unzip nano dialog git certbot python3-certbot-dns-cloudflare unattended-upgrades locales dnsutils coreutils grep gawk > /dev/null 2>&1
 
+# Configure logrotate for panel
+echo
+echo "Configuring logrotate for panel logs..."
+mkdir -p /var/log/remnawave 2>/dev/null || true
+apt-get install -y logrotate > /dev/null 2>&1 || true
+
+cat > /etc/logrotate.d/remnawave <<'EOL' 2>/dev/null || true
+/var/lib/docker/containers/*/*.log {
+    size 100M
+    rotate 7
+    compress
+    missingok
+    notifempty
+    copytruncate
+    delaycompress
+}
+/var/log/letsencrypt/*.log {
+    size 10M
+    rotate 5
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+/usr/local/remnawave_reverse/cron_jobs.log {
+    size 10M
+    rotate 3
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+EOL
+
 # Install and enable cron
 echo
 echo "Installing and enabling cron..."
@@ -1190,6 +1224,27 @@ echo
 echo "Installing basic packages..."
 apt-get update -y > /dev/null 2>&1
 apt-get install -y ca-certificates curl jq ufw wget gnupg unzip nano dialog git certbot python3-certbot-dns-cloudflare unattended-upgrades locales dnsutils coreutils grep gawk > /dev/null 2>&1
+
+# Configure logrotate for remnanode
+echo
+echo "Configuring logrotate for remnanode..."
+mkdir -p /var/log/remnanode
+apt-get install -y logrotate > /dev/null 2>&1
+
+# Create logrotate configuration
+cat > /etc/logrotate.d/remnanode <<'EOL'
+/var/log/remnanode/*.log {
+    size 50M
+    rotate 5
+    compress
+    missingok
+    notifempty
+    copytruncate
+}
+EOL
+
+# Test logrotate configuration
+logrotate -vf /etc/logrotate.d/remnanode > /dev/null 2>&1
 
 # Install and enable cron
 echo
