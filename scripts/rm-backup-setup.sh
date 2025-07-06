@@ -10,11 +10,11 @@ CYAN='\033[0;36m'
 WHITE='\033[1;37m'
 NC='\033[0m'
 
-# Remnawave backup setup script
+# Marzban backup setup script
 echo
-echo -e "${PURPLE}=======================${NC}"
-echo -e "${NC}REMNAWAVE BACKUP SETUP${NC}"
-echo -e "${PURPLE}=======================${NC}"
+echo -e "${PURPLE}=====================${NC}"
+echo -e "${NC}MARZBAN BACKUP SETUP${NC}"
+echo -e "${PURPLE}=====================${NC}"
 echo
 
 set -e
@@ -24,9 +24,9 @@ echo -e "${NC}1. Preparing backup environment${NC}"
 echo -e "${GREEN}================================${NC}"
 echo
 
-SCRIPT_URL="https://raw.githubusercontent.com/supermegaelf/rm-files/main/scripts/rm-backup.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/supermegaelf/mb-scripts/main/mb-backup.sh"
 SCRIPT_DIR="/root/scripts"
-SCRIPT_PATH="$SCRIPT_DIR/rm-backup.sh"
+SCRIPT_PATH="$SCRIPT_DIR/mb-backup.sh"
 
 if [ ! -d "$SCRIPT_DIR" ]; then
     echo -e "${CYAN}Creating directory $SCRIPT_DIR...${NC}"
@@ -46,11 +46,11 @@ echo -e "${NC}2. Downloading backup script${NC}"
 echo -e "${GREEN}=============================${NC}"
 echo
 
-echo -e "${NC}Downloading rm-backup.sh from $SCRIPT_URL...${NC}"
+echo -e "${NC}Downloading mb-backup.sh from $SCRIPT_URL...${NC}"
 echo
 wget -q -O "$SCRIPT_PATH" "$SCRIPT_URL" 2>/dev/null
 if [ $? -ne 0 ]; then
-    echo -e "${RED}Error: Failed to download rm-backup.sh${NC}"
+    echo -e "${RED}Error: Failed to download mb-backup.sh${NC}"
     exit 1
 fi
 
@@ -72,10 +72,10 @@ echo -e "${NC}3. Configuring backup script${NC}"
 echo -e "${GREEN}=============================${NC}"
 echo
 
-echo -e "${CYAN}Running rm-backup.sh to configure variables...${NC}"
+echo -e "${CYAN}Running mb-backup.sh to configure variables...${NC}"
 /bin/bash "$SCRIPT_PATH"
 if [ $? -ne 0 ]; then
-    echo -e "${RED}Error: rm-backup.sh failed to execute${NC}"
+    echo -e "${RED}Error: mb-backup.sh failed to execute${NC}"
     exit 1
 fi
 
