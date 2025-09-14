@@ -1,26 +1,143 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-bs-theme="system">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#fff">
     <title>Redirect</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-            text-align: center;
+        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
+
+        :root {
+            --bs-body-font-family: "Inter", sans-serif;
         }
-        p {
-            font-size: 25px;
-            color: #000000;
+
+        /* ========== THEMES ========== */
+        [data-bs-theme='light'] {
+            --bs-body-bg: #fff;
+            --my-gray-color: #f6f5f4;
+            --my-dark-gray-color: #eaeaea;
+            --my-alpha-gray-color: rgba(50, 50, 50, .75);
+            --my-alpha-dark-gray-color: rgba(0, 0, 0, .15);
+            --my-emphasis-focus-shadow-rgb: 0, 0, 0;
+            --my-heading-color: rgb(30, 25, 20);
+            --my-content-color: rgba(0, 0, 0, .65);
+        }
+
+        [data-bs-theme='dark'] {
+            --bs-body-bg: #151515;
+            --my-gray-color: #232323;
+            --my-dark-gray-color: #1c1c1c;
+            --my-alpha-gray-color: rgba(255, 255, 255, .5);
+            --my-alpha-dark-gray-color: rgba(255, 255, 255, .15);
+            --my-emphasis-focus-shadow-rgb: 255, 255, 255;
+            --my-heading-color: rgb(225, 225, 225);
+            --my-content-color: rgba(255, 255, 255, .55);
+        }
+
+        /* ========== COMPONENTS ========== */
+        .my-text-heading {
+            color: var(--my-heading-color);
+        }
+
+        .my-text-content {
+            color: var(--my-content-color);
+        }
+
+        /* ========== CONTENT BLOCKS ========== */
+        .my-block {
+            border-radius: var(--bs-border-radius-xl);
+            background-color: var(--my-gray-color);
+            padding: 2rem;
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .redirect-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .redirect-message {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .redirect-emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        /* ========== ANIMATION ========== */
+        .loading-animation {
+            display: inline-block;
+            animation: spin 2s linear infinite;
+        }
+
+        .success-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        /* ========== RESPONSIVENESS ========== */
+        @media (max-width: 576px) {
+            .my-block {
+                padding: 1.5rem;
+            }
+            
+            .redirect-message {
+                font-size: 1.1rem;
+            }
+            
+            .redirect-emoji {
+                font-size: 2.5rem;
+            }
         }
     </style>
     <script>
+        // Color mode toggler (simplified version)
+        const COLOR_SCHEME = '(prefers-color-scheme: dark)';
+        const DEFAULT_THEME = 'system';
+        const META_THEME_COLORS = { light: '#fff', dark: '#151515' };
+
+        function getUserTheme() {
+            return localStorage.getItem('theme') || DEFAULT_THEME;
+        }
+
+        function setTheme(theme) {
+            if (theme === 'system') {
+                theme = window.matchMedia(COLOR_SCHEME).matches ? 'dark' : 'light';
+            }
+            document.documentElement.setAttribute('data-bs-theme', theme);
+            document
+                .querySelector(`[name='theme-color']`)
+                .setAttribute('content', META_THEME_COLORS[theme]);
+        }
+
+        // Apply theme immediately
+        setTheme(getUserTheme());
+        window.matchMedia(COLOR_SCHEME).addEventListener('change', () => {
+            if (getUserTheme() === 'system') setTheme('system');
+        });
+
+        // Main redirect functionality
         function getParameterByName(name, url = window.location.href) {
             name = name.replace(/[\[\]]/g, '\\$&');
             let regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
@@ -33,19 +150,33 @@
         document.addEventListener("DOMContentLoaded", function() {
             const happUrl = getParameterByName('happ_url');
             const messageElement = document.getElementById('message');
+            const emojiElement = document.getElementById('emoji');
 
             if (happUrl) {
+                // Redirect user
                 window.location.href = happUrl;
-                messageElement.innerHTML = '<p>Подписка добавляется... 🏄🏼‍♂️ Вы можете закрыть эту вкладку ✅</p>';
+                
+                // Update interface for success case
+                emojiElement.textContent = '🏄🏼‍♂️';
+                emojiElement.className = 'redirect-emoji success-pulse';
+                messageElement.innerHTML = '<p class="redirect-message my-text-heading">Подписка добавляется...<br><small class="my-text-content">Вы можете закрыть эту вкладку ✅</small></p>';
             } else {
-                messageElement.innerHTML = '<p>Ошибка: ссылка на подписку не найдена 🚫</p>';
+                // Update interface for error case
+                emojiElement.textContent = '🚫';
+                emojiElement.className = 'redirect-emoji';
+                messageElement.innerHTML = '<p class="redirect-message my-text-heading">Ошибка: ссылка на подписку не найдена</p>';
             }
         });
     </script>
 </head>
 <body>
-    <div id="message">
-        <p>Перенаправление... 🔄</p>
+    <div class="redirect-container">
+        <div class="my-block">
+            <span id="emoji" class="redirect-emoji loading-animation">🔄</span>
+            <div id="message">
+                <p class="redirect-message my-text-heading">Перенаправление...</p>
+            </div>
+        </div>
     </div>
 </body>
 </html>
