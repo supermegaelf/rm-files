@@ -346,7 +346,7 @@ send_to_telegram() {
 
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}${CHECK}${NC} Backup successfully sent to Telegram"
-        rm -rf /var/lib/marzban/mysql/db-backup/* > /dev/null 2>&1
+        rm -rf /var/lib/remnawave/db-backup/* > /dev/null 2>&1
     else
         echo -e "${RED}${CROSS}${NC} Failed to send backup to Telegram"
     fi
