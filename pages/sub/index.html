@@ -7,7 +7,7 @@
     <meta name="description" content="<%= metaDescription %>" />
     <meta name="theme-color" content="#fff">
     <title>
-        <%= metaTitle %>
+        Surf VPN
     </title>
     <script>
         // Get data from Remnawave
@@ -673,8 +673,7 @@
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
-                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.third.title')">
-                            </h5>
+                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.android.third.text')"></p>
                             <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied" x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></button>
                         </div>
@@ -742,7 +741,7 @@
                     </div>
                 </div>
             </div>
-            <div id="tab-pc" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-pc-tab" role="tabpanel">
+            <div id="tab-pc" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-pc-tab" role="tabpanel" x-data="androidCopyLink">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 g-sm-2 g-lg-3">
                     <div class="col">
                         <div class="my-block-big h-100">
@@ -751,7 +750,7 @@
                             <p class="my-text-content" x-html="$t('guideContent.pc.first.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
                                 <a class="btn my-btn-primary"
-                                    href="https://github.com/Happ-proxy/happ-desktop/releases/download/alpha_0.3.7/setup-Happ.x86.exe"
+                                    href="https://github.com/Happ-proxy/happ-desktop/releases/download/alpha_0.5.6/setup-Happ.x86.exe"
                                     role="button" rel="noopener noreferrer">
                                     <span class="fw-semibold" x-text="$t('downloadApp')"></span>
                                 </a>
@@ -762,29 +761,35 @@
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.second.title')"></h5>
-                            <p class="my-text-content" x-html="$t('guideContent.pc.second.text')"></p>
-                            <a class="btn my-btn-primary fw-semibold" id="sub-url-pc" role="button"
-                                rel="noopener noreferrer" target="_blank" x-text="$t('addSubscription')"></a>
+                            <p class="my-text-content mb-0" x-html="$t('guideContent.pc.second.text')"></p>
                         </div>
                     </div>
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.third.title')"></h5>
-                            <p class="my-text-content mb-0" x-html="$t('guideContent.pc.third.text')"></p>
+                            <p class="my-text-content" x-html="$t('guideContent.pc.third.text')"></p>
+                            <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied" x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></button>
                         </div>
                     </div>
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.fourth.title')"></h5>
+                            <p class="my-text-content mb-0" x-html="$t('guideContent.pc.fourth.text')"></p>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="my-block-big h-100">
+                            <span class="my-step-counter mb-1"></span>
+                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.fifth.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.fourth.text')"></p>
                             <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
                                 role="button" rel="noopener noreferrer" target="_blank">
                                 <span class="fw-semibold" x-text="$t('fixInstr')"></span>
                             </a>
                         </div>
-                    </div>                    
+                    </div> 
                 </div>
             </div>
             <div id="tab-tv" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-tv-tab" role="tabpanel">
@@ -827,17 +832,6 @@
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.fifth.title')">
                             </h5>
                             <p class="my-text-content mb-0" x-html="$t('guideContent.tv.fifth.text')"></p>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
-                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.sixth.title')"></h5>
-                            <p class="my-text-content" x-html="$t('guideContent.tv.sixth.text')"></p>
-                            <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
-                                role="button" rel="noopener noreferrer" target="_blank">
-                                <span class="fw-semibold" x-text="$t('fixInstr')"></span>
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -895,10 +889,10 @@
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     <script>
         const SUB_URL_SCHEMES = {
-            pc: "https://redirect.example.com?happ_url=" + encodeURIComponent(happUrl),
+            pc: happUrl,
             android: happUrl,
             ios: happUrl,
-            macos: "https://redirect.example.com?happ_url=" + encodeURIComponent(happUrl),
+            macos: happUrl,
         };
         // Default locale used to display content if
         // the user's locale is not specified.
@@ -923,91 +917,95 @@
                     ios: {
                         first: {
                             title: 'Download app',
-                            text: `Click on the button below to download the app.`,
+                            text: `Click on button below to download app.`,
                         },
                         second: {
                             title: 'Add subscription',
-                            text: `Click the button below to add the subscription to the app.`,
+                            text: `Click button below to add subscription to app.`,
                         },
                         third: {
                             title: 'Enable VPN',
-                            text: `Click the big round button to enable VPN.`,
+                            text: `Click big round button to enable VPN.`,
                         },
                         fourth: {
                             title: 'Not working?',
-                            text: `Click the button below to open tips for fixing the connection error.`,
+                            text: `Click button below to open tips for fixing connection error.`,
                         },
                     },
                     android: {
                         first: {
                             title: 'Download app',
-                            text: `Click on the button below to download the app.`,
+                            text: `Click on button below to download app.`,
                         },
                         second: {
                             title: 'Unable to download?',
-                            text: `Click the button below to download the app from another source and install it manually.`,
+                            text: `Click button below to download app from another source and install it manually.`,
                         },
                         third: {
                             title: 'Add subscription',
-                            text: `- Click the button below to copy the subscription link.<br>- Open the installed application and click <b>«Clipboard»</b>.`,
+                            text: `- Click button below to copy subscription link.<br>- Open installed application and click <b>«Clipboard»</b>.`,
                         },
                         fourth: {
                             title: 'Enable VPN',
-                            text: `Click the big round button to enable VPN.`,
+                            text: `Click big round button to enable VPN.`,
                         },
                         fifth: {
                             title: 'Not working?',
-                            text: `Click the button below to open tips for fixing the connection error.`,
+                            text: `Click button below to open tips for fixing connection error.`,
                         },
                     },
                     macos: {
                         first: {
                             title: 'Download app',
-                            text: `Click on the button below to download the app.`,
+                            text: `Click on button below to download app.`,
                         },
                         second: {
                             title: 'Add subscription',
-                            text: `- Click the button below to copy the subscription link.<br>- Open the installed app, insert the link in the <b>«Subscription or VLESS...»</b> field and click <b>«Get started»</b>.`,
+                            text: `- Click button below to copy subscription link.<br>- Open installed app, click <b>«Skip»</b> (if you are launching it for the first time), and tap <b>«Clipboard»</b>.`,
                         },
                         third: {
                             title: 'Enable VPN',
-                            text: `Click the big round button to enable VPN.`,
+                            text: `Click big round button to enable VPN.`,
                         },
                         fourth: {
                             title: 'Not working?',
-                            text: `Click the button below to open tips for fixing the connection error.`,
+                            text: `Click button below to open tips for fixing connection error.`,
                         },
                     },
                     pc: {
                         first: {
                             title: 'Download app',
-                            text: `Click on the button below to download the app. Install and run it.`,
+                            text: `Click on button below to download app.`,
                         },
                         second: {
-                            title: 'Add subscription',
-                            text: `- Click the button below to add the subscription to the app.<br>- In the pop-up window, select <b>«Open the "Happ, xray GUI client application".»</b>, then click <b>«Skip»</b> in the app.`,
+                            title: 'Install app',
+                            text: `Open file, click <b>«More info»</b>, <b>«Run anyway»</b> and follow instructions to complete installation.`,
                         },
                         third: {
-                            title: 'Enable VPN',
-                            text: `Click the big round button to enable VPN.`,
+                            title: 'Add subscription',
+                            text: `- Click button below to copy subscription link.<br>- Open installed app, click <b>«Skip»</b> (if you are launching it for the first time), and tap <b>«Clipboard»</b>.`,
                         },
                         fourth: {
+                            title: 'Enable VPN',
+                            text: `Click big round button to enable VPN.`,
+                        },
+                        fifth: {
                             title: 'Not working?',
-                            text: `Click the button below to open tips for fixing the connection error.`,
+                            text: `Click button below to open tips for fixing connection error.`,
                         },
                     },
                     tv: {
                         first: {
                             title: 'Important!',
-                            text: `- Make sure that our VPN is already installed on your phone.<br>- The TV and your phone are connected to the same Wi-Fi network.`,
+                            text: `- Make sure that our VPN is already installed on your phone.<br>- TV and your phone are connected to the same Wi-Fi network.`,
                         },
                         second: {
                             title: 'Install app',
-                            text: `On your TV, open <b>«Google Play»</b>, install the <b>«Happ»</b> app and launch it.`,
+                            text: `On your TV, open <b>«Google Play»</b>, install <b>«Happ»</b> app and launch it.`,
                         },
                         third: {
                             title: 'Scan QR code',
-                            text: `On your phone, open the <b>«Happ» app</b>, press <b>«+»</b>, select <b>«QR Code»</b> and scan it from TV.`,
+                            text: `On your phone, open <b>«Happ» app</b>, press <b>«+»</b>, select <b>«QR Code»</b> and scan it from TV.`,
                         },
                         fourth: {
                             title: 'Add subscription',
@@ -1015,11 +1013,11 @@
                         },
                         fifth: {
                             title: 'Enable VPN',
-                            text: `Click the big round button to enable VPN.`,
+                            text: `Click big round button to enable VPN.`,
                         },
                         sixth: {
                             title: 'Not working?',
-                            text: `Click the button below to open tips for fixing the connection error.`,
+                            text: `Click button below to open tips for fixing connection error.`,
                         },
                     },
                 },
@@ -1086,7 +1084,7 @@
                         },
                         second: {
                             title: 'Добавьте подписку',
-                            text: `- Нажмите кнопку ниже, чтобы скопировать ссылку на подписку.<br>- Откройте установленное приложение, вставьте ссылку в поле <b>«Subscription or VLESS...»</b> и нажмите <b>«Get started»</b>.`,
+                            text: `- Нажмите кнопку ниже, чтобы скопировать ссылку на подписку.<br>- Откройте установленное приложение, кликните <b>«Пропустить»</b> (если запускаете его впервые) и нажмите <b>«Из Буфера»<b>.`,
                         },
                         third: {
                             title: 'Включите VPN',
@@ -1100,19 +1098,23 @@
                     pc: {
                         first: {
                             title: 'Скачайте приложение',
-                            text: `Нажмите кнопку ниже, чтобы скачать приложение. Установите и запустите его.`,
+                            text: `Нажмите кнопку ниже, чтобы скачать приложение.`,
                         },
                         second: {
-                            title: 'Добавьте подписку',
-                            text: `- Нажмите кнопку ниже, чтобы добавить подписку в приложение.<br>- Во всплывающем окне выберите <b>«Открыть приложение "Happ, xray GUI client".»</b>, затем нажмите <b>«Skip»</b> в приложении.`,
+                            title: 'Установите приложение',
+                            text: `Откройте файл, нажмите <b>«Подробнее»</b>, <b>«Выполнить в любом случае»</b> и следуйте инструкции, чтобы завершить установку.`,
                         },
                         third: {
+                            title: 'Добавьте подписку',
+                            text: `- Нажмите кнопку ниже, чтобы скопировать ссылку на подписку.<br>- Откройте установленное приложение, кликните <b>«Пропустить»</b> (если запускаете его впервые) и нажмите <b>«Из буфера»<b>.`,
+                        },
+                        fourth: {
                             title: 'Включите VPN',
                             text: `Нажмите большую круглую кнопку, чтобы включить VPN.`,
                         },
-                        fourth: {
+                        fifth: {
                             title: 'Не работает?',
-                            text: `Нажмите кнопку ниже, чтобы открыть рекомендации по устранению ошибки подключения.`,
+                            text: `Нажмите кнопку ниже, чтобы открыть рекомендации по устранению ошибки подключения`,
                         },
                     },
                     tv: {
