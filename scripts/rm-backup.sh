@@ -286,7 +286,6 @@ create_archive() {
         "/opt/remnawave/remnawave-vars.sh"
         "/opt/remnawave/nginx.conf"
         "/opt/remnawave/index.html"
-        "/opt/remnawave/assets"
         "/var/lib/remnawave/db-backup/shop.sql"
         "/root/shop-bot/.env"
         "/root/shop-bot/goods.json"
