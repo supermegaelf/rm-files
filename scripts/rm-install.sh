@@ -1277,6 +1277,33 @@ create_host() {
     fi
 }
 
+create_bot_token() {
+    local domain_url=$1
+    local token=$2
+    
+    local token_response=$(curl -s -X POST "http://$domain_url/api/tokens" \
+        -H "Host: $PANEL_DOMAIN" \
+        -H "Authorization: Bearer $token" \
+        -H "Content-Type: application/json" \
+        -H "X-Remnawave-Client-Type: browser" \
+        -H "X-Forwarded-For: 127.0.0.1" \
+        -H "X-Forwarded-Proto: https" \
+        -H "X-Forwarded-Host: $PANEL_DOMAIN" \
+        -d '{
+            "tokenName": "Bot API Token",
+            "tokenDescription": "API token for bot integration and webhook notifications"
+        }')
+
+    local bot_token=$(echo "$token_response" | jq -r '.response.token // empty')
+    
+    if [ -n "$bot_token" ] && [ "$bot_token" != "null" ]; then
+        echo "$bot_token"
+        return 0
+    else
+        return 1
+    fi
+}
+
 get_default_squad() {
     local domain_url=$1
     local token=$2
@@ -1943,6 +1970,18 @@ EOL
     echo -e "${GRAY}  ${ARROW}${NC} Configuring default squad"
     local squad_uuid=$(get_default_squad "$domain_url" "$token")
     update_squad "$domain_url" "$token" "$squad_uuid" "$inbound_uuid"
+    
+    echo -e "${GRAY}  ${ARROW}${NC} Creating bot API token"
+    local bot_token=$(create_bot_token "$domain_url" "$token")
+    if [ -n "$bot_token" ]; then
+        echo "" >> /opt/remnawave/remnawave-vars.sh
+        echo "# API Token for Bot" >> /opt/remnawave/remnawave-vars.sh
+        echo "export REMNAWAVE_TOKEN=\"$bot_token\"" >> /opt/remnawave/remnawave-vars.sh
+        echo -e "${GREEN}${CHECK}${NC} Bot API token created"
+    else
+        echo -e "${RED}${CROSS}${NC} Failed to create bot token"
+    fi
+    
     echo -e "${GREEN}${CHECK}${NC} Remnawave panel configured successfully"
 }
 
