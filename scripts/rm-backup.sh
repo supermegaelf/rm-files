@@ -25,7 +25,7 @@ readonly ARROW="→"
 # Global variables
 POSTGRES_USER=""
 POSTGRES_PASSWORD=""
-SHOP_MYSQL_USER=""
+SHOP_MYSQL_USER="remnawave"
 SHOP_MYSQL_PASSWORD=""
 TG_BOT_TOKEN=""
 TG_CHAT_ID=""
@@ -52,12 +52,8 @@ configure_backup() {
         read POSTGRES_PASSWORD
         echo
 
-        # Shop/Bot database credentials
-        echo -ne "${CYAN}Shop/Bot MySQL username (default is marzban, press Enter to use default): ${NC}"
-        read SHOP_MYSQL_USER
-        SHOP_MYSQL_USER=${SHOP_MYSQL_USER:-marzban}
-        
-        echo -ne "${CYAN}Shop/Bot MySQL password: ${NC}"
+        # Shop-Bot database credentials
+        echo -ne "${CYAN}Shop Bot MySQL password (or press Enter to skip shop backup): ${NC}"
         read SHOP_MYSQL_PASSWORD
         echo
 
@@ -78,14 +74,6 @@ configure_backup() {
             echo -e "${RED}${CROSS}${NC} Remnawave PostgreSQL password cannot be empty"
             exit 1
         fi
-        if [ -z "$SHOP_MYSQL_USER" ]; then
-            echo -e "${RED}${CROSS}${NC} Shop MySQL username cannot be empty"
-            exit 1
-        fi
-        if [ -z "$SHOP_MYSQL_PASSWORD" ]; then
-            echo -e "${RED}${CROSS}${NC} Shop MySQL password cannot be empty"
-            exit 1
-        fi
         if [[ ! "$TG_BOT_TOKEN" =~ ^[0-9]+:[A-Za-z0-9_-]+$ ]]; then
             echo -e "${RED}${CROSS}${NC} Invalid Telegram Bot Token format"
             exit 1
@@ -102,7 +90,6 @@ configure_backup() {
 
         sed -i "s|POSTGRES_USER=\"[^\"]*\"|POSTGRES_USER=\"$POSTGRES_USER\"|" "$0"
         sed -i "s|POSTGRES_PASSWORD=\"[^\"]*\"|POSTGRES_PASSWORD=\"$POSTGRES_PASSWORD\"|" "$0"
-        sed -i "s|SHOP_MYSQL_USER=\"[^\"]*\"|SHOP_MYSQL_USER=\"$SHOP_MYSQL_USER\"|" "$0"
         sed -i "s|SHOP_MYSQL_PASSWORD=\"[^\"]*\"|SHOP_MYSQL_PASSWORD=\"$SHOP_MYSQL_PASSWORD\"|" "$0"
         sed -i "s|TG_BOT_TOKEN=\"[^\"]*\"|TG_BOT_TOKEN=\"$TG_BOT_TOKEN\"|" "$0"
         sed -i "s|TG_CHAT_ID=\"[^\"]*\"|TG_CHAT_ID=\"$TG_CHAT_ID\"|" "$0"
@@ -128,16 +115,6 @@ validate_configuration() {
 
     if [ -z "$POSTGRES_PASSWORD" ]; then
         echo -e "${RED}${CROSS}${NC} Remnawave PostgreSQL password cannot be empty"
-        exit 1
-    fi
-
-    if [ -z "$SHOP_MYSQL_USER" ]; then
-        echo -e "${RED}${CROSS}${NC} Shop MySQL username cannot be empty"
-        exit 1
-    fi
-
-    if [ -z "$SHOP_MYSQL_PASSWORD" ]; then
-        echo -e "${RED}${CROSS}${NC} Shop MySQL password cannot be empty"
         exit 1
     fi
 
@@ -198,10 +175,7 @@ check_containers() {
     # Check for shop database container
     SHOP_CONTAINER_NAME=""
     
-    if docker ps -q -f name="marzban-shop-db-1" | grep -q .; then
-        SHOP_CONTAINER_NAME="marzban-shop-db-1"
-        echo -e "${GRAY}  ${ARROW}${NC} Marzban shop database container detected"
-    elif docker ps -q -f name="shop-bot-db-1" | grep -q .; then
+    if docker ps -q -f name="shop-bot-db-1" | grep -q .; then
         SHOP_CONTAINER_NAME="shop-bot-db-1"
         echo -e "${GRAY}  ${ARROW}${NC} Shop bot database container detected"
     else
@@ -235,9 +209,9 @@ create_database_backup() {
         exit 1
     fi
 
-    # Backup shop database from shop container if exists
+    # Backup shop database from shop container if exists and password provided
     SHOP_DUMPED=false
-    if [ -n "$SHOP_CONTAINER_NAME" ]; then
+    if [ -n "$SHOP_CONTAINER_NAME" ] && [ -n "$SHOP_MYSQL_PASSWORD" ]; then
         databases_shop=$(docker exec $SHOP_CONTAINER_NAME mariadb -h 127.0.0.1 --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" -e "SHOW DATABASES;" 2>/dev/null | tr -d "| " | grep -v Database)
         if [ $? -eq 0 ]; then
             for db in $databases_shop; do
@@ -289,8 +263,6 @@ create_archive() {
         "/var/lib/remnawave/db-backup/shop.sql"
         "/root/shop-bot/.env"
         "/root/shop-bot/goods.json"
-        "/root/marzban-shop/.env"
-        "/root/marzban-shop/goods.json"
     )
 
     # Check required files
