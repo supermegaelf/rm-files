@@ -41,7 +41,7 @@ configure_backup() {
     echo -e "${PURPLE}==========================${NC}"
     echo
 
-    if [ -z "$POSTGRES_USER" ] || [ -z "$POSTGRES_PASSWORD" ] || [ -z "$SHOP_MYSQL_USER" ] || [ -z "$SHOP_MYSQL_PASSWORD" ] || [ -z "$TG_BOT_TOKEN" ] || [ -z "$TG_CHAT_ID" ]; then
+    if [ -t 0 ] && ([ -z "$POSTGRES_PASSWORD" ] || [ -z "$TG_BOT_TOKEN" ] || [ -z "$TG_CHAT_ID" ]); then
         
         # Remnawave database credentials
         echo -ne "${CYAN}Remnawave PostgreSQL username (default is remnawave, press Enter to use default): ${NC}"
