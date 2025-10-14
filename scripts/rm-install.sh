@@ -1396,25 +1396,16 @@ randomhtml() {
     cd /opt/ || { echo "Error unpacking archive"; exit 1; }
 
     rm -f main.zip 2>/dev/null
-    rm -rf simple-web-templates-main/ sni-templates-main/ 2>/dev/null
+    rm -rf simple-web-templates-main/ 2>/dev/null
 
     echo -e "${GRAY}  ${ARROW}${NC} Installing random template for camouflage site"
     echo -e "${GRAY}  ${ARROW}${NC} Downloading and extracting template"
 
     template_urls=(
-        "https://github.com/eGamesAPI/simple-web-templates/archive/refs/heads/main.zip"
-        "https://github.com/SmallPoppa/sni-templates/archive/refs/heads/main.zip"
+        "https://github.com/supermegaelf/simple-web-templates/archive/refs/heads/main.zip"
     )
 
-    if [ -z "$template_source" ]; then
-        selected_url=${template_urls[$RANDOM % ${#template_urls[@]}]}
-    else
-        if [ "$template_source" = "simple" ]; then
-            selected_url=${template_urls[0]}
-        else
-            selected_url=${template_urls[1]}
-        fi
-    fi
+    selected_url=${template_urls[0]}
 
     while ! wget -q --timeout=30 --tries=10 --retry-connrefused "$selected_url"; do
         echo "Download failed, retrying..."
@@ -1424,25 +1415,12 @@ randomhtml() {
     unzip -o main.zip &>/dev/null || { echo "Error unpacking archive"; exit 0; }
     rm -f main.zip
 
-    if [[ "$selected_url" == *"eGamesAPI"* ]]; then
-        cd simple-web-templates-main/ || { echo "Error unpacking archive"; exit 0; }
-        rm -rf assets ".gitattributes" "README.md" "_config.yml" 2>/dev/null
-    else
-        cd sni-templates-main/ || { echo "Error unpacking archive"; exit 0; }
-        rm -rf assets "README.md" "index.html" 2>/dev/null
-    fi
+    cd simple-web-templates-main/ || { echo "Error unpacking archive"; exit 0; }
+    rm -rf assets ".gitattributes" "README.md" "_config.yml" 2>/dev/null
 
     mapfile -t templates < <(find . -maxdepth 1 -type d -not -path . | sed 's|./||')
 
     RandomHTML="${templates[$RANDOM % ${#templates[@]}]}"
-
-    if [[ "$selected_url" == *"SmallPoppa"* && "$RandomHTML" == "503 error pages" ]]; then
-        cd "$RandomHTML" || { echo "Error unpacking archive"; exit 0; }
-        versions=("v1" "v2")
-        RandomVersion="${versions[$RANDOM % ${#versions[@]}]}"
-        RandomHTML="$RandomHTML/$RandomVersion"
-        cd ..
-    fi
 
     local random_meta_id=$(openssl rand -hex 16)
     local random_comment=$(openssl rand -hex 8)
@@ -1496,7 +1474,7 @@ randomhtml() {
     fi
 
     cd /opt/
-    rm -rf simple-web-templates-main/ sni-templates-main/
+    rm -rf simple-web-templates-main/
 }
 
 #==============================
