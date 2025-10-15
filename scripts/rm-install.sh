@@ -22,6 +22,10 @@ readonly ARROW="→"
 
 DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 
+SCRIPT_VERSION="1.0.0"
+PANEL_VERSION="2.1.19"
+NODE_VERSION="2.1.7"
+
 #======================
 # VALIDATION FUNCTIONS
 #======================
@@ -72,6 +76,10 @@ show_main_menu() {
     echo -e "${PURPLE}==================${NC}"
     echo -e "${WHITE}REMNAWAVE MANAGER${NC}"
     echo -e "${PURPLE}==================${NC}"
+    echo
+    echo -e "${CYAN}Script version: ${WHITE}${SCRIPT_VERSION}${NC}"
+    echo -e "${CYAN}Panel version: ${WHITE}${PANEL_VERSION}${NC}"
+    echo -e "${CYAN}Node version: ${WHITE}${NODE_VERSION}${NC}"
     echo
     echo -e "${CYAN}Please select installation type:${NC}"
     echo
@@ -1682,7 +1690,7 @@ services:
         max-file: '5'
 
   remnawave:
-    image: remnawave/backend:latest
+    image: remnawave/backend:2.1.19
     container_name: remnawave
     hostname: remnawave
     restart: always
@@ -2019,7 +2027,7 @@ services:
         max-file: '5'
 
   remnanode:
-    image: remnawave/node:latest
+    image: remnawave/node:2.1.7
     container_name: remnanode
     hostname: remnanode
     restart: always
