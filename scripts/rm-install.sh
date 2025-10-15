@@ -1963,7 +1963,7 @@ EOL
         echo "" >> /opt/remnawave/remnawave-vars.sh
         echo "# API Token for Bot" >> /opt/remnawave/remnawave-vars.sh
         echo "export REMNAWAVE_TOKEN=\"$bot_token\"" >> /opt/remnawave/remnawave-vars.sh
-        echo -e "${GREEN}${CHECK}${NC} Bot API token created"
+        echo -e "${GRAY}  ${ARROW}${NC} Bot API token created"
     else
         echo -e "${RED}${CROSS}${NC} Failed to create bot token"
     fi
