@@ -1628,7 +1628,7 @@ METRICS_PASS=$METRICS_PASS
 ### WEBHOOK ###
 WEBHOOK_ENABLED=false
 ### Only https:// is allowed
-WEBHOOK_URL=https://webhook.site/1234567890
+WEBHOOK_URL=https://bot.$PANEL_DOMAIN/notify_user
 ### This secret is used to sign the webhook payload, must be exact 64 characters. Only a-z, 0-9, A-Z are allowed.
 WEBHOOK_SECRET_HEADER=$WEBHOOK_SECRET_HEADER
 
