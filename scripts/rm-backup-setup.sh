@@ -47,7 +47,7 @@ prepare_environment() {
             echo -e "${RED}${CROSS}${NC} Failed to create directory $SCRIPT_DIR"
             exit 1
         fi
-        echo -e "${CYAN}${INFO}${NC} Directory created successfully"
+        echo -e "${GRAY}  ${ARROW}${NC} Creating directory"
     else
         echo -e "${YELLOW}${WARNING}${NC} Directory $SCRIPT_DIR already exists"
     fi
