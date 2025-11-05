@@ -464,10 +464,10 @@ install_system_packages() {
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Configuring TCP optimizations (BBR)"
-    if ! grep -q "net.core.default_qdisc = fq" /etc/sysctl.conf; then
+    if ! grep -qE '^\s*net\.core\.default_qdisc\s*=\s*fq' /etc/sysctl.conf; then
         echo "net.core.default_qdisc = fq" >> /etc/sysctl.conf
     fi
-    if ! grep -q "net.ipv4.tcp_congestion_control = bbr" /etc/sysctl.conf; then
+    if ! grep -qE '^\s*net\.ipv4\.tcp_congestion_control\s*=\s*bbr' /etc/sysctl.conf; then
         echo "net.ipv4.tcp_congestion_control = bbr" >> /etc/sysctl.conf
     fi
     sysctl -p >/dev/null
