@@ -23,8 +23,8 @@ readonly ARROW="→"
 DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 
 SCRIPT_VERSION="1.0.0"
-PANEL_VERSION="2.1.19"
-NODE_VERSION="2.1.7"
+PANEL_VERSION="2.2.6"
+NODE_VERSION="2.2.3"
 
 #======================
 # VALIDATION FUNCTIONS
@@ -1690,7 +1690,7 @@ services:
         max-file: '5'
 
   remnawave:
-    image: remnawave/backend:2.1.19
+    image: remnawave/backend:2.2.6
     container_name: remnawave
     hostname: remnawave
     restart: always
@@ -1988,7 +1988,7 @@ create_node() {
 APP_PORT=2222
 
 ### XRAY ###
-$(echo -e "$CERTIFICATE" | sed 's/\\n$//')
+SECRET_KEY=$(echo -e "$CERTIFICATE" | sed 's/\\n$//')
 EOL
 
     local SELFSTEAL_BASE_DOMAIN=$(extract_domain "$SELFSTEAL_DOMAIN")
@@ -2025,7 +2025,7 @@ services:
         max-file: '5'
 
   remnanode:
-    image: remnawave/node:2.1.7
+    image: remnawave/node:2.2.3
     container_name: remnanode
     hostname: remnanode
     restart: always
