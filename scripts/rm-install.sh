@@ -509,7 +509,9 @@ check_domain() {
             printf "${YELLOW}Ensure that the domain %s is correctly configured and points to this server (%s).${NC}\n" "$domain" "$server_ip"
             echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
             read confirm
-            if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+            if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+                return 0
+            else
                 return 2
             fi
         fi
@@ -563,7 +565,7 @@ check_domain() {
                 echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
                 read confirm
                 if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-                    return 1
+                    return 0
                 else
                     return 2
                 fi
@@ -580,7 +582,7 @@ check_domain() {
             read confirm
             echo
             if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-                return 1
+                return 0
             else
                 return 2
             fi
