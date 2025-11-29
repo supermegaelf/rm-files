@@ -1063,7 +1063,7 @@ get_public_key() {
     local env_node_file="$target_dir/.env-node"
     cat > "$env_node_file" <<EOL
 ### APP ###
-APP_PORT=2222
+NODE_PORT=2222
 
 ### XRAY ###
 SSL_CERT="$pubkey"
@@ -1985,7 +1985,7 @@ create_node() {
 
     cat > .env-node <<EOL
 ### APP ###
-APP_PORT=2222
+NODE_PORT=2222
 
 ### XRAY ###
 SECRET_KEY=$(echo -e "$CERTIFICATE" | sed 's/\\n$//')
