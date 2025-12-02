@@ -1613,7 +1613,7 @@ FRONT_END_DOMAIN=$PANEL_DOMAIN
 ### DOMAIN, WITHOUT HTTP/HTTPS, DO NOT ADD / AT THE END ###
 ### Used in "profile-web-page-url" response header and in UI/API ###
 ### Review documentation: https://remna.st/docs/install/environment-variables#domains
-SUB_PUBLIC_DOMAIN=$SUB_DOMAIN
+SUB_PUBLIC_DOMAIN=$SUB_DOMAIN/sub
 
 ### If CUSTOM_SUB_PREFIX is set in @remnawave/subscription-page, append the same path to SUB_PUBLIC_DOMAIN. Example: SUB_PUBLIC_DOMAIN=sub-page.example.com/sub ###
 
@@ -1658,6 +1658,18 @@ CLOUDFLARE_TOKEN=ey...
 POSTGRES_USER=remnawave
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 POSTGRES_DB=remnawave
+
+### SUBSCRIPTION PAGE ###
+### For remnawave-subscription-page container ###
+# NOT USED BY THE APP ITSELF
+SUBSCRIPTION_APP_PORT=3010
+SUBSCRIPTION_REMNAWAVE_PANEL_URL=http://remnawave:3000
+SUBSCRIPTION_META_TITLE=Remnawave Subscription
+SUBSCRIPTION_META_DESCRIPTION=Subscription page description
+SUBSCRIPTION_MARZBAN_LEGACY_LINK_ENABLED=true
+SUBSCRIPTION_MARZBAN_LEGACY_SECRET_KEY=
+SUBSCRIPTION_REMNAWAVE_API_TOKEN=
+SUBSCRIPTION_CUSTOM_SUB_PREFIX=sub
 EOL
 
     cat > docker-compose.yml <<EOF
@@ -1703,11 +1715,11 @@ services:
     networks:
       - remnawave-network
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:\${METRICS_PORT:-3001}/health']
-      interval: 30s
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 30s
+      retries: 20
+      start_period: 20s
     depends_on:
       remnawave-db:
         condition: service_healthy
@@ -1766,10 +1778,14 @@ services:
     hostname: remnawave-subscription-page
     restart: always
     environment:
-      - REMNAWAVE_PANEL_URL=http://remnawave:3000
-      - APP_PORT=3010
-      - META_TITLE=Remnawave Subscription
-      - META_DESCRIPTION=page
+      - APP_PORT=\${SUBSCRIPTION_APP_PORT}
+      - REMNAWAVE_PANEL_URL=\${SUBSCRIPTION_REMNAWAVE_PANEL_URL}
+      - META_TITLE=\${SUBSCRIPTION_META_TITLE}
+      - META_DESCRIPTION=\${SUBSCRIPTION_META_DESCRIPTION}
+      - MARZBAN_LEGACY_LINK_ENABLED=\${SUBSCRIPTION_MARZBAN_LEGACY_LINK_ENABLED}
+      - MARZBAN_LEGACY_SECRET_KEY=\${SUBSCRIPTION_MARZBAN_LEGACY_SECRET_KEY}
+      - REMNAWAVE_API_TOKEN=\${SUBSCRIPTION_REMNAWAVE_API_TOKEN}
+      - CUSTOM_SUB_PREFIX=\${SUBSCRIPTION_CUSTOM_SUB_PREFIX}
     ports:
       - '127.0.0.1:3010:3010'
     networks:
@@ -1777,6 +1793,9 @@ services:
     volumes:
       - ./index.html:/opt/app/frontend/index.html
       - ./assets:/opt/app/frontend/assets
+    depends_on:
+      remnawave:
+        condition: service_healthy
     logging:
       driver: 'json-file'
       options:
@@ -1977,7 +1996,7 @@ server {
         text/plain
         text/xml;
 
-    location / {
+    location /sub {
         proxy_http_version 1.1;
         proxy_pass http://127.0.0.1:3010;
         proxy_set_header Host \$host;
