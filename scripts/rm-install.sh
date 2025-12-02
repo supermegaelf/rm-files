@@ -1882,8 +1882,6 @@ server {
     ssl_certificate "/etc/nginx/ssl/$PANEL_CERT_DOMAIN/fullchain.pem";
     ssl_certificate_key "/etc/nginx/ssl/$PANEL_CERT_DOMAIN/privkey.pem";
     ssl_trusted_certificate "/etc/nginx/ssl/$PANEL_CERT_DOMAIN/fullchain.pem";
-    ssl_stapling on;
-    ssl_stapling_verify on;
 
     gzip on;
     gzip_vary on;
@@ -1965,8 +1963,6 @@ server {
     ssl_certificate "/etc/nginx/ssl/$SUB_CERT_DOMAIN/fullchain.pem";
     ssl_certificate_key "/etc/nginx/ssl/$SUB_CERT_DOMAIN/privkey.pem";
     ssl_trusted_certificate "/etc/nginx/ssl/$SUB_CERT_DOMAIN/fullchain.pem";
-    ssl_stapling on;
-    ssl_stapling_verify on;
 
     gzip on;
     gzip_vary on;
