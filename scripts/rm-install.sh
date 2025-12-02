@@ -1613,7 +1613,7 @@ FRONT_END_DOMAIN=$PANEL_DOMAIN
 ### DOMAIN, WITHOUT HTTP/HTTPS, DO NOT ADD / AT THE END ###
 ### Used in "profile-web-page-url" response header and in UI/API ###
 ### Review documentation: https://remna.st/docs/install/environment-variables#domains
-SUB_PUBLIC_DOMAIN=$SUB_DOMAIN
+SUB_PUBLIC_DOMAIN=$SUB_DOMAIN/sub
 
 ### If CUSTOM_SUB_PREFIX is set in @remnawave/subscription-page, append the same path to SUB_PUBLIC_DOMAIN. Example: SUB_PUBLIC_DOMAIN=sub-page.example.com/sub ###
 
@@ -1658,6 +1658,18 @@ CLOUDFLARE_TOKEN=ey...
 POSTGRES_USER=remnawave
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
 POSTGRES_DB=remnawave
+
+### SUBSCRIPTION PAGE ###
+### For remnawave-subscription-page container ###
+# NOT USED BY THE APP ITSELF
+SUBSCRIPTION_APP_PORT=3010
+SUBSCRIPTION_REMNAWAVE_PANEL_URL=http://remnawave:3000
+SUBSCRIPTION_META_TITLE=Remnawave Subscription
+SUBSCRIPTION_META_DESCRIPTION=Subscription page description
+SUBSCRIPTION_MARZBAN_LEGACY_LINK_ENABLED=false
+SUBSCRIPTION_MARZBAN_LEGACY_SECRET_KEY=
+SUBSCRIPTION_REMNAWAVE_API_TOKEN=
+SUBSCRIPTION_CUSTOM_SUB_PREFIX=sub
 EOL
 
     cat > docker-compose.yml <<EOF
@@ -1703,11 +1715,11 @@ services:
     networks:
       - remnawave-network
     healthcheck:
-      test: ['CMD-SHELL', 'curl -f http://localhost:\${METRICS_PORT:-3001}/health']
-      interval: 30s
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 30s
+      retries: 20
+      start_period: 20s
     depends_on:
       remnawave-db:
         condition: service_healthy
@@ -1766,10 +1778,14 @@ services:
     hostname: remnawave-subscription-page
     restart: always
     environment:
-      - REMNAWAVE_PANEL_URL=http://remnawave:3000
-      - APP_PORT=3010
-      - META_TITLE=Remnawave Subscription
-      - META_DESCRIPTION=page
+      - APP_PORT=\${SUBSCRIPTION_APP_PORT}
+      - REMNAWAVE_PANEL_URL=\${SUBSCRIPTION_REMNAWAVE_PANEL_URL}
+      - META_TITLE=\${SUBSCRIPTION_META_TITLE}
+      - META_DESCRIPTION=\${SUBSCRIPTION_META_DESCRIPTION}
+      - MARZBAN_LEGACY_LINK_ENABLED=\${SUBSCRIPTION_MARZBAN_LEGACY_LINK_ENABLED}
+      - MARZBAN_LEGACY_SECRET_KEY=\${SUBSCRIPTION_MARZBAN_LEGACY_SECRET_KEY}
+      - REMNAWAVE_API_TOKEN=\${SUBSCRIPTION_REMNAWAVE_API_TOKEN}
+      - CUSTOM_SUB_PREFIX=\${SUBSCRIPTION_CUSTOM_SUB_PREFIX}
     ports:
       - '127.0.0.1:3010:3010'
     networks:
@@ -1777,6 +1793,9 @@ services:
     volumes:
       - ./index.html:/opt/app/frontend/index.html
       - ./assets:/opt/app/frontend/assets
+    depends_on:
+      remnawave:
+        condition: service_healthy
     logging:
       driver: 'json-file'
       options:
@@ -1850,6 +1869,10 @@ ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDS
 ssl_prefer_server_ciphers on;
 ssl_session_timeout 1d;
 ssl_session_cache shared:MozSSL:10m;
+ssl_session_tickets off;
+
+resolver 1.1.1.1 1.0.0.1 8.8.8.8 8.8.4.4 208.67.222.222 208.67.220.220 valid=60s;
+resolver_timeout 2s;
 
 server {
     server_name $PANEL_DOMAIN;
@@ -1859,8 +1882,56 @@ server {
     ssl_certificate "/etc/nginx/ssl/$PANEL_CERT_DOMAIN/fullchain.pem";
     ssl_certificate_key "/etc/nginx/ssl/$PANEL_CERT_DOMAIN/privkey.pem";
     ssl_trusted_certificate "/etc/nginx/ssl/$PANEL_CERT_DOMAIN/fullchain.pem";
+    ssl_stapling on;
+    ssl_stapling_verify on;
+
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_buffers 16 8k;
+    gzip_http_version 1.1;
+    gzip_min_length 256;
+    gzip_types
+        application/atom+xml
+        application/geo+json
+        application/javascript
+        application/x-javascript
+        application/json
+        application/ld+json
+        application/manifest+json
+        application/rdf+xml
+        application/rss+xml
+        application/xhtml+xml
+        application/xml
+        font/eot
+        font/otf
+        font/ttf
+        image/svg+xml
+        text/css
+        text/javascript
+        text/plain
+        text/xml;
 
     add_header Set-Cookie \$set_cookie_header;
+
+    location /api/ {
+        proxy_http_version 1.1;
+        proxy_pass http://remnawave;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Host \$host;
+        proxy_set_header X-Forwarded-Port \$server_port;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        proxy_buffering on;
+        proxy_buffer_size 16k;
+        proxy_buffers 4 32k;
+        proxy_busy_buffers_size 64k;
+    }
 
     location / {
         if (\$authorized = 0) {
@@ -1876,8 +1947,13 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
         proxy_set_header X-Forwarded-Host \$host;
         proxy_set_header X-Forwarded-Port \$server_port;
+        proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
+        proxy_buffering on;
+        proxy_buffer_size 16k;
+        proxy_buffers 4 32k;
+        proxy_busy_buffers_size 64k;
     }
 }
 
@@ -1889,20 +1965,57 @@ server {
     ssl_certificate "/etc/nginx/ssl/$SUB_CERT_DOMAIN/fullchain.pem";
     ssl_certificate_key "/etc/nginx/ssl/$SUB_CERT_DOMAIN/privkey.pem";
     ssl_trusted_certificate "/etc/nginx/ssl/$SUB_CERT_DOMAIN/fullchain.pem";
+    ssl_stapling on;
+    ssl_stapling_verify on;
 
-    location / {
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_buffers 16 8k;
+    gzip_http_version 1.1;
+    gzip_min_length 256;
+    gzip_types
+        application/atom+xml
+        application/geo+json
+        application/javascript
+        application/x-javascript
+        application/json
+        application/ld+json
+        application/manifest+json
+        application/rdf+xml
+        application/rss+xml
+        application/xhtml+xml
+        application/xml
+        font/eot
+        font/otf
+        font/ttf
+        image/svg+xml
+        text/css
+        text/javascript
+        text/plain
+        text/xml;
+
+    location /sub {
         proxy_http_version 1.1;
-        proxy_pass http://json;
+        proxy_pass http://127.0.0.1:3010;
         proxy_set_header Host \$host;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection \$connection_upgrade;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Ssl on;
         proxy_set_header X-Forwarded-Host \$host;
         proxy_set_header X-Forwarded-Port \$server_port;
+        proxy_set_header X-Forwarded-Scheme https;
+        proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
+        proxy_buffering on;
+        proxy_buffer_size 16k;
+        proxy_buffers 4 32k;
+        proxy_busy_buffers_size 64k;
         proxy_intercept_errors on;
         error_page 400 404 500 502 @redirect;
     }
