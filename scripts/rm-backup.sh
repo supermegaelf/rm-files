@@ -311,15 +311,19 @@ send_to_telegram() {
     echo -e "${GRAY}  ${ARROW}${NC} Uploading backup file"
     echo -e "${GRAY}  ${ARROW}${NC} Verifying upload status"
 
-    curl -F chat_id="$TG_CHAT_ID" \
+    RESPONSE=$(curl -s -F chat_id="$TG_CHAT_ID" \
          -F document=@"$BACKUP_FILE" \
-         https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument > /dev/null 2>&1
+         https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument)
 
-    if [ $? -eq 0 ]; then
+    if echo "$RESPONSE" | grep -q '"ok":true'; then
         echo -e "${GREEN}${CHECK}${NC} Backup successfully sent to Telegram"
         rm -rf /var/lib/remnawave/db-backup/* > /dev/null 2>&1
     else
         echo -e "${RED}${CROSS}${NC} Failed to send backup to Telegram"
+        ERROR_DESC=$(echo "$RESPONSE" | grep -o '"description":"[^"]*"' | cut -d'"' -f4)
+        if [ -n "$ERROR_DESC" ]; then
+            echo -e "${RED}${WARNING}${NC} Error: $ERROR_DESC"
+        fi
     fi
 }
 
