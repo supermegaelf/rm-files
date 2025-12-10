@@ -23,8 +23,8 @@ readonly ARROW="→"
 DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 
 SCRIPT_VERSION="1.0.0"
-PANEL_VERSION="2.2.6"
-NODE_VERSION="2.2.3"
+PANEL_VERSION="2.3.2"
+NODE_VERSION="2.3.1"
 
 #======================
 # VALIDATION FUNCTIONS
@@ -1704,7 +1704,7 @@ services:
         max-file: '5'
 
   remnawave:
-    image: remnawave/backend:2.2.6
+    image: remnawave/backend:2.3.2
     container_name: remnawave
     hostname: remnawave
     restart: always
@@ -2136,7 +2136,7 @@ services:
         max-file: '5'
 
   remnanode:
-    image: remnawave/node:2.2.3
+    image: remnawave/node:2.3.1
     container_name: remnanode
     hostname: remnanode
     restart: always
