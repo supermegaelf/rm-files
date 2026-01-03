@@ -817,7 +817,11 @@ fix_letsencrypt_structure() {
         sed -i "s|^privkey =.*|privkey = $privkey_path|" "$renewal_conf"
     fi
 
-    local expected_hook="renew_hook = sh -c 'cd /opt/remnawave && docker compose down remnawave-nginx && docker compose up -d remnawave-nginx && docker compose exec remnawave-nginx nginx -s reload'"
+    local target_dir="/opt/remnawave"
+    if [ -d "/opt/remnanode" ]; then
+        target_dir="/opt/remnanode"
+    fi
+    local expected_hook="renew_hook = sh -c 'cd $target_dir && docker compose down remnawave-nginx && docker compose up -d remnawave-nginx && docker compose exec remnawave-nginx nginx -s reload'"
     sed -i '/^renew_hook/d' "$renewal_conf"
     echo "$expected_hook" >> "$renewal_conf"
 
@@ -830,7 +834,7 @@ handle_certificates() {
     local -n domains_to_check_ref=$1
     local cert_method="$2"
     local letsencrypt_email="$3"
-    local target_dir="/opt/remnawave"
+    local target_dir="${4:-/opt/remnawave}"
 
     declare -A unique_domains
     local need_certificates=false
@@ -916,7 +920,7 @@ handle_certificates() {
 
     for domain in "${!unique_domains[@]}"; do
         if [ -f "/etc/letsencrypt/renewal/$domain.conf" ]; then
-            desired_hook="renew_hook = sh -c 'cd /opt/remnawave && docker compose down remnawave-nginx && docker compose up -d remnawave-nginx'"
+            desired_hook="renew_hook = sh -c 'cd $target_dir && docker compose down remnawave-nginx && docker compose up -d remnawave-nginx'"
             if ! grep -q "renew_hook" "/etc/letsencrypt/renewal/$domain.conf"; then
                 echo "$desired_hook" >> "/etc/letsencrypt/renewal/$domain.conf"
             elif ! grep -Fx "$desired_hook" "/etc/letsencrypt/renewal/$domain.conf"; then
@@ -2085,7 +2089,7 @@ EOL
 #=============================
 
 create_node() {
-    mkdir -p /opt/remnawave && cd /opt/remnawave
+    mkdir -p /opt/remnanode && cd /opt/remnanode
 
     check_domain "$SELFSTEAL_DOMAIN" true false
     local domain_check_result=$?
@@ -2108,7 +2112,7 @@ EOL
 
     declare -A domains_to_check
     domains_to_check["$SELFSTEAL_DOMAIN"]=1
-    handle_certificates domains_to_check "$CERT_METHOD" "$LETSENCRYPT_EMAIL"
+    handle_certificates domains_to_check "$CERT_METHOD" "$LETSENCRYPT_EMAIL" "/opt/remnanode"
 
     NODE_CERT_DOMAIN=$(extract_domain "$SELFSTEAL_DOMAIN")
 
@@ -2142,7 +2146,7 @@ services:
     restart: always
     network_mode: host
     env_file:
-      - path: /opt/remnawave/.env-node
+      - path: /opt/remnanode/.env-node
         required: false
     volumes:
       - /dev/shm:/dev/shm:rw
@@ -2162,7 +2166,7 @@ start_node_services() {
     echo -e "${CYAN}${INFO}${NC} Configuring Docker Compose..."
 
     echo -e "${GRAY}  ${ARROW}${NC} Configuring SSL and Unix socket"
-    cat > /opt/remnawave/nginx.conf <<EOL
+    cat > /opt/remnanode/nginx.conf <<EOL
 map \$http_upgrade \$connection_upgrade {
     default upgrade;
     ""      close;
@@ -2203,7 +2207,7 @@ EOL
 
     echo -e "${GRAY}  ${ARROW}${NC} Launching node services"
     sleep 3
-    cd /opt/remnawave
+    cd /opt/remnanode
     docker compose up -d > /dev/null 2>&1
     echo -e "${GREEN}${CHECK}${NC} Docker containers started successfully"
     echo
@@ -2297,7 +2301,7 @@ install_node() {
     set -e
     
     INSTALL_DIR="/opt"
-    APP_NAME="remnawave"
+    APP_NAME="remnanode"
     APP_DIR="$INSTALL_DIR/$APP_NAME"
     DATA_DIR="/var/lib/$APP_NAME"
     COMPOSE_FILE="$APP_DIR/docker-compose.yml"
@@ -2330,8 +2334,8 @@ install_node() {
     echo -e "${PURPLE}========================${NC}"
     echo
     echo -e "${CYAN}Useful Commands:${NC}"
-    echo -e "${WHITE}• Check logs: cd /opt/remnawave && docker compose logs -f${NC}"
-    echo -e "${WHITE}• Restart service: cd /opt/remnawave && docker compose restart${NC}"
+    echo -e "${WHITE}• Check logs: cd /opt/remnanode && docker compose logs -f${NC}"
+    echo -e "${WHITE}• Restart service: cd /opt/remnanode && docker compose restart${NC}"
     echo
 }
 
