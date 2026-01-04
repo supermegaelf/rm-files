@@ -25,6 +25,7 @@ DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 SCRIPT_VERSION="1.0.0"
 PANEL_VERSION="2.3.2"
 NODE_VERSION="2.3.1"
+SUBSCRIPTION_PAGE_VERSION="6.1.0"
 
 #======================
 # VALIDATION FUNCTIONS
@@ -80,6 +81,7 @@ show_main_menu() {
     echo -e "${CYAN}Script version: ${WHITE}${SCRIPT_VERSION}${NC}"
     echo -e "${CYAN}Panel version: ${WHITE}${PANEL_VERSION}${NC}"
     echo -e "${CYAN}Node version: ${WHITE}${NODE_VERSION}${NC}"
+    echo -e "${CYAN}Subscription page version: ${WHITE}${SUBSCRIPTION_PAGE_VERSION}${NC}"
     echo
     echo -e "${CYAN}Please select installation type:${NC}"
     echo
@@ -1708,7 +1710,7 @@ services:
         max-file: '5'
 
   remnawave:
-    image: remnawave/backend:2.3.2
+    image: remnawave/backend:${PANEL_VERSION}
     container_name: remnawave
     hostname: remnawave
     restart: always
@@ -1777,7 +1779,7 @@ services:
         max-file: '5'
 
   remnawave-subscription-page:
-    image: remnawave/subscription-page:latest
+    image: remnawave/subscription-page:${SUBSCRIPTION_PAGE_VERSION}
     container_name: remnawave-subscription-page
     hostname: remnawave-subscription-page
     restart: always
@@ -2140,7 +2142,7 @@ services:
         max-file: '5'
 
   remnanode:
-    image: remnawave/node:2.3.1
+    image: remnawave/node:${NODE_VERSION}
     container_name: remnanode
     hostname: remnanode
     restart: always
