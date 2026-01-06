@@ -26,6 +26,12 @@ readonly ARROW="→"
 PANEL_DOMAIN=""
 BASE_DOMAIN=""
 MONITOR_DOMAIN=""
+INSTALL_STEP=""
+HUB_STARTED=false
+AGENT_STARTED=false
+FIREWALL_CONFIGURED=false
+NGINX_BACKUPED=false
+NGINX_MODIFIED=false
 
 #======================
 # VALIDATION FUNCTIONS
@@ -190,7 +196,16 @@ start_hub_container() {
     echo -e "${GRAY}  ${ARROW}${NC} Pulling latest image"
     echo -e "${GRAY}  ${ARROW}${NC} Starting service"
     
-    cd /opt/beszel
+    if [ ! -d "/opt/beszel" ]; then
+        echo -e "${RED}${CROSS}${NC} Directory /opt/beszel does not exist"
+        exit 1
+    fi
+    
+    cd /opt/beszel || {
+        echo -e "${RED}${CROSS}${NC} Failed to change directory to /opt/beszel"
+        exit 1
+    }
+    
     docker compose up -d > /dev/null 2>&1
     
     if [ $? -eq 0 ]; then
@@ -251,7 +266,16 @@ start_agent_container() {
     echo -e "${GRAY}  ${ARROW}${NC} Pulling latest image"
     echo -e "${GRAY}  ${ARROW}${NC} Starting service"
     
-    cd /opt/beszel-agent
+    if [ ! -d "/opt/beszel-agent" ]; then
+        echo -e "${RED}${CROSS}${NC} Directory /opt/beszel-agent does not exist"
+        exit 1
+    fi
+    
+    cd /opt/beszel-agent || {
+        echo -e "${RED}${CROSS}${NC} Failed to change directory to /opt/beszel-agent"
+        exit 1
+    }
+    
     docker compose up -d > /dev/null 2>&1
     
     if [ $? -eq 0 ]; then
@@ -313,14 +337,22 @@ add_beszel_to_nginx() {
     echo
 
     echo -e "${CYAN}${INFO}${NC} Adding Beszel configuration to Nginx..."
-    echo -e "${GRAY}  ${ARROW}${NC} Extracting base domain"
-    
-    local BASE_DOMAIN=$(echo "$MONITOR_DOMAIN" | awk -F'.' '{if (NF > 2) {print $(NF-1)"."$NF} else {print $0}}')
-    
     echo -e "${GRAY}  ${ARROW}${NC} Preparing configuration"
+    
+    local total_lines=$(wc -l < /opt/remnawave/nginx.conf)
+    if [ "$total_lines" -lt 6 ]; then
+        echo -e "${RED}${CROSS}${NC} Nginx config file is too small ($total_lines lines), cannot safely remove last 5 lines"
+        exit 1
+    fi
 
-    head -n -5 /opt/remnawave/nginx.conf > /opt/remnawave/nginx.conf.tmp
-    mv /opt/remnawave/nginx.conf.tmp /opt/remnawave/nginx.conf
+    head -n -5 /opt/remnawave/nginx.conf > /opt/remnawave/nginx.conf.tmp || {
+        echo -e "${RED}${CROSS}${NC} Failed to process nginx config"
+        exit 1
+    }
+    mv /opt/remnawave/nginx.conf.tmp /opt/remnawave/nginx.conf || {
+        echo -e "${RED}${CROSS}${NC} Failed to update nginx config"
+        exit 1
+    }
     
     echo -e "${GRAY}  ${ARROW}${NC} Inserting Beszel server block"
     cat >> /opt/remnawave/nginx.conf << EOF
@@ -373,9 +405,32 @@ restart_nginx_container() {
     echo
 
     echo -e "${CYAN}${INFO}${NC} Restarting Nginx container..."
+    echo -e "${GRAY}  ${ARROW}${NC} Validating nginx configuration"
+    
+    if docker ps --format '{{.Names}}' | grep -q "^remnawave-nginx$"; then
+        if ! docker exec remnawave-nginx nginx -t 2>&1 | grep -q "syntax is ok"; then
+            echo -e "${RED}${CROSS}${NC} Nginx config syntax error"
+            docker exec remnawave-nginx nginx -t 2>&1 | tail -5
+            echo -e "${YELLOW}${WARNING}${NC} Restoring backup configuration"
+            if [ -f "/opt/remnawave/nginx.conf.backup" ]; then
+                mv /opt/remnawave/nginx.conf.backup /opt/remnawave/nginx.conf
+                echo -e "${GREEN}${CHECK}${NC} Backup configuration restored"
+            fi
+            exit 1
+        fi
+    fi
+    
     echo -e "${GRAY}  ${ARROW}${NC} Navigating to Remnawave directory"
     
-    cd /opt/remnawave
+    if [ ! -d "/opt/remnawave" ]; then
+        echo -e "${RED}${CROSS}${NC} Directory /opt/remnawave does not exist"
+        exit 1
+    fi
+    
+    cd /opt/remnawave || {
+        echo -e "${RED}${CROSS}${NC} Failed to change directory to /opt/remnawave"
+        exit 1
+    }
     
     echo -e "${GRAY}  ${ARROW}${NC} Restarting remnawave-nginx service"
     docker compose restart remnawave-nginx > /dev/null 2>&1
@@ -402,8 +457,10 @@ restore_nginx_config() {
         mv /opt/remnawave/nginx.conf.backup /opt/remnawave/nginx.conf
         
         echo -e "${GRAY}  ${ARROW}${NC} Restarting Nginx container"
-        cd /opt/remnawave
-        docker compose restart remnawave-nginx > /dev/null 2>&1
+        if [ -d "/opt/remnawave" ]; then
+            cd /opt/remnawave
+            docker compose restart remnawave-nginx > /dev/null 2>&1 || true
+        fi
         
         echo -e "${GREEN}${CHECK}${NC} Nginx configuration restored!"
     else
@@ -481,11 +538,61 @@ display_installation_completion() {
     echo -e "${WHITE}Name: Panel${NC}"
     echo -e "${WHITE}Host/IP: 127.0.0.1${NC}"
     echo
-    echo -e "${WHITE}3. Click \"Copy docker compose\", open \"docker-compose\" and insert \"PUBLIC_KEY\" and \"TOKEN\":${NC}"
+    echo -e "${WHITE}3. Click \"Copy docker compose\", open \"docker-compose\" using the command below, and replace the content:${NC}"
     echo -e "${WHITE}nano /opt/beszel-agent/docker-compose.yml${NC}"
     echo
     echo -e "${WHITE}4. Run:${NC}"
     echo -e "${WHITE}cd /opt/beszel-agent && docker compose down && docker compose up -d${NC}"
+}
+
+#============================
+# ROLLBACK FUNCTION
+#============================
+
+# Rollback installation on error
+rollback_installation() {
+    echo
+    echo -e "${RED}${CROSS}${NC} Installation failed at step: $INSTALL_STEP"
+    echo -e "${YELLOW}${WARNING}${NC} Starting rollback..."
+    echo
+    
+    if [ "$NGINX_MODIFIED" = "true" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Restoring nginx configuration"
+        if [ -f "/opt/remnawave/nginx.conf.backup" ]; then
+            mv /opt/remnawave/nginx.conf.backup /opt/remnawave/nginx.conf
+            if [ -d "/opt/remnawave" ]; then
+                cd /opt/remnawave
+                docker compose restart remnawave-nginx > /dev/null 2>&1 || true
+            fi
+        fi
+    fi
+    
+    if [ "$FIREWALL_CONFIGURED" = "true" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Removing firewall rules"
+        ufw delete allow 8090/tcp > /dev/null 2>&1 || true
+        ufw delete allow 45876/tcp > /dev/null 2>&1 || true
+    fi
+    
+    if [ "$AGENT_STARTED" = "true" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Stopping Beszel Agent"
+        if [ -d "/opt/beszel-agent" ]; then
+            cd /opt/beszel-agent
+            docker compose down > /dev/null 2>&1 || true
+        fi
+        rm -rf /opt/beszel-agent || true
+    fi
+    
+    if [ "$HUB_STARTED" = "true" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Stopping Beszel Hub"
+        if [ -d "/opt/beszel" ]; then
+            cd /opt/beszel
+            docker compose down > /dev/null 2>&1 || true
+        fi
+        rm -rf /opt/beszel || true
+    fi
+    
+    echo -e "${GREEN}${CHECK}${NC} Rollback completed"
+    echo
 }
 
 #============================
@@ -527,22 +634,50 @@ install_beszel() {
     
     echo -e "${GREEN}${CHECK}${NC} System requirements validated!"
 
+    trap rollback_installation ERR
     set -e
 
-    # Execute installation steps
+    INSTALL_STEP="Creating Hub structure"
     create_hub_structure
+    
+    INSTALL_STEP="Creating Hub docker-compose"
     create_hub_docker_compose
+    
+    INSTALL_STEP="Starting Hub container"
     start_hub_container
+    HUB_STARTED=true
     
+    INSTALL_STEP="Creating Agent structure"
     create_agent_structure
-    create_agent_docker_compose
-    start_agent_container
     
+    INSTALL_STEP="Creating Agent docker-compose"
+    create_agent_docker_compose
+    
+    INSTALL_STEP="Starting Agent container"
+    start_agent_container
+    AGENT_STARTED=true
+    
+    INSTALL_STEP="Configuring firewall"
     configure_firewall
+    FIREWALL_CONFIGURED=true
+    
+    INSTALL_STEP="Backing up nginx config"
     backup_nginx_config
+    NGINX_BACKUPED=true
+    
+    INSTALL_STEP="Adding Beszel to nginx"
     add_beszel_to_nginx
+    NGINX_MODIFIED=true
+    
+    INSTALL_STEP="Restarting nginx"
     restart_nginx_container
+    
+    INSTALL_STEP="Verification"
     verify_installation
+    
+    trap - ERR
+    set +e
+    
     display_installation_completion
 }
 

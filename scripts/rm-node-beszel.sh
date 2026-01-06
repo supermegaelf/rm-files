@@ -25,6 +25,9 @@ readonly ARROW="→"
 # Global variables
 PANEL_IP=""
 HUB_DOMAIN=""
+INSTALL_STEP=""
+AGENT_STARTED=false
+FIREWALL_CONFIGURED=false
 
 #======================
 # VALIDATION FUNCTIONS
@@ -185,7 +188,16 @@ start_agent_container() {
     echo -e "${GRAY}  ${ARROW}${NC} Pulling latest image"
     echo -e "${GRAY}  ${ARROW}${NC} Starting service"
     
-    cd /opt/beszel-agent
+    if [ ! -d "/opt/beszel-agent" ]; then
+        echo -e "${RED}${CROSS}${NC} Directory /opt/beszel-agent does not exist"
+        exit 1
+    fi
+    
+    cd /opt/beszel-agent || {
+        echo -e "${RED}${CROSS}${NC} Failed to change directory to /opt/beszel-agent"
+        exit 1
+    }
+    
     docker compose up -d > /dev/null 2>&1
     
     if [ $? -eq 0 ]; then
@@ -256,11 +268,44 @@ display_installation_completion() {
     echo -e "${WHITE}Name: Node${NC}"
     echo -e "${WHITE}Host/IP: $(hostname -I | awk '{print $1}')${NC}"
     echo
-    echo -e "${WHITE}3. Click \"Copy docker compose\", open \"docker-compose\" and insert \"PUBLIC_KEY\" and \"TOKEN\":${NC}"
+    echo -e "${WHITE}3. Click \"Copy docker compose\", open \"docker-compose\" using the command below, and replace the content:${NC}"
     echo -e "${WHITE}nano /opt/beszel-agent/docker-compose.yml${NC}"
     echo
     echo -e "${WHITE}4. Run:${NC}"
     echo -e "${WHITE}cd /opt/beszel-agent && docker compose down && docker compose up -d${NC}"
+}
+
+#============================
+# ROLLBACK FUNCTION
+#============================
+
+# Rollback installation on error
+rollback_installation() {
+    echo
+    echo -e "${RED}${CROSS}${NC} Installation failed at step: $INSTALL_STEP"
+    echo -e "${YELLOW}${WARNING}${NC} Starting rollback..."
+    echo
+    
+    if [ "$FIREWALL_CONFIGURED" = "true" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Removing firewall rules"
+        ufw status numbered | grep "Beszel Agent" | awk '{print $1}' | sed 's/\[//' | sed 's/\]//' | tac | while read num; do
+            yes | ufw delete $num > /dev/null 2>&1 || true
+        done
+    fi
+    
+    if [ "$AGENT_STARTED" = "true" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Stopping Beszel Agent"
+        if [ -d "/opt/beszel-agent" ]; then
+            cd /opt/beszel-agent || {
+                echo -e "${YELLOW}${WARNING}${NC} Failed to change directory, continuing..."
+            }
+            docker compose down > /dev/null 2>&1 || true
+        fi
+        rm -rf /opt/beszel-agent || true
+    fi
+    
+    echo -e "${GREEN}${CHECK}${NC} Rollback completed"
+    echo
 }
 
 #============================
@@ -297,14 +342,29 @@ install_beszel() {
     
     echo -e "${GREEN}${CHECK}${NC} System requirements validated!"
 
+    trap rollback_installation ERR
     set -e
 
-    # Execute installation steps
+    INSTALL_STEP="Creating Agent structure"
     create_agent_structure
+    
+    INSTALL_STEP="Creating Agent docker-compose"
     create_agent_docker_compose
+    
+    INSTALL_STEP="Starting Agent container"
     start_agent_container
+    AGENT_STARTED=true
+    
+    INSTALL_STEP="Configuring firewall"
     configure_firewall
+    FIREWALL_CONFIGURED=true
+    
+    INSTALL_STEP="Verification"
     verify_installation
+    
+    trap - ERR
+    set +e
+    
     display_installation_completion
 }
 
@@ -358,7 +418,9 @@ uninstall_beszel() {
     # Stop and remove Beszel Agent
     if [ -d "/opt/beszel-agent" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Stopping Beszel Agent"
-        cd /opt/beszel-agent
+        cd /opt/beszel-agent || {
+            echo -e "${YELLOW}${WARNING}${NC} Failed to change directory, continuing..."
+        }
         docker compose down > /dev/null 2>&1 || true
     fi
 
