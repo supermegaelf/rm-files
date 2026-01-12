@@ -2085,9 +2085,9 @@ EOL
         local escaped_token=$(printf '%s\n' "$bot_token" | sed -e 's/[\/&]/\\&/g')
         sed -i "s|^SUBSCRIPTION_REMNAWAVE_API_TOKEN=.*|SUBSCRIPTION_REMNAWAVE_API_TOKEN=$escaped_token|" /opt/remnawave/.env
         
-        echo -e "${GRAY}  ${ARROW}${NC} Restarting subscription page container"
+        echo -e "${GRAY}  ${ARROW}${NC} Recreating subscription page container"
         cd /opt/remnawave
-        docker compose restart remnawave-subscription-page > /dev/null 2>&1
+        docker compose up -d --force-recreate remnawave-subscription-page > /dev/null 2>&1
         
         echo -e "${GREEN}${CHECK}${NC} Remnawave panel configured successfully"
     else
