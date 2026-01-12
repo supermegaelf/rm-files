@@ -23,9 +23,9 @@ readonly ARROW="→"
 DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 
 SCRIPT_VERSION="1.0.0"
-PANEL_VERSION="2.3.2"
-NODE_VERSION="2.3.1"
-SUBSCRIPTION_PAGE_VERSION="6.1.0"
+PANEL_VERSION="2.5.3"
+NODE_VERSION="2.5.0"
+SUBSCRIPTION_PAGE_VERSION="7.1.2"
 
 #======================
 # VALIDATION FUNCTIONS
@@ -2080,6 +2080,15 @@ EOL
         echo "" >> /opt/remnawave/remnawave-vars.sh
         echo "# API Token for Bot" >> /opt/remnawave/remnawave-vars.sh
         echo "export REMNAWAVE_TOKEN=\"$bot_token\"" >> /opt/remnawave/remnawave-vars.sh
+        
+        echo -e "${GRAY}  ${ARROW}${NC} Adding API token to .env file"
+        local escaped_token=$(printf '%s\n' "$bot_token" | sed -e 's/[\/&]/\\&/g')
+        sed -i "s|^SUBSCRIPTION_REMNAWAVE_API_TOKEN=.*|SUBSCRIPTION_REMNAWAVE_API_TOKEN=$escaped_token|" /opt/remnawave/.env
+        
+        echo -e "${GRAY}  ${ARROW}${NC} Restarting subscription page container"
+        cd /opt/remnawave
+        docker compose restart remnawave-subscription-page > /dev/null 2>&1
+        
         echo -e "${GREEN}${CHECK}${NC} Remnawave panel configured successfully"
     else
         echo -e "${RED}${CROSS}${NC} Remnawave panel configuration failed"
