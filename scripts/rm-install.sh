@@ -1636,7 +1636,7 @@ METRICS_PASS=$METRICS_PASS
 ### WEBHOOK ###
 WEBHOOK_ENABLED=true
 ### Only https:// is allowed
-WEBHOOK_URL=https://bot.$PANEL_DOMAIN/notify_user
+WEBHOOK_URL=http://bot:8777/notify_user
 ### This secret is used to sign the webhook payload, must be exact 64 characters. Only a-z, 0-9, A-Z are allowed.
 WEBHOOK_SECRET_HEADER=$WEBHOOK_SECRET_HEADER
 
@@ -1649,9 +1649,9 @@ HWID_FALLBACK_DEVICE_LIMIT=5
 HWID_MAX_DEVICES_ANNOUNCE="You have reached the maximum number of devices for your subscription."
 
 ### Bandwidth usage reached notifications
-BANDWIDTH_USAGE_NOTIFICATIONS_ENABLED=false
+BANDWIDTH_USAGE_NOTIFICATIONS_ENABLED=true
 # Only in ASC order (example: [60, 80]), must be valid array of integer(min: 25, max: 95) numbers. No more than 5 values.
-BANDWIDTH_USAGE_NOTIFICATIONS_THRESHOLD=[60, 80]
+BANDWIDTH_USAGE_NOTIFICATIONS_THRESHOLD=[75]
 
 ### CLOUDFLARE ###
 # USED ONLY FOR docker-compose-prod-with-cf.yml
