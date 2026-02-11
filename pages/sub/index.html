@@ -246,6 +246,14 @@
         .my-block-big {
             border-radius: var(--bs-border-radius-xl);
             background-color: var(--my-gray-color);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .my-block:hover,
+        .my-block-big:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
         }
 
         .my-block {
@@ -674,7 +682,7 @@
         <h4 class="my-text-heading fw-bold guide-heading" x-text="$t('guide')"></h4>
         <div class="tab-content" role="tablist">
             <div id="tab-android" class="tab-pane my-tab-pane fade show active" aria-labelledby="btn-guide-android-tab" role="tabpanel" x-data="androidCopyLink">
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 g-sm-2 g-lg-3">
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
@@ -735,7 +743,7 @@
                 </div>
             </div>
             <div id="tab-ios" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-ios-tab" role="tabpanel">
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 g-sm-2 g-lg-3">
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
@@ -777,7 +785,7 @@
                 </div>
             </div>
             <div id="tab-pc" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-pc-tab" role="tabpanel" x-data="androidCopyLink">
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 g-sm-2 g-lg-3">
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
@@ -828,7 +836,7 @@
                 </div>
             </div>
             <div id="tab-tv" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-tv-tab" role="tabpanel">
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 g-sm-2 g-lg-3">
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
@@ -872,7 +880,7 @@
                 </div>
             </div>
             <div id="tab-macos" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-macos-tab" role="tabpanel" x-data="androidCopyLink">
-                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 g-sm-2 g-lg-3">
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
