@@ -425,6 +425,12 @@
             --bs-btn-active-bg: rgb(18, 106, 110);
         }
 
+        .my-btn-primary .bi,
+        .my-btn-outline .bi {
+            margin-right: 0.35rem;
+            font-size: 1.1em;
+        }
+
         .my-btn-neutral {
             --bs-btn-bg: rgb(50, 50, 50);
             --bs-btn-hover-bg: rgb(65, 65, 65);
@@ -518,6 +524,22 @@
                 d="M4.545 6.714 4.11 8H3l1.862-5h1.284L8 8H6.833l-.435-1.286zm1.634-.736L5.5 3.956h-.049l-.679 2.022z" />
             <path
                 d="M0 2a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v3h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-3H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zm7.138 9.995q.289.451.63.846c-.748.575-1.673 1.001-2.768 1.292.178.217.451.635.555.867 1.125-.359 2.08-.844 2.886-1.494.777.665 1.739 1.165 2.93 1.472.133-.254.414-.673.629-.89-1.125-.253-2.057-.694-2.82-1.284.681-.747 1.222-1.651 1.621-2.757H14V8h-3v1.047h.765c-.318.844-.74 1.546-1.272 2.13a6 6 0 0 1-.415-.492 2 2 0 0 1-.94.31" />
+        </symbol>
+        <symbol id="download" viewBox="0 0 16 16">
+            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
+        </symbol>
+        <symbol id="clipboard" viewBox="0 0 16 16">
+            <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"/>
+            <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"/>
+        </symbol>
+        <symbol id="link" viewBox="0 0 16 16">
+            <path d="M6.354 5.5H4a3 3 0 0 0 0 6h3a3 3 0 0 0 2.83-4H9q-.13 0-.25.031A2 2 0 0 1 7 10.5H4a2 2 0 1 1 0-4h1.535c.218-.376.495-.714.82-1z"/>
+            <path d="M9 5.5a3 3 0 0 0-2.83 4h1.098A2 2 0 0 1 9 6.5h3a2 2 0 1 1 0 4h-1.535a4 4 0 0 1-.82 1H12a3 3 0 1 0 0-6z"/>
+        </symbol>
+        <symbol id="box-arrow-up-right" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
+            <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
         </symbol>
     </svg>
 <header class="navbar my-navbar navbar-expand-sm" x-data>
@@ -700,6 +722,7 @@
                                 <a class="btn my-btn-primary"
                                     href="https://play.google.com/store/apps/details?id=com.happproxy"
                                     role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#download"></use></svg>
                                     <span class="fw-semibold" x-text="$t('downloadApp')"></span>
                                 </a>
                             </div>
@@ -715,6 +738,7 @@
                                 <a class="btn my-btn-primary"
                                     href="https://github.com/Happ-proxy/happ-android/releases/latest/download/Happ.apk" role="button"
                                     rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#download"></use></svg>
                                     <span class="fw-semibold" x-text="$t('downloadApp')"></span>
                                 </a>
                             </div>
@@ -725,7 +749,11 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.android.third.text')"></p>
-                            <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied" x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></button>
+                            <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied">
+                                <svg class="bi" x-show="!isLinkCopied"><use href="#clipboard"></use></svg>
+                                <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
+                                <span x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></span>
+                            </button>
                         </div>
                     </div>
                     <div class="col">
@@ -743,6 +771,7 @@
                             <p class="my-text-content" x-html="$t('guideContent.android.fifth.text')"></p>
                             <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
                                 role="button" rel="noopener noreferrer" target="_blank">
+                                <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
                                 <span class="fw-semibold" x-text="$t('fixInstr')"></span>
                             </a>
                         </div>
@@ -758,6 +787,7 @@
                             <p class="my-text-content" x-html="$t('guideContent.ios.first.text')"></p>
                             <a class="btn my-btn-primary" href="https://apps.apple.com/ru/app/happ-proxy-utility-plus/id6746188973"
                                 role="button" rel="noopener noreferrer" target="_blank">
+                                <svg class="bi"><use href="#download"></use></svg>
                                 <span class="fw-semibold" x-text="$t('downloadApp')"></span>
                             </a>
                         </div>
@@ -768,7 +798,10 @@
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.second.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.second.text')"></p>
                             <a class="btn my-btn-primary fw-semibold" id="sub-url-ios" role="button"
-                                rel="noopener noreferrer" target="_blank" x-text="$t('addSubscription')"></a>
+                                rel="noopener noreferrer" target="_blank">
+                                <svg class="bi"><use href="#link"></use></svg>
+                                <span x-text="$t('addSubscription')"></span>
+                            </a>
                         </div>
                     </div>
                     <div class="col">
@@ -785,6 +818,7 @@
                             <p class="my-text-content" x-html="$t('guideContent.ios.fourth.text')"></p>
                             <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
                                 role="button" rel="noopener noreferrer" target="_blank">
+                                <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
                                 <span class="fw-semibold" x-text="$t('fixInstr')"></span>
                             </a>
                         </div>
@@ -802,6 +836,7 @@
                                 <a class="btn my-btn-primary"
                                     href="https://github.com/Happ-proxy/happ-desktop/releases/download/1.2.4/setup-Happ.x64.exe"
                                     role="button" rel="noopener noreferrer">
+                                    <svg class="bi"><use href="#download"></use></svg>
                                     <span class="fw-semibold" x-text="$t('downloadApp')"></span>
                                 </a>
                             </div>
@@ -819,7 +854,11 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.pc.third.text')"></p>
-                            <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied" x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></button>
+                            <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied">
+                                <svg class="bi" x-show="!isLinkCopied"><use href="#clipboard"></use></svg>
+                                <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
+                                <span x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></span>
+                            </button>
                         </div>
                     </div>
                     <div class="col">
@@ -836,6 +875,7 @@
                             <p class="my-text-content" x-html="$t('guideContent.pc.fifth.text')"></p>
                             <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
                                 role="button" rel="noopener noreferrer" target="_blank">
+                                <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
                                 <span class="fw-semibold" x-text="$t('fixInstr')"></span>
                             </a>
                         </div>
@@ -895,6 +935,7 @@
                             <p class="my-text-content" x-html="$t('guideContent.macos.first.text')"></p>
                             <a class="btn my-btn-primary" href="https://apps.apple.com/ru/app/happ-proxy-utility-plus/id6746188973"
                                 role="button" rel="noopener noreferrer" target="_blank">
+                                <svg class="bi"><use href="#download"></use></svg>
                                 <span class="fw-semibold" x-text="$t('downloadApp')"></span>
                             </a>
                         </div>
@@ -904,7 +945,11 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.second.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.second.text')"></p>
-                            <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied" x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></button>
+                            <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied">
+                                <svg class="bi" x-show="!isLinkCopied"><use href="#clipboard"></use></svg>
+                                <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
+                                <span x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></span>
+                            </button>
                         </div>
                     </div>
                     <div class="col">
@@ -921,6 +966,7 @@
                             <p class="my-text-content" x-html="$t('guideContent.macos.fourth.text')"></p>
                             <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
                                 role="button" rel="noopener noreferrer" target="_blank">
+                                <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
                                 <span class="fw-semibold" x-text="$t('fixInstr')"></span>
                             </a>
                         </div>
@@ -930,7 +976,10 @@
         </div>
         <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 bottom-controls">
             <a class="btn my-btn-outline" href="https://t.me/surf_vpn_1" rel="noopener noreferrer"
-                target="_blank" x-text="$t('support')"></a>
+                target="_blank">
+                <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
+                <span x-text="$t('support')"></span>
+            </a>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"
