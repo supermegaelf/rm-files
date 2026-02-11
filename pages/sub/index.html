@@ -350,6 +350,13 @@
             margin-right: -3px;
             margin-left: 3px;
             background-color: currentColor;
+            transform: rotate(0deg);
+            transition: transform 0.2s ease;
+        }
+
+        .dropdown-toggle.show::after,
+        .dropdown-toggle[aria-expanded="true"]::after {
+            transform: rotate(180deg);
         }
 
         .my-dropdown .dropdown-menu {
