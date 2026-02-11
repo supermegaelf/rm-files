@@ -149,28 +149,37 @@
         .my-navbar {
             --bs-navbar-nav-link-padding-x: .75rem;
             padding-top: 1rem;
-            padding-bottom: 0rem;
+            padding-bottom: 0;
+            border-bottom: 1px solid var(--my-alpha-dark-gray-color);
+        }
+
+        .my-navbar .my-container {
+            padding-top: 0;
+            padding-bottom: 1rem;
         }
 
         .navbar-content {
-            margin-top: 0.5rem;
-        }
-
-        @media (min-width: 576px) {
-            .navbar-content {
-                margin-top: 0;
-            }
+            margin-top: 0;
         }
 
         @media (max-width: 576px) {
+            .navbar-content {
+                margin-top: 1rem;
+                margin-bottom: 0.5rem;
+            }
             .my-navbar .navbar-nav {
                 --bs-nav-link-padding-y: .75rem;
             }
-            .my-navbar .nav-item .nav-link {
+            .my-navbar .navbar-nav .ms-auto {
+                margin-left: 0 !important;
+            }
+            .my-navbar .nav-item .nav-link,
+            .my-navbar .nav-item button.nav-link {
+                width: 100%;
                 border-top: 1px solid var(--my-alpha-dark-gray-color);
             }
             .my-navbar .dropdown-menu {
-                margin-bottom: 1rem;
+                margin-bottom: .5rem;
             }
         }
 
@@ -180,8 +189,13 @@
             --bs-navbar-toggler-padding-y: 0;
         }
 
+        .my-navbar .navbar-toggler:focus {
+            box-shadow: none;
+            outline: none;
+        }
+
         .guide-heading {
-            margin-top: 1rem;
+            margin-top: 1.5rem;
             margin-bottom: 0.5rem;
         }
 
@@ -273,15 +287,50 @@
         .my-nav-outline {
             --bs-nav-link-padding-x: .85rem;
             --bs-nav-link-padding-y: .25rem;
-            --bs-nav-link-color: var(--my-heading-color);
-            --bs-nav-link-hover-color: var(--my-heading-color);
-            border: 1px solid var(--my-alpha-dark-gray-color);
+            --bs-nav-link-color: #fff;
+            --bs-nav-link-hover-color: #fff;
+            background-color: rgb(28, 154, 160);
+            border: 1px solid rgb(28, 154, 160);
             border-radius: var(--bs-border-radius-lg);
         }
 
-        .my-nav-outline:hover,
-        .my-nav-outline.show {
+        .my-nav-outline:not(.my-nav-secondary) {
+            --bs-nav-link-color: #fff !important;
+            color: #fff !important;
+        }
+
+        .my-nav-outline:not(.my-nav-secondary):hover,
+        .my-nav-outline:not(.my-nav-secondary).show {
+            --bs-nav-link-color: #fff !important;
+            background-color: rgb(23, 130, 135);
+            border-color: rgb(23, 130, 135);
+            color: #fff !important;
+        }
+
+        .my-nav-outline:not(.my-nav-secondary) *,
+        .my-nav-outline:not(.my-nav-secondary):hover *,
+        .my-nav-outline:not(.my-nav-secondary).show * {
+            color: #fff !important;
+        }
+
+        .my-nav-outline.my-nav-secondary {
+            --bs-nav-link-color: var(--my-heading-color);
+            background-color: var(--my-dropdown-bg);
+            border-color: var(--my-alpha-dark-gray-color);
+            color: var(--my-heading-color) !important;
+        }
+
+        .my-nav-outline.my-nav-secondary:hover,
+        .my-nav-outline.my-nav-secondary.show {
             background-color: var(--my-gray-color);
+            border-color: var(--my-alpha-dark-gray-color);
+            color: var(--my-heading-color) !important;
+        }
+
+        .my-nav-outline.my-nav-secondary *,
+        .my-nav-outline.my-nav-secondary:hover *,
+        .my-nav-outline.my-nav-secondary.show * {
+            color: var(--my-heading-color) !important;
         }
 
         /* ========== DROPDOWN ========== */
@@ -298,9 +347,9 @@
         .my-dropdown .dropdown-menu {
             --bs-dropdown-padding-x: .25rem;
             --bs-dropdown-padding-y: .25rem;
-            --bs-dropdown-spacer: 0;
+            --bs-dropdown-spacer: .5rem;
             --bs-dropdown-bg: var(--my-dropdown-bg);
-            --bs-dropdown-border-color: none;
+            --bs-dropdown-border-color: var(--my-alpha-dark-gray-color);
             --bs-dropdown-border-radius: var(--bs-border-radius-lg);
             --bs-dropdown-link-color: var(--my-heading-color);
             --bs-dropdown-link-hover-color: var(--my-heading-color);
@@ -375,13 +424,13 @@
             --bs-btn-color: var(--my-heading-color);
             --bs-btn-bg: transparent;
             --bs-btn-border-color: var(--my-alpha-dark-gray-color);
-            --bs-btn-hover-color: var(--my-heading-color);
-            --bs-btn-hover-bg: var(--my-gray-color);
-            --bs-btn-hover-border-color: var(--my-alpha-dark-gray-color);
+            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-bg: rgb(28, 154, 160);
+            --bs-btn-hover-border-color: rgb(28, 154, 160);
             --bs-btn-focus-shadow-rgb: var(--my-emphasis-focus-shadow-rgb);
-            --bs-btn-active-color: var(--my-heading-color);
-            --bs-btn-active-bg: var(--my-dark-gray-color);
-            --bs-btn-active-border-color: var(--my-alpha-dark-gray-color);
+            --bs-btn-active-color: #fff;
+            --bs-btn-active-bg: rgb(18, 106, 110);
+            --bs-btn-active-border-color: rgb(18, 106, 110);
         }
 
         /* ========== ADAPTABILITY ========== */
@@ -464,9 +513,9 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="navbar-collapse collapse navbar-content" id="navbar-collapse-content">
-            <ul class="navbar-nav me-auto gap-2">
+            <ul class="navbar-nav w-100 gap-2">
                 <li class="nav-item dropdown my-dropdown">
-                    <a class="nav-link my-nav-outline dropdown-toggle" id="btn-theme" role="button"
+                    <a class="nav-link my-nav-outline my-nav-secondary dropdown-toggle" id="btn-theme" role="button"
                         data-bs-toggle="dropdown" tabindex="0" aria-expanded="false">
                         <svg class="bi my-nav-link-icon">
                             <use href="#circle-half"></use>
@@ -513,7 +562,7 @@
                     </ul>
                 </li>
                 <li class="nav-item dropdown my-dropdown" x-data>
-                    <a class="nav-link my-nav-outline dropdown-toggle" id="btn-lang" role="button"
+                    <a class="nav-link my-nav-outline my-nav-secondary dropdown-toggle" id="btn-lang" role="button"
                         data-bs-toggle="dropdown" tabindex="0" aria-expanded="false">
                         <svg class="bi">
                             <use href="#translate"></use>
@@ -541,17 +590,15 @@
                         </li>
                     </ul>
                 </li>
-            </ul>
-        </div>
-        <div class="dropdown my-dropdown ms-auto">
-            <button class="nav-link my-nav-outline dropdown-toggle" id="btn-guide" type="button"
-                data-bs-toggle="dropdown">
-                <svg class="bi my-nav-link-icon">
-                    <use href="#android"></use>
-                </svg>
-                <span class="my-nav-link-text"></span>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end" role="tablist">
+                <li class="nav-item dropdown my-dropdown ms-auto">
+                    <button class="nav-link my-nav-outline dropdown-toggle" id="btn-guide" type="button"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <svg class="bi my-nav-link-icon">
+                            <use href="#android"></use>
+                        </svg>
+                        <span class="my-nav-link-text"></span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" role="tablist">
                 <li>
                     <button class="dropdown-item my-dropdown-item-guide" id="btn-guide-ios-tab" type="button"
                         data-bs-target="#tab-ios" data-bs-toggle="tab" role="tab" aria-controls="tab-ios"
@@ -616,6 +663,8 @@
                             <use href="#check-lg"></use>
                         </svg>
                     </button>
+                </li>
+            </ul>
                 </li>
             </ul>
         </div>
@@ -1240,17 +1289,31 @@
             const btnGuide = document.getElementById('btn-guide');
             document.querySelectorAll('.my-dropdown-item-guide').forEach(item => {
                 item.addEventListener('click', () => {
+                    const tabPane = document.querySelector(item.dataset.bsTarget);
+                    if (tabPane) {
+                        document.querySelectorAll('.tab-pane').forEach(pane => {
+                            pane.classList.remove('show', 'active');
+                        });
+                        tabPane.classList.add('show', 'active');
+                    }
                     showActiveDropdownItem(btnGuide, item);
                 });
             });
 
             const itemInitialGuideTab =
                 `.my-dropdown-item-guide[data-bs-target="${getTabIdByDevice()}"]`;
-            bootstrap.Tab.getOrCreateInstance(itemInitialGuideTab).show();
-            showActiveDropdownItem(
-                btnGuide,
-                document.querySelector(itemInitialGuideTab),
-            );
+            const selectedItem = document.querySelector(itemInitialGuideTab);
+            
+            // Show initial tab without triggering dropdown
+            const tabPane = document.querySelector(selectedItem.dataset.bsTarget);
+            if (tabPane) {
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+                tabPane.classList.add('show', 'active');
+            }
+            
+            showActiveDropdownItem(btnGuide, selectedItem);
 
             for (const [os, url] of Object.entries(SUB_URL_SCHEMES)) {
                 const element = document.getElementById(`sub-url-${os}`);
