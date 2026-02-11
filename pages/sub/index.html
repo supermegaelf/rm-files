@@ -10,7 +10,6 @@
         Surf VPN
     </title>
     <script>
-        // Get data from Remnawave
         let panelData;
         try {
             panelData = '<%- panelData %>';
@@ -20,22 +19,18 @@
             panelData = null;
         }
 
-        // Get subscription URL from panelData or fallback to current URL
         function getSubscriptionUrl() {
             if (panelData && panelData.subscriptionUrl) {
                 return panelData.subscriptionUrl;
             }
             
-            // Fallback to current URL (original logic)
             const url = new URL(window.location.href);
             return url.origin + url.pathname;
         }
 
-        // Generating URL for subscription
         const cleanUrl = getSubscriptionUrl();
         const happUrl = "happ://add/" + cleanUrl + "#Title";
 
-        // Function for processing URL parameters
         function handleUrlParameters() {
             const urlParams = new URLSearchParams(window.location.search);
             const happUrlParam = urlParams.get("happ_url");
@@ -45,19 +40,11 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            // URL parameter processing
             handleUrlParameters();
         });
 
-        // Color mode toggler.
-
         const COLOR_SCHEME = '(prefers-color-scheme: dark)';
-
-        // Defines the default website theme used when the user hasn't
-        // selected a different one.
         const DEFAULT_THEME = 'system';
-        // Colors for light and dark themes in the theme-color value,
-        // used to change browser interface colors, like the top bar in Safari.
         const META_THEME_COLORS = { light: '#fff', dark: '#151515' };
 
         function getUserTheme() {
@@ -99,7 +86,6 @@
                 document.querySelector('.my-dropdown-item-theme.active'),
             );
 
-            // Initialize Telegram WebApp
             try {
                 if (window.Telegram?.WebApp) {
                     Telegram.WebApp.ready();
@@ -478,9 +464,9 @@
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="navbar-collapse collapse navbar-content" id="navbar-collapse-content">
-            <ul class="navbar-nav me-auto">
+            <ul class="navbar-nav me-auto gap-2">
                 <li class="nav-item dropdown my-dropdown">
-                    <a class="nav-link my-nav-link dropdown-toggle" id="btn-theme" role="button"
+                    <a class="nav-link my-nav-outline dropdown-toggle" id="btn-theme" role="button"
                         data-bs-toggle="dropdown" tabindex="0" aria-expanded="false">
                         <svg class="bi my-nav-link-icon">
                             <use href="#circle-half"></use>
@@ -527,7 +513,7 @@
                     </ul>
                 </li>
                 <li class="nav-item dropdown my-dropdown" x-data>
-                    <a class="nav-link my-nav-link dropdown-toggle" id="btn-lang" role="button"
+                    <a class="nav-link my-nav-outline dropdown-toggle" id="btn-lang" role="button"
                         data-bs-toggle="dropdown" tabindex="0" aria-expanded="false">
                         <svg class="bi">
                             <use href="#translate"></use>
@@ -894,10 +880,7 @@
             ios: happUrl,
             macos: happUrl,
         };
-        // Default locale used to display content if
-        // the user's locale is not specified.
         const DEFAULT_LOCALE = 'en';
-        // Translation data.
         const MESSAGES = {
             en: {
                 support: 'Support',
@@ -1161,12 +1144,10 @@
         }
 
         function getUserLocale() {
-            // Checking the lang parameter in URL
             const urlParams = new URLSearchParams(window.location.search);
             const urlLang = urlParams.get('lang');
             if (urlLang === 'en' || urlLang === 'ru') return urlLang;
 
-            // Language check from Telegram
             try {
                 const tgLang = window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code;
                 if (tgLang) return tgLang.startsWith('ru') ? 'ru' : 'en';
@@ -1174,11 +1155,9 @@
                 console.warn('Telegram error:', e);
             }
 
-            // Checking localStorage
             const storedLocale = localStorage.getItem('locale');
             if (storedLocale && storedLocale in MESSAGES) return storedLocale;
 
-            // Browser check
             const browserLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
             const russianLanguageCodes = ['ru', 'ru-ru', 'ru_ru', 'by', 'kz', 'kg', 'uz'];
             return russianLanguageCodes.some(code => browserLang.includes(code)) ? 'ru' : 'en';
