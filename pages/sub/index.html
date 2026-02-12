@@ -428,6 +428,11 @@
             justify-content: center;
         }
 
+        .bottom-controls .my-btn-outline {
+            --bs-btn-padding-x: 1rem;
+            --bs-btn-padding-y: .5rem;
+        }
+
         .my-btn-primary {
             --bs-btn-bg: rgb(28, 154, 160);
             --bs-btn-hover-bg: rgb(23, 130, 135);
@@ -456,28 +461,23 @@
             --bs-btn-color: var(--my-heading-color);
             --bs-btn-bg: transparent;
             --bs-btn-border-color: var(--my-alpha-dark-gray-color);
+            --bs-btn-hover-color: var(--my-heading-color);
+            --bs-btn-hover-bg: var(--my-gray-color);
+            --bs-btn-hover-border-color: var(--my-alpha-dark-gray-color);
             --bs-btn-focus-shadow-rgb: var(--my-emphasis-focus-shadow-rgb);
             --bs-btn-active-color: var(--my-heading-color);
             --bs-btn-active-bg: var(--my-gray-color);
             --bs-btn-active-border-color: var(--my-alpha-dark-gray-color);
         }
 
-        .my-btn-outline:focus,
-        .my-btn-outline:active {
-            border-color: var(--my-alpha-dark-gray-color) !important;
-        }
-
         @media (hover: hover) and (pointer: fine) {
-            .my-btn-outline:hover {
+            .my-btn-outline {
                 --bs-btn-hover-color: #fff;
-                background-color: rgb(28, 154, 160);
-                border-color: rgb(28, 154, 160);
-            }
-            
-            .my-btn-outline:active {
+                --bs-btn-hover-bg: rgb(28, 154, 160);
+                --bs-btn-hover-border-color: rgb(28, 154, 160);
                 --bs-btn-active-color: #fff;
-                background-color: rgb(18, 106, 110);
-                border-color: rgb(18, 106, 110);
+                --bs-btn-active-bg: rgb(18, 106, 110);
+                --bs-btn-active-border-color: rgb(18, 106, 110);
             }
         }
 
