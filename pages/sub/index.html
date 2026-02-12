@@ -416,8 +416,8 @@
         .my-btn-primary,
         .my-btn-neutral,
         .my-btn-outline {
-            --bs-btn-padding-x: 1rem;
-            --bs-btn-padding-y: .5rem;
+            --bs-btn-padding-x: .85rem;
+            --bs-btn-padding-y: .25rem;
             --bs-btn-color: #fff;
             --bs-btn-border-radius: var(--bs-border-radius-lg);
             --bs-btn-hover-color: #fff;
@@ -426,6 +426,11 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+        }
+
+        .bottom-controls .my-btn-outline {
+            --bs-btn-padding-x: 1rem;
+            --bs-btn-padding-y: .5rem;
         }
 
         .my-btn-primary {
