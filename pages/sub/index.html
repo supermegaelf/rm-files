@@ -197,6 +197,7 @@
         .guide-heading {
             margin-top: 1.5rem;
             margin-bottom: 0.5rem;
+            font-size: 1.75rem;
         }
 
         .tab-content {
@@ -455,13 +456,18 @@
             --bs-btn-color: var(--my-heading-color);
             --bs-btn-bg: transparent;
             --bs-btn-border-color: var(--my-alpha-dark-gray-color);
-            --bs-btn-hover-color: #fff;
-            --bs-btn-hover-bg: rgb(28, 154, 160);
-            --bs-btn-hover-border-color: rgb(28, 154, 160);
             --bs-btn-focus-shadow-rgb: var(--my-emphasis-focus-shadow-rgb);
-            --bs-btn-active-color: #fff;
-            --bs-btn-active-bg: rgb(18, 106, 110);
-            --bs-btn-active-border-color: rgb(18, 106, 110);
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .my-btn-outline {
+                --bs-btn-hover-color: #fff;
+                --bs-btn-hover-bg: rgb(28, 154, 160);
+                --bs-btn-hover-border-color: rgb(28, 154, 160);
+                --bs-btn-active-color: #fff;
+                --bs-btn-active-bg: rgb(18, 106, 110);
+                --bs-btn-active-border-color: rgb(18, 106, 110);
+            }
         }
 
         /* ========== ADAPTABILITY ========== */
