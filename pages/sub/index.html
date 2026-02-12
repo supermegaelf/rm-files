@@ -428,11 +428,6 @@
             justify-content: center;
         }
 
-        .bottom-controls .my-btn-outline {
-            --bs-btn-padding-x: 1rem;
-            --bs-btn-padding-y: .5rem;
-        }
-
         .my-btn-primary {
             --bs-btn-bg: rgb(28, 154, 160);
             --bs-btn-hover-bg: rgb(23, 130, 135);
@@ -465,6 +460,11 @@
             --bs-btn-active-color: var(--my-heading-color);
             --bs-btn-active-bg: var(--my-gray-color);
             --bs-btn-active-border-color: var(--my-alpha-dark-gray-color);
+        }
+
+        .my-btn-outline:focus,
+        .my-btn-outline:active {
+            border-color: var(--my-alpha-dark-gray-color) !important;
         }
 
         @media (hover: hover) and (pointer: fine) {
