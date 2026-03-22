@@ -38,9 +38,9 @@ fi
 
 show_main_menu() {
     echo
-    echo -e "${PURPLE}=================${NC}"
-    echo -e "${WHITE}BOT DB MIGRATION${NC}"
-    echo -e "${PURPLE}=================${NC}"
+    echo -e "${PURPLE}====================${NC}"
+    echo -e "${WHITE}SHOP-BOT DB MIGRATE${NC}"
+    echo -e "${PURPLE}====================${NC}"
     echo
     echo -e "${CYAN}Please select an action:${NC}"
     echo

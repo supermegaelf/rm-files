@@ -25,14 +25,49 @@ readonly ARROW="→"
 # Global variables
 POSTGRES_USER=""
 POSTGRES_PASSWORD=""
-SHOP_MYSQL_USER="remnawave"
+SHOP_MYSQL_USER=""
 SHOP_MYSQL_PASSWORD=""
 TG_BOT_TOKEN=""
 TG_CHAT_ID=""
+TIMESTAMP=""
+WORK_DIR=""
+MAIN_BACKUP_FILE=""
+SHOP_SQL_FILE=""
 
 #=====================
 # CONFIGURATION SETUP
 #=====================
+
+read_env_var() {
+    local file="$1"
+    local var="$2"
+    grep "^${var}=" "$file" 2>/dev/null | cut -d'=' -f2- | tr -d '"' | tr -d "'"
+}
+
+load_credentials() {
+    echo -e "${CYAN}${INFO}${NC} Loading credentials..."
+
+    # Remnawave PostgreSQL — read from /opt/remnawave/.env
+    if [ ! -f /opt/remnawave/.env ]; then
+        echo -e "${RED}${CROSS}${NC} /opt/remnawave/.env not found"
+        exit 1
+    fi
+    POSTGRES_USER=$(read_env_var /opt/remnawave/.env POSTGRES_USER)
+    POSTGRES_PASSWORD=$(read_env_var /opt/remnawave/.env POSTGRES_PASSWORD)
+    echo -e "${GRAY}  ${ARROW}${NC} Remnawave DB: ${POSTGRES_USER}"
+
+    # Shop Bot MySQL — read from /root/shop-bot/.env (optional)
+    if [ -f /root/shop-bot/.env ]; then
+        SHOP_MYSQL_USER=$(read_env_var /root/shop-bot/.env DB_USER)
+        SHOP_MYSQL_PASSWORD=$(read_env_var /root/shop-bot/.env DB_PASS)
+        echo -e "${GRAY}  ${ARROW}${NC} Shop Bot DB: ${SHOP_MYSQL_USER}"
+    else
+        echo -e "${GRAY}  ${ARROW}${NC} Shop Bot: not found, skipping"
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Credentials loaded."
+    echo
+}
 
 configure_backup() {
     echo
@@ -41,39 +76,17 @@ configure_backup() {
     echo -e "${PURPLE}==========================${NC}"
     echo
 
-    if [ -t 0 ] && ([ -z "$POSTGRES_PASSWORD" ] || [ -z "$TG_BOT_TOKEN" ] || [ -z "$TG_CHAT_ID" ]); then
-        
-        # Remnawave database credentials
-        echo -ne "${CYAN}Remnawave PostgreSQL username (default is remnawave, press Enter to use default): ${NC}"
-        read POSTGRES_USER
-        POSTGRES_USER=${POSTGRES_USER:-remnawave}
-        
-        echo -ne "${CYAN}Remnawave PostgreSQL password: ${NC}"
-        read POSTGRES_PASSWORD
-        echo
+    load_credentials
 
-        # Shop-Bot database credentials
-        echo -ne "${CYAN}Shop Bot MySQL password (or press Enter to skip shop backup): ${NC}"
-        read SHOP_MYSQL_PASSWORD
-        echo
+    if [ -t 0 ] && ([ -z "$TG_BOT_TOKEN" ] || [ -z "$TG_CHAT_ID" ]); then
 
-        # Telegram configuration
         echo -ne "${CYAN}Telegram Bot Token: ${NC}"
         read TG_BOT_TOKEN
-        
+
         echo -ne "${CYAN}Telegram Chat ID: ${NC}"
         read TG_CHAT_ID
         echo
 
-        # Validation
-        if [ -z "$POSTGRES_USER" ]; then
-            echo -e "${RED}${CROSS}${NC} Remnawave PostgreSQL username cannot be empty"
-            exit 1
-        fi
-        if [ -z "$POSTGRES_PASSWORD" ]; then
-            echo -e "${RED}${CROSS}${NC} Remnawave PostgreSQL password cannot be empty"
-            exit 1
-        fi
         if [[ ! "$TG_BOT_TOKEN" =~ ^[0-9]+:[A-Za-z0-9_-]+$ ]]; then
             echo -e "${RED}${CROSS}${NC} Invalid Telegram Bot Token format"
             exit 1
@@ -84,20 +97,16 @@ configure_backup() {
         fi
 
         echo -e "${CYAN}${INFO}${NC} Saving configuration..."
-        echo -e "${GRAY}  ${ARROW}${NC} Updating database credentials"
         echo -e "${GRAY}  ${ARROW}${NC} Setting Telegram parameters"
         echo -e "${GRAY}  ${ARROW}${NC} Creating cron schedule"
 
-        sed -i "s|POSTGRES_USER=\"[^\"]*\"|POSTGRES_USER=\"$POSTGRES_USER\"|" "$0"
-        sed -i "s|POSTGRES_PASSWORD=\"[^\"]*\"|POSTGRES_PASSWORD=\"$POSTGRES_PASSWORD\"|" "$0"
-        sed -i "s|SHOP_MYSQL_PASSWORD=\"[^\"]*\"|SHOP_MYSQL_PASSWORD=\"$SHOP_MYSQL_PASSWORD\"|" "$0"
         sed -i "s|TG_BOT_TOKEN=\"[^\"]*\"|TG_BOT_TOKEN=\"$TG_BOT_TOKEN\"|" "$0"
         sed -i "s|TG_CHAT_ID=\"[^\"]*\"|TG_CHAT_ID=\"$TG_CHAT_ID\"|" "$0"
 
         if ! grep -q "/root/scripts/rm-backup.sh" /etc/crontab; then
             echo "0 */1 * * * root /bin/bash /root/scripts/rm-backup.sh >/dev/null 2>&1" | tee -a /etc/crontab > /dev/null 2>&1
         fi
-        
+
         echo -e "${GREEN}${CHECK}${NC} Configuration saved successfully!"
         echo
     fi
@@ -109,12 +118,12 @@ configure_backup() {
 
 validate_configuration() {
     if [ -z "$POSTGRES_USER" ]; then
-        echo -e "${RED}${CROSS}${NC} Remnawave PostgreSQL username cannot be empty"
+        echo -e "${RED}${CROSS}${NC} POSTGRES_USER not found in /opt/remnawave/.env"
         exit 1
     fi
 
     if [ -z "$POSTGRES_PASSWORD" ]; then
-        echo -e "${RED}${CROSS}${NC} Remnawave PostgreSQL password cannot be empty"
+        echo -e "${RED}${CROSS}${NC} POSTGRES_PASSWORD not found in /opt/remnawave/.env"
         exit 1
     fi
 
@@ -148,8 +157,12 @@ prepare_system() {
         echo -e "${RED}${CROSS}${NC} Failed to create temporary directory"
         exit 1
     fi
-    
-    BACKUP_FILE="$TEMP_DIR/backup-remnawave.tar.gz"
+
+    TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
+    WORK_DIR="$TEMP_DIR/work"
+    mkdir -p "$WORK_DIR"
+    MAIN_BACKUP_FILE="$TEMP_DIR/remnawave_backup_${TIMESTAMP}.tar.gz"
+    SHOP_SQL_FILE="$TEMP_DIR/shop_${TIMESTAMP}.sql"
 
     echo -e "${GREEN}${CHECK}${NC} System preparation completed!"
 }
@@ -192,36 +205,34 @@ create_database_backup() {
     echo
 
     echo -e "${CYAN}${INFO}${NC} Creating database backups..."
-    echo -e "${GRAY}  ${ARROW}${NC} Retrieving Remnawave database"
-    echo -e "${GRAY}  ${ARROW}${NC} Setting up backup directory"
-    echo -e "${GRAY}  ${ARROW}${NC} Exporting database content"
+    echo -e "${GRAY}  ${ARROW}${NC} User: ${POSTGRES_USER}"
 
-    mkdir -p /var/lib/remnawave/db-backup/ > /dev/null 2>&1
-
-    # Backup PostgreSQL database
-    docker exec $POSTGRES_CONTAINER_NAME pg_dump -U "$POSTGRES_USER" remnawave > /var/lib/remnawave/db-backup/remnawave.sql 2>/dev/null
-    
-    if [ $? -eq 0 ]; then
-        echo -e "${GRAY}  ${ARROW}${NC} Remnawave database backed up"
-    else
+    # Backup PostgreSQL — full dump compatible with db-migrate.sh restore
+    local error_log
+    error_log=$(mktemp)
+    docker exec "$POSTGRES_CONTAINER_NAME" pg_dumpall -c -U "$POSTGRES_USER" 2>"$error_log" | gzip -9 > "$WORK_DIR/dump_${TIMESTAMP}.sql.gz"
+    if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
+        cat "$error_log" >&2
+        rm -f "$error_log"
         echo -e "${RED}${CROSS}${NC} Failed to backup remnawave database"
         rm -rf "$TEMP_DIR"
         exit 1
     fi
+    rm -f "$error_log"
+    echo -e "${GRAY}  ${ARROW}${NC} Remnawave database backed up"
 
-    # Backup shop database from shop container if exists and password provided
-    SHOP_DUMPED=false
+    # Backup shop database (plain SQL, sent as separate file)
     if [ -n "$SHOP_CONTAINER_NAME" ] && [ -n "$SHOP_MYSQL_PASSWORD" ]; then
-        databases_shop=$(docker exec $SHOP_CONTAINER_NAME mariadb -h 127.0.0.1 --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" -e "SHOW DATABASES;" 2>/dev/null | tr -d "| " | grep -v Database)
+        databases_shop=$(docker exec "$SHOP_CONTAINER_NAME" mariadb -h 127.0.0.1 --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" -e "SHOW DATABASES;" 2>/dev/null | tr -d "| " | grep -v Database)
         if [ $? -eq 0 ]; then
             for db in $databases_shop; do
                 if [[ "$db" == "shop" ]]; then
-                    docker exec $SHOP_CONTAINER_NAME mariadb-dump -h 127.0.0.1 --force --opt --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" --databases $db > /var/lib/remnawave/db-backup/$db.sql 2>/dev/null
+                    docker exec "$SHOP_CONTAINER_NAME" mariadb-dump -h 127.0.0.1 --force --opt --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" --databases "$db" > "$SHOP_SQL_FILE" 2>/dev/null
                     if [ $? -eq 0 ]; then
-                        SHOP_DUMPED=true
                         echo -e "${GRAY}  ${ARROW}${NC} Shop database backed up"
                     else
                         echo -e "${GRAY}  ${ARROW}${NC} Failed to backup shop database"
+                        rm -f "$SHOP_SQL_FILE"
                     fi
                 fi
             done
@@ -242,61 +253,49 @@ create_archive() {
     echo
 
     echo -e "${CYAN}${INFO}${NC} Building backup archive..."
-    echo -e "${GRAY}  ${ARROW}${NC} Collecting configuration files"
-    echo -e "${GRAY}  ${ARROW}${NC} Adding database backups"
-    echo -e "${GRAY}  ${ARROW}${NC} Finalizing archive structure"
+    echo -e "${GRAY}  ${ARROW}${NC} Archiving /opt/remnawave"
 
-    FILES_TO_BACKUP=""
-
-    # Required files (must exist)
-    REQUIRED_FILES=(
-        "/opt/remnawave/.env"
-        "/opt/remnawave/docker-compose.yml"
-        "/var/lib/remnawave/db-backup/remnawave.sql"
-    )
-
-    # Optional files (include if they exist)
-    OPTIONAL_FILES=(
-        "/opt/remnawave/remnawave-vars.sh"
-        "/opt/remnawave/nginx.conf"
-        "/opt/remnawave/index.html"
-        "/var/lib/remnawave/db-backup/shop.sql"
-        "/root/shop-bot/.env"
-        "/root/shop-bot/goods.json"
-    )
-
-    # Check required files
-    for file in "${REQUIRED_FILES[@]}"; do
-        if [ -e "$file" ]; then
-            FILES_TO_BACKUP="$FILES_TO_BACKUP $file"
-        else
-            echo -e "${GRAY}  ${ARROW}${NC} Required file not found: $file"
-        fi
-    done
-
-    # Check optional files
-    for file in "${OPTIONAL_FILES[@]}"; do
-        if [ -e "$file" ]; then
-            FILES_TO_BACKUP="$FILES_TO_BACKUP $file"
-            echo -e "${GRAY}  ${ARROW}${NC} Including optional: $(basename $file)"
-        fi
-    done
-
-    # Create the tar archive with the collected files
-    if [ -n "$FILES_TO_BACKUP" ]; then
-        tar -czf "$BACKUP_FILE" -C / $FILES_TO_BACKUP > /dev/null 2>&1
-        
-        if [ $? -eq 0 ]; then
-            echo -e "${GREEN}${CHECK}${NC} Backup archive created successfully!"
-        else
-            echo -e "${RED}${CROSS}${NC} Failed to create backup archive"
-            rm -rf "$TEMP_DIR"
-            exit 1
-        fi
-    else
-        echo -e "${RED}${CROSS}${NC} No files found to backup"
+    # Archive /opt/remnawave directory
+    tar -czf "$WORK_DIR/remnawave_dir_${TIMESTAMP}.tar.gz" \
+        --exclude="*.log" --exclude="*.tmp" --exclude=".git" \
+        -C /opt remnawave > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}${CROSS}${NC} Failed to archive /opt/remnawave"
         rm -rf "$TEMP_DIR"
         exit 1
+    fi
+    echo -e "${GRAY}  ${ARROW}${NC} Packing final archive"
+
+    # Pack dump + dir archive into final backup (compatible with db-migrate.sh)
+    tar -czf "$MAIN_BACKUP_FILE" \
+        -C "$WORK_DIR" \
+        "dump_${TIMESTAMP}.sql.gz" \
+        "remnawave_dir_${TIMESTAMP}.tar.gz" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}${CROSS}${NC} Failed to create backup archive"
+        rm -rf "$TEMP_DIR"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Backup archive created successfully!"
+}
+
+send_file_to_telegram() {
+    local file="$1"
+    local filename
+    filename=$(basename "$file")
+
+    echo -e "${GRAY}  ${ARROW}${NC} ${filename}"
+    local response
+    response=$(curl -s -F chat_id="$TG_CHAT_ID" \
+        -F document=@"$file" \
+        "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendDocument")
+
+    if ! echo "$response" | grep -q '"ok":true'; then
+        local error_desc
+        error_desc=$(echo "$response" | grep -o '"description":"[^"]*"' | cut -d'"' -f4)
+        echo -e "${RED}${CROSS}${NC} Failed to send ${filename}"
+        [ -n "$error_desc" ] && echo -e "${YELLOW}${WARNING}${NC} Error: ${error_desc}"
     fi
 }
 
@@ -306,25 +305,15 @@ send_to_telegram() {
     echo -e "${GREEN}===============${NC}"
     echo
 
-    echo -e "${CYAN}${INFO}${NC} Sending backup to Telegram..."
-    echo -e "${GRAY}  ${ARROW}${NC} Connecting to Telegram API"
-    echo -e "${GRAY}  ${ARROW}${NC} Uploading backup file"
-    echo -e "${GRAY}  ${ARROW}${NC} Verifying upload status"
+    echo -e "${CYAN}${INFO}${NC} Sending backups to Telegram..."
 
-    RESPONSE=$(curl -s -F chat_id="$TG_CHAT_ID" \
-         -F document=@"$BACKUP_FILE" \
-         https://api.telegram.org/bot$TG_BOT_TOKEN/sendDocument)
+    send_file_to_telegram "$MAIN_BACKUP_FILE"
 
-    if echo "$RESPONSE" | grep -q '"ok":true'; then
-        echo -e "${GREEN}${CHECK}${NC} Backup successfully sent to Telegram"
-        rm -rf /var/lib/remnawave/db-backup/* > /dev/null 2>&1
-    else
-        echo -e "${RED}${CROSS}${NC} Failed to send backup to Telegram"
-        ERROR_DESC=$(echo "$RESPONSE" | grep -o '"description":"[^"]*"' | cut -d'"' -f4)
-        if [ -n "$ERROR_DESC" ]; then
-            echo -e "${RED}${WARNING}${NC} Error: $ERROR_DESC"
-        fi
+    if [ -f "$SHOP_SQL_FILE" ]; then
+        send_file_to_telegram "$SHOP_SQL_FILE"
     fi
+
+    echo -e "${GREEN}${CHECK}${NC} Upload complete!"
 }
 
 cleanup_files() {
