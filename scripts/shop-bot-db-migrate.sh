@@ -44,8 +44,8 @@ show_main_menu() {
     echo
     echo -e "${CYAN}Please select an action:${NC}"
     echo
-    echo -e "${GREEN}1.${NC} Export Database"
-    echo -e "${GREEN}2.${NC} Import Database"
+    echo -e "${GREEN}1.${NC} Export"
+    echo -e "${GREEN}2.${NC} Import"
     echo -e "${RED}3.${NC} Exit"
     echo
     echo -ne "${CYAN}Enter your choice (1, 2, or 3): ${NC}"
@@ -589,8 +589,6 @@ main() {
             import_database
             ;;
         3)
-            echo
-            echo -e "${YELLOW}${WARNING}${NC} Exiting..."
             exit 0
             ;;
         *)
