@@ -589,6 +589,7 @@ main() {
             import_database
             ;;
         3)
+            echo
             exit 0
             ;;
         *)
