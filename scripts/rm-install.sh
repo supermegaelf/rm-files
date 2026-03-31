@@ -23,9 +23,9 @@ readonly ARROW="→"
 DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 
 SCRIPT_VERSION="1.0.0"
-PANEL_VERSION="2.6.4"
-NODE_VERSION="2.6.1"
-SUBSCRIPTION_PAGE_VERSION="7.1.7"
+PANEL_VERSION="2.7.4"
+NODE_VERSION="2.7.0"
+SUBSCRIPTION_PAGE_VERSION="7.1.8"
 
 #======================
 # VALIDATION FUNCTIONS
@@ -1552,8 +1552,7 @@ API_INSTANCES=1
 DATABASE_URL="postgresql://remnawave:$POSTGRES_PASSWORD@remnawave-db:5432/remnawave"
 
 ### REDIS ###
-REDIS_HOST=remnawave-redis
-REDIS_PORT=6379
+REDIS_SOCKET=/var/run/valkey/valkey.sock
 
 ### JWT ###
 JWT_AUTH_SECRET=$JWT_AUTH_SECRET
@@ -1566,8 +1565,11 @@ JWT_AUTH_LIFETIME=168
 ### TELEGRAM NOTIFICATIONS ###
 IS_TELEGRAM_NOTIFICATIONS_ENABLED=false
 TELEGRAM_BOT_TOKEN=change_me
-TELEGRAM_NOTIFY_USERS_CHAT_ID=change_me
-TELEGRAM_NOTIFY_NODES_CHAT_ID=change_me
+TELEGRAM_NOTIFY_USERS=change_me
+TELEGRAM_NOTIFY_NODES=change_me
+TELEGRAM_NOTIFY_CRM=change_me
+TELEGRAM_NOTIFY_SERVICE=change_me
+TELEGRAM_NOTIFY_TBLOCKER=change_me
 
 ### Telegram Oauth (Login with Telegram)
 ### Docs https://remna.st/docs/features/telegram-oauth
@@ -1575,12 +1577,6 @@ TELEGRAM_NOTIFY_NODES_CHAT_ID=change_me
 TELEGRAM_OAUTH_ENABLED=false
 ### Array of Admin Chat Ids. These ids will be allowed to login.
 TELEGRAM_OAUTH_ADMIN_IDS=[123, 321]
-
-# Optional
-# Only set if you want to use topics
-TELEGRAM_NOTIFY_USERS_THREAD_ID=
-TELEGRAM_NOTIFY_NODES_THREAD_ID=
-TELEGRAM_NOTIFY_CRM_THREAD_ID=
 
 # Enable Github OAuth2, possible values: true, false
 OAUTH2_GITHUB_ENABLED=false
@@ -1614,6 +1610,7 @@ OAUTH2_YANDEX_ALLOWED_EMAILS=["admin@example.com", "user@example.com"]
 ### FRONT_END ###
 # Used by CORS, you can leave it as * or place your domain there
 FRONT_END_DOMAIN=$PANEL_DOMAIN
+# PANEL_DOMAIN=panel.domain.com
 
 ### SUBSCRIPTION PUBLIC DOMAIN ###
 ### DOMAIN, WITHOUT HTTP/HTTPS, DO NOT ADD / AT THE END ###
@@ -1718,6 +1715,8 @@ services:
       - .env
     ports:
       - '127.0.0.1:3000:3000'
+    volumes:
+      - valkey-socket:/var/run/valkey
     networks:
       - remnawave-network
     healthcheck:
@@ -1738,16 +1737,17 @@ services:
         max-file: '5'
 
   remnawave-redis:
-    image: valkey/valkey:8.1.3-alpine
+    image: valkey/valkey:9
     container_name: remnawave-redis
     hostname: remnawave-redis
     restart: always
+    command: ['--save', '', '--appendonly', 'no', '--unixsocket', '/var/run/valkey/valkey.sock', '--unixsocketperm', '777']
     networks:
       - remnawave-network
     volumes:
-      - remnawave-redis-data:/data
+      - valkey-socket:/var/run/valkey
     healthcheck:
-      test: ['CMD', 'valkey-cli', 'ping']
+      test: ['CMD', 'valkey-cli', '-s', '/var/run/valkey/valkey.sock', 'ping']
       interval: 3s
       timeout: 10s
       retries: 3
@@ -1819,10 +1819,7 @@ volumes:
     driver: local
     external: false
     name: remnawave-db-data
-  remnawave-redis-data:
-    driver: local
-    external: false
-    name: remnawave-redis-data
+  valkey-socket:
 EOF
 }
 
@@ -2155,6 +2152,8 @@ services:
     container_name: remnanode
     hostname: remnanode
     restart: always
+    cap_add:
+      - NET_ADMIN
     network_mode: host
     env_file:
       - path: /opt/remnanode/.env-node
