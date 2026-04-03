@@ -1452,6 +1452,14 @@
                 qrCode.append(document.getElementById('qr-code-container'));
             }
 
+            document.getElementById('navbar-collapse-content').addEventListener('hide.bs.collapse', () => {
+                document.querySelectorAll('.my-navbar .dropdown.show').forEach(el => {
+                    el.classList.remove('show');
+                    el.querySelector('.dropdown-menu')?.classList.remove('show');
+                    el.querySelector('[data-bs-toggle="dropdown"]')?.setAttribute('aria-expanded', 'false');
+                });
+            });
+
             const btnGuide = document.getElementById('btn-guide');
             document.querySelectorAll('.my-dropdown-item-guide').forEach(item => {
                 item.addEventListener('click', () => {
