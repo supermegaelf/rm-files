@@ -532,13 +532,13 @@
             margin-bottom: 1.25rem;
         }
 
-        #qr-code {
+        #qr-code-container {
             padding: .5rem 1rem 1rem;
         }
 
-        #qr-code canvas {
-            width: 100%;
-            max-width: 240px;
+        #qr-code-container canvas {
+            display: block;
+            margin: 0 auto;
             border-radius: var(--bs-border-radius-xl);
         }
     </style>
@@ -1442,12 +1442,14 @@
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof QRCodeStyling !== 'undefined') {
                 const qrCode = new QRCodeStyling({
+                    width: 240,
+                    height: 240,
                     data: cleanUrl,
                     margin: 6,
                     dotsOptions: { type: 'extra-rounded' },
                     cornersSquareOptions: { type: 'extra-rounded' },
                 });
-                qrCode.append(document.getElementById('qr-code'));
+                qrCode.append(document.getElementById('qr-code-container'));
             }
 
             const btnGuide = document.getElementById('btn-guide');
@@ -1516,7 +1518,7 @@
                 <div class="modal-body">
                     <h5 class="my-text-heading fw-semibold" x-text="$t('getLinkModalTitle')"></h5>
                     <p class="my-text-content" x-html="$t('getLinkModalText')"></p>
-                    <div id="qr-code" class="text-center"></div>
+                    <div id="qr-code-container" class="text-center"></div>
                 </div>
             </div>
         </div>
