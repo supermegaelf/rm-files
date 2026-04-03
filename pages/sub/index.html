@@ -420,7 +420,6 @@
 
         /* ========== BUTTONS ========== */
         .my-btn-primary,
-        .my-btn-neutral,
         .my-btn-outline {
             --bs-btn-padding-x: .85rem;
             --bs-btn-padding-y: .25rem;
@@ -451,16 +450,6 @@
             margin-right: 0.35rem;
             font-size: 1.1em;
             flex-shrink: 0;
-        }
-
-        .my-btn-neutral {
-            --bs-btn-bg: rgb(50, 50, 50);
-            --bs-btn-hover-bg: rgb(65, 65, 65);
-            --bs-btn-focus-shadow-rgb: var(--my-emphasis-focus-shadow-rgb);
-            --bs-btn-active-bg: rgb(75, 75, 75);
-            --bs-btn-disabled-color: #fff;
-            --bs-btn-disabled-bg: rgb(50, 50, 50);
-            --bs-btn-disabled-border-color: transparent;
         }
 
         .my-btn-outline {
@@ -516,13 +505,13 @@
             --bs-modal-bg: var(--my-modal-bg);
             --bs-modal-border-width: 0;
             --bs-modal-border-radius: var(--bs-border-radius-xl);
-            --bs-modal-header-padding: 1.5rem 1.5rem 0;
+            --bs-modal-header-padding: .75rem .75rem 0;
             --bs-modal-header-border-width: 0;
         }
 
         @media (min-width: 576px) {
             .my-modal {
-                --bs-modal-padding: 2rem;
+                --bs-modal-padding: 1.25rem;
             }
         }
 
@@ -531,7 +520,7 @@
         }
 
         .my-modal .modal-content {
-            padding-bottom: 1.5rem;
+            padding-bottom: 1rem;
         }
 
         #qr-code canvas {
@@ -1073,9 +1062,8 @@
                 dark: 'Dark',
                 copyLink: 'Copy',
                 copied: 'Copied',
-                getLink: 'Get link',
+                getLink: 'QR-код',
                 getLinkModalTitle: 'Scan the QR code in the client',
-                getLinkModalSubtitle: 'Or copy the link below and paste it into the client.',
                 guide: 'Follow instructions:',
                 pc: 'Windows',
                 macos: 'MacOS',
@@ -1199,9 +1187,8 @@
                 dark: 'Темная',
                 copyLink: 'Скопировать',
                 copied: 'Скопировано',
-                getLink: 'Получить ссылку',
+                getLink: 'QR-код',
                 getLinkModalTitle: 'Отсканируй QR-код в клиенте',
-                getLinkModalSubtitle: 'Или скопируй ссылку ниже и вставь в клиент.',
                 guide: 'Следуйте инструкции:',
                 pc: 'Windows',
                 macos: 'MacOS',
@@ -1424,25 +1411,6 @@
                 }
             }));
 
-            Alpine.data('copyLink', () => ({
-                isDisabled: false,
-                async copyToClipboard() {
-                    try {
-                        await navigator.clipboard.writeText(cleanUrl);
-                        this.isDisabled = true;
-                        setTimeout(() => { this.isDisabled = false; }, 3000);
-                    } catch (err) {
-                        const tempInput = document.createElement('input');
-                        tempInput.value = cleanUrl;
-                        document.body.appendChild(tempInput);
-                        tempInput.select();
-                        document.execCommand('copy');
-                        document.body.removeChild(tempInput);
-                        this.isDisabled = true;
-                        setTimeout(() => { this.isDisabled = false; }, 3000);
-                    }
-                }
-            }));
         });
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -1515,12 +1483,9 @@
                 <div class="modal-header">
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body text-center" x-data="copyLink">
-                    <div class="mb-4" id="qr-code"></div>
-                    <h4 class="my-text-heading fw-semibold" x-text="$t('getLinkModalTitle')"></h4>
-                    <p class="my-text-content" x-text="$t('getLinkModalSubtitle')"></p>
-                    <button class="btn my-btn-primary fw-semibold" @click="copyToClipboard" :disabled="isDisabled"
-                        x-text="isDisabled ? $t('copied') : $t('copyLink')"></button>
+                <div class="modal-body text-center">
+                    <h4 class="my-text-heading fw-semibold mb-3" x-text="$t('getLinkModalTitle')"></h4>
+                    <div id="qr-code"></div>
                 </div>
             </div>
         </div>
