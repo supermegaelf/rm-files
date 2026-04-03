@@ -1519,7 +1519,7 @@
                     <div class="mb-4" id="qr-code"></div>
                     <h4 class="my-text-heading fw-semibold" x-text="$t('getLinkModalTitle')"></h4>
                     <p class="my-text-content" x-text="$t('getLinkModalSubtitle')"></p>
-                    <button class="btn my-btn-neutral" @click="copyToClipboard" :disabled="isDisabled"
+                    <button class="btn my-btn-primary fw-semibold" @click="copyToClipboard" :disabled="isDisabled"
                         x-text="isDisabled ? $t('copied') : $t('copyLink')"></button>
                 </div>
             </div>
