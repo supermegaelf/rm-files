@@ -1439,13 +1439,18 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            const qrCode = new QRCodeStyling({
-                data: cleanUrl,
-                margin: 6,
-                dotsOptions: { type: 'extra-rounded' },
-                cornersSquareOptions: { type: 'extra-rounded' },
+            document.getElementById('get-link-modal').addEventListener('shown.bs.modal', () => {
+                const qrContainer = document.getElementById('qr-code');
+                if (!qrContainer.hasChildNodes()) {
+                    const qrCode = new QRCodeStyling({
+                        data: cleanUrl,
+                        margin: 6,
+                        dotsOptions: { type: 'extra-rounded' },
+                        cornersSquareOptions: { type: 'extra-rounded' },
+                    });
+                    qrCode.append(qrContainer);
+                }
             });
-            qrCode.append(document.getElementById('qr-code'));
 
             const btnGuide = document.getElementById('btn-guide');
             document.querySelectorAll('.my-dropdown-item-guide').forEach(item => {
