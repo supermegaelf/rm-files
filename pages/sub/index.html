@@ -123,6 +123,7 @@
             --my-content-color: rgba(0, 0, 0, .65);
             --my-dropdown-bg: #fff;
             --my-dropdown-link-hover-bg: rgba(55, 53, 47, .05);
+            --my-modal-bg: #fff;
         }
 
         [data-bs-theme='dark'] {
@@ -136,6 +137,7 @@
             --my-content-color: rgba(255, 255, 255, .55);
             --my-dropdown-bg: #2c2c2c;
             --my-dropdown-link-hover-bg: rgba(255, 255, 255, .05);
+            --my-modal-bg: #232323;
         }
 
         /* ========== LAYOUT & SPACING ========== */
@@ -503,6 +505,40 @@
                 width: 100%;
             }
         }
+
+        /* ========== MODAL ========== */
+        .modal-backdrop {
+            --bs-backdrop-opacity: .75;
+        }
+
+        .my-modal {
+            --bs-modal-margin: 1rem;
+            --bs-modal-bg: var(--my-modal-bg);
+            --bs-modal-border-width: 0;
+            --bs-modal-border-radius: var(--bs-border-radius-xl);
+            --bs-modal-header-padding: 1.5rem 1.5rem 0;
+            --bs-modal-header-border-width: 0;
+        }
+
+        @media (min-width: 576px) {
+            .my-modal {
+                --bs-modal-padding: 2rem;
+            }
+        }
+
+        .my-modal .modal-dialog {
+            max-width: 420px;
+        }
+
+        .my-modal .modal-content {
+            padding-bottom: 1.5rem;
+        }
+
+        #qr-code canvas {
+            width: 100%;
+            max-width: 240px;
+            margin-top: .5rem;
+        }
     </style>
 </head>
 
@@ -653,6 +689,11 @@
                             </button>
                         </li>
                     </ul>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link my-nav-outline my-nav-secondary" type="button"
+                        data-bs-toggle="modal" data-bs-target="#get-link-modal"
+                        x-text="$t('getLink')"></button>
                 </li>
                 <li class="nav-item dropdown my-dropdown ms-auto">
                     <button class="nav-link my-nav-outline dropdown-toggle" id="btn-guide" type="button"
@@ -1011,6 +1052,7 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"></script>
+    <script src="https://unpkg.com/qr-code-styling@1.9.1/lib/qr-code-styling.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs-i18n@2.x.x/dist/cdn.min.js"
         onerror="this.onerror=null;this.src='https://unpkg.com/alpinejs-i18n@2/dist/cdn.min.js'"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer
@@ -1031,6 +1073,9 @@
                 dark: 'Dark',
                 copyLink: 'Copy',
                 copied: 'Copied',
+                getLink: 'Get link',
+                getLinkModalTitle: 'Scan the QR code in the client',
+                getLinkModalSubtitle: 'Or copy the link below and paste it into the client.',
                 guide: 'Follow instructions:',
                 pc: 'Windows',
                 macos: 'MacOS',
@@ -1154,6 +1199,9 @@
                 dark: 'Темная',
                 copyLink: 'Скопировать',
                 copied: 'Скопировано',
+                getLink: 'Получить ссылку',
+                getLinkModalTitle: 'Отсканируй QR-код в клиенте',
+                getLinkModalSubtitle: 'Или скопируй ссылку ниже и вставь в клиент.',
                 guide: 'Следуйте инструкции:',
                 pc: 'Windows',
                 macos: 'MacOS',
@@ -1375,9 +1423,36 @@
                     }
                 }
             }));
+
+            Alpine.data('copyLink', () => ({
+                isDisabled: false,
+                async copyToClipboard() {
+                    try {
+                        await navigator.clipboard.writeText(cleanUrl);
+                        this.isDisabled = true;
+                        setTimeout(() => { this.isDisabled = false; }, 3000);
+                    } catch (err) {
+                        const tempInput = document.createElement('input');
+                        tempInput.value = cleanUrl;
+                        document.body.appendChild(tempInput);
+                        tempInput.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(tempInput);
+                        this.isDisabled = true;
+                        setTimeout(() => { this.isDisabled = false; }, 3000);
+                    }
+                }
+            }));
         });
 
         document.addEventListener('DOMContentLoaded', () => {
+            const qrCode = new QRCodeStyling({
+                data: cleanUrl,
+                margin: 6,
+                dotsOptions: { type: 'extra-rounded' },
+                cornersSquareOptions: { type: 'extra-rounded' },
+            });
+            qrCode.append(document.getElementById('qr-code'));
 
             const btnGuide = document.getElementById('btn-guide');
             document.querySelectorAll('.my-dropdown-item-guide').forEach(item => {
@@ -1434,6 +1509,22 @@
         }, 4000);
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <div class="modal my-modal fade" id="get-link-modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center" x-data="copyLink">
+                    <div class="mb-4" id="qr-code"></div>
+                    <h4 class="my-text-heading fw-semibold" x-text="$t('getLinkModalTitle')"></h4>
+                    <p class="my-text-content" x-text="$t('getLinkModalSubtitle')"></p>
+                    <button class="btn my-btn-neutral" @click="copyToClipboard" :disabled="isDisabled"
+                        x-text="isDisabled ? $t('copied') : $t('copyLink')"></button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
