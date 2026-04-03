@@ -506,14 +506,7 @@
             --bs-modal-border-width: 1px;
             --bs-modal-border-color: var(--my-alpha-dark-gray-color);
             --bs-modal-border-radius: var(--bs-border-radius-xl);
-            --bs-modal-header-padding: .75rem .75rem 0;
-            --bs-modal-header-border-width: 0;
-        }
-
-        @media (min-width: 576px) {
-            .my-modal {
-                --bs-modal-padding: 1.25rem;
-            }
+            --bs-modal-padding: 1.5rem;
         }
 
         .my-modal .modal-dialog {
@@ -521,13 +514,31 @@
         }
 
         .my-modal .modal-content {
-            padding-bottom: 1rem;
+            position: relative;
+        }
+
+        .my-modal .btn-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1;
+        }
+
+        .my-modal .modal-body h5 {
+            margin-bottom: .75rem;
+        }
+
+        .my-modal .modal-body p {
+            margin-bottom: 1.25rem;
+        }
+
+        #qr-code {
+            padding: .5rem 1rem 1rem;
         }
 
         #qr-code canvas {
             width: 100%;
             max-width: 240px;
-            margin-top: .5rem;
         }
     </style>
 </head>
@@ -1487,12 +1498,10 @@
     <div class="modal my-modal fade" id="get-link-modal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <div class="modal-header">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 <div class="modal-body">
-                    <h5 class="my-text-heading fw-semibold mb-2" x-text="$t('getLinkModalTitle')"></h5>
-                    <p class="my-text-content mb-3" x-html="$t('getLinkModalText')"></p>
+                    <h5 class="my-text-heading fw-semibold" x-text="$t('getLinkModalTitle')"></h5>
+                    <p class="my-text-content" x-html="$t('getLinkModalText')"></p>
                     <div id="qr-code" class="text-center"></div>
                 </div>
             </div>
