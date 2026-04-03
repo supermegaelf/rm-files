@@ -1065,7 +1065,8 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"></script>
-    <script src="https://unpkg.com/qr-code-styling@1.9.1/lib/qr-code-styling.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.9.1/lib/qr-code-styling.js"
+        onerror="this.onerror=null;this.src='https://unpkg.com/qr-code-styling@1.9.1/lib/qr-code-styling.js'"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs-i18n@2.x.x/dist/cdn.min.js"
         onerror="this.onerror=null;this.src='https://unpkg.com/alpinejs-i18n@2/dist/cdn.min.js'"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer
@@ -1439,18 +1440,15 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('get-link-modal').addEventListener('shown.bs.modal', () => {
-                const qrContainer = document.getElementById('qr-code');
-                if (!qrContainer.hasChildNodes()) {
-                    const qrCode = new QRCodeStyling({
-                        data: cleanUrl,
-                        margin: 6,
-                        dotsOptions: { type: 'extra-rounded' },
-                        cornersSquareOptions: { type: 'extra-rounded' },
-                    });
-                    qrCode.append(qrContainer);
-                }
-            });
+            if (typeof QRCodeStyling !== 'undefined') {
+                const qrCode = new QRCodeStyling({
+                    data: cleanUrl,
+                    margin: 6,
+                    dotsOptions: { type: 'extra-rounded' },
+                    cornersSquareOptions: { type: 'extra-rounded' },
+                });
+                qrCode.append(document.getElementById('qr-code'));
+            }
 
             const btnGuide = document.getElementById('btn-guide');
             document.querySelectorAll('.my-dropdown-item-guide').forEach(item => {
