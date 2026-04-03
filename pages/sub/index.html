@@ -1452,7 +1452,11 @@
                 tabPane.classList.add('show', 'active');
             }
             
-            showActiveDropdownItem(btnGuide, selectedItem);
+            showActiveDropdownItem(
+                btnGuide,
+                selectedItem,
+                document.querySelector('.my-dropdown-item-guide.active'),
+            );
 
             for (const [os, url] of Object.entries(SUB_URL_SCHEMES)) {
                 const element = document.getElementById(`sub-url-${os}`);
