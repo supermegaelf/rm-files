@@ -2033,11 +2033,9 @@ EOL
 
     echo -e "${GRAY}  ${ARROW}${NC} Starting Docker containers"
     cd /opt/remnawave
-    compose_output=$(docker compose up -d 2>&1)
-    compose_exit=$?
-    if [ $compose_exit -ne 0 ]; then
+    if ! docker compose up -d > /tmp/.compose.log 2>&1; then
         echo -e "${RED}${CROSS}${NC} Failed to start Docker containers:"
-        echo "$compose_output"
+        cat /tmp/.compose.log
         exit 1
     fi
     echo -e "${GREEN}${CHECK}${NC} Infrastructure set up successfully"
@@ -2090,11 +2088,9 @@ EOL
         
         echo -e "${GRAY}  ${ARROW}${NC} Recreating subscription page container"
         cd /opt/remnawave
-        compose_output=$(docker compose up -d --force-recreate remnawave-subscription-page 2>&1)
-        compose_exit=$?
-        if [ $compose_exit -ne 0 ]; then
+        if ! docker compose up -d --force-recreate remnawave-subscription-page > /tmp/.compose.log 2>&1; then
             echo -e "${RED}${CROSS}${NC} Failed to recreate subscription page container:"
-            echo "$compose_output"
+            cat /tmp/.compose.log
             exit 1
         fi
         
@@ -2230,11 +2226,9 @@ EOL
     echo -e "${GRAY}  ${ARROW}${NC} Launching node services"
     sleep 3
     cd /opt/remnanode
-    compose_output=$(docker compose up -d 2>&1)
-    compose_exit=$?
-    if [ $compose_exit -ne 0 ]; then
+    if ! docker compose up -d > /tmp/.compose.log 2>&1; then
         echo -e "${RED}${CROSS}${NC} Failed to start Docker containers:"
-        echo "$compose_output"
+        cat /tmp/.compose.log
         exit 1
     fi
     echo -e "${GREEN}${CHECK}${NC} Docker containers started successfully"
