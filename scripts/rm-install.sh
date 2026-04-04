@@ -1428,10 +1428,10 @@ randomhtml() {
         sleep 3
     done
 
-    unzip -o main.zip &>/dev/null || { echo "Error unpacking archive"; exit 0; }
+    unzip -o main.zip &>/dev/null || { echo "Error unpacking archive"; exit 1; }
     rm -f main.zip
 
-    cd simple-web-templates-main/ || { echo "Error unpacking archive"; exit 0; }
+    cd simple-web-templates-main/ || { echo "Error unpacking archive"; exit 1; }
     rm -rf assets ".gitattributes" "README.md" "_config.yml" 2>/dev/null
 
     mapfile -t templates < <(find . -maxdepth 1 -type d -not -path . | sed 's|./||')
@@ -2033,7 +2033,11 @@ EOL
 
     echo -e "${GRAY}  ${ARROW}${NC} Starting Docker containers"
     cd /opt/remnawave
-    docker compose up -d > /dev/null 2>&1
+    if ! docker compose up -d > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to start Docker containers"
+        echo -e "${YELLOW}${WARNING}${NC} Run: cd /opt/remnawave && docker compose logs"
+        exit 1
+    fi
     echo -e "${GREEN}${CHECK}${NC} Infrastructure set up successfully"
     echo
     echo -e "${CYAN}${INFO}${NC} Setting up Remnawave panel..."
@@ -2084,7 +2088,11 @@ EOL
         
         echo -e "${GRAY}  ${ARROW}${NC} Recreating subscription page container"
         cd /opt/remnawave
-        docker compose up -d --force-recreate remnawave-subscription-page > /dev/null 2>&1
+        if ! docker compose up -d --force-recreate remnawave-subscription-page > /dev/null 2>&1; then
+            echo -e "${RED}${CROSS}${NC} Failed to recreate subscription page container"
+            echo -e "${YELLOW}${WARNING}${NC} Run: cd /opt/remnawave && docker compose logs remnawave-subscription-page"
+            exit 1
+        fi
         
         echo -e "${GREEN}${CHECK}${NC} Remnawave panel configured successfully"
     else
@@ -2218,7 +2226,11 @@ EOL
     echo -e "${GRAY}  ${ARROW}${NC} Launching node services"
     sleep 3
     cd /opt/remnanode
-    docker compose up -d > /dev/null 2>&1
+    if ! docker compose up -d > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to start Docker containers"
+        echo -e "${YELLOW}${WARNING}${NC} Run: cd /opt/remnanode && docker compose logs"
+        exit 1
+    fi
     echo -e "${GREEN}${CHECK}${NC} Docker containers started successfully"
     echo
     echo -e "${CYAN}${INFO}${NC} Installing camouflage template..."
