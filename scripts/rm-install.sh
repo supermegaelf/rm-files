@@ -2033,7 +2033,7 @@ EOL
 
     echo -e "${GRAY}  ${ARROW}${NC} Starting Docker containers"
     cd /opt/remnawave
-    if ! docker compose up -d > /tmp/.compose.log 2>&1; then
+    if ! docker_compose_up; then
         echo -e "${RED}${CROSS}${NC} Failed to start Docker containers:"
         cat /tmp/.compose.log
         exit 1
@@ -2093,6 +2093,7 @@ EOL
             cat /tmp/.compose.log
             exit 1
         fi
+
         
         echo -e "${GREEN}${CHECK}${NC} Remnawave panel configured successfully"
     else
@@ -2226,7 +2227,7 @@ EOL
     echo -e "${GRAY}  ${ARROW}${NC} Launching node services"
     sleep 3
     cd /opt/remnanode
-    if ! docker compose up -d > /tmp/.compose.log 2>&1; then
+    if ! docker_compose_up; then
         echo -e "${RED}${CROSS}${NC} Failed to start Docker containers:"
         cat /tmp/.compose.log
         exit 1
@@ -2258,6 +2259,24 @@ EOL
             fi
             sleep $delay
         fi
+        ((attempt++))
+    done
+}
+
+docker_compose_up() {
+    local max_attempts=3
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        docker compose pull > /tmp/.compose.log 2>&1 || true
+        if docker compose up -d --pull never >> /tmp/.compose.log 2>&1; then
+            return 0
+        fi
+        if [ $attempt -eq $max_attempts ]; then
+            return 1
+        fi
+        echo -e "${YELLOW}${WARNING}${NC} Attempt $attempt failed, retrying in 10s..."
+        sleep 10
         ((attempt++))
     done
 }
