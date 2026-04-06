@@ -1192,7 +1192,7 @@ create_config_profile() {
     local name=$3
     local domain=$4
     local private_key=$5
-    local inbound_tag="${6:-Steal}"
+    local inbound_tag="${6:-VLESS_TCP_REALITY}"
 
     local short_id=$(openssl rand -hex 8)
 
