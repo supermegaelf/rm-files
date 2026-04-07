@@ -501,17 +501,12 @@ setup_bridge() {
 main() {
     log_entry
     check_root
-    echo
     check_deps
 
     echo
     echo -e "${PURPLE}=======================${NC}"
     echo -e "${WHITE}REMNAWAVE BRIDGE SETUP${NC}"
     echo -e "${PURPLE}=======================${NC}"
-    echo
-    echo -e "${PURPLE}===================${NC}"
-    echo -e "${WHITE}Bridge Configuration${NC}"
-    echo -e "${PURPLE}===================${NC}"
     echo
 
     input_panel_url
