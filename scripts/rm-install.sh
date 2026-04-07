@@ -644,7 +644,7 @@ check_certificates() {
     if [ "$base_domain" != "$DOMAIN" ]; then
         live_dir=$(find "$cert_dir" -maxdepth 1 -type d -name "${base_domain}*" 2>/dev/null | sort -V | tail -n 1)
         if [ -n "$live_dir" ] && [ -d "$live_dir" ] && is_wildcard_cert "$base_domain"; then
-            echo -e "${GREEN}Wildcard certificate found in /etc/letsencrypt/live/$base_domain for $DOMAIN${NC}"
+            echo -e "${GRAY}  ${ARROW}${NC} Wildcard certificate found for $DOMAIN"
             return 0
         fi
     fi
@@ -2247,7 +2247,7 @@ EOL
 
     while [ $attempt -le $max_attempts ]; do
         echo -e "${GRAY}  ${ARROW}${NC} Attempt $attempt of $max_attempts"
-        if curl -s --fail --max-time 10 "https://$SELFSTEAL_DOMAIN" | grep -q "html"; then
+        if curl -sk --max-time 10 "https://$SELFSTEAL_DOMAIN" | grep -qi "html"; then
             echo -e "${GREEN}${CHECK}${NC} Node connection established successfully"
             break
         else
