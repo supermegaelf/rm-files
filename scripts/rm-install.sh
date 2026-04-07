@@ -365,7 +365,7 @@ install_system_packages() {
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Installing and configuring cron service"
-    if ! dpkg -l | grep -q '^ii.*cron '; then
+    if ! dpkg -l cron 2>/dev/null | grep -q '^ii'; then
         if ! apt-get install -y cron > /dev/null 2>&1; then
             echo -e "${RED}${CROSS}${NC} Failed to install cron"
             return 1
