@@ -849,9 +849,10 @@ handle_certificates() {
         if ! check_certificates "$domain"; then
             need_certificates=true
         else
-            days_left=$(check_cert_expiry "$domain")
-            if [ $? -eq 0 ] && [ "$days_left" -lt "$min_days_left" ]; then
-                min_days_left=$days_left
+            if days_left=$(check_cert_expiry "$domain"); then
+                if [ "$days_left" -lt "$min_days_left" ]; then
+                    min_days_left=$days_left
+                fi
             fi
         fi
     done
