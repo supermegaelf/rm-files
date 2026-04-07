@@ -64,6 +64,7 @@ check_root() {
 }
 
 install_deps() {
+    echo
     echo -e "${CYAN}${INFO}${NC} Installing dependencies..."
 
     echo -e "${GRAY}  ${ARROW}${NC} Updating package lists"
