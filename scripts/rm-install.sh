@@ -1111,7 +1111,7 @@ create_node_api() {
     local config_profile_uuid=$3
     local inbound_uuid=$4
     local node_address="${5:-172.30.0.1}"
-    local node_name="${6:-Steal}"
+    local node_name="${6:-Default}"
 
     local node_data=$(cat <<EOF
 {
@@ -1261,7 +1261,7 @@ create_host() {
     local inbound_uuid=$3
     local address=$4
     local config_uuid=$5
-    local host_remark="${6:-Steal}"
+    local host_remark="${6:-Default}"
 
     local request_body=$(jq -n --arg config_uuid "$config_uuid" --arg inbound_uuid "$inbound_uuid" --arg remark "$host_remark" --arg address "$address" '{
         inbound: {
