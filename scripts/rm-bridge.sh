@@ -472,9 +472,9 @@ setup_bridge() {
     update_bridge_squad
 
     echo
-    echo -e "${PURPLE}=================${NC}"
-    echo -e "${GREEN}${CHECK}${NC} Setup complete"
-    echo -e "${PURPLE}=================${NC}"
+    echo -e "${PURPLE}========================${NC}"
+    echo -e "${GREEN}${CHECK}${NC} Installation complete"
+    echo -e "${PURPLE}========================${NC}"
     echo
     echo -e "${CYAN}Install node on Bridge server:${NC}"
     echo -e "${WHITE}bash <(curl -s https://raw.githubusercontent.com/supermegaelf/rm-files/main/scripts/rm-install.sh)${NC}"
