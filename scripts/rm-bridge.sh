@@ -92,6 +92,25 @@ check_deps() {
     fi
 }
 
+#=====================
+# MAIN MENU FUNCTIONS
+#=====================
+
+show_main_menu() {
+    echo
+    echo -e "${PURPLE}=======================${NC}"
+    echo -e "${WHITE}REMNAWAVE BRIDGE SETUP${NC}"
+    echo -e "${PURPLE}=======================${NC}"
+    echo
+    echo -e "${CYAN}Please select an option:${NC}"
+    echo
+    echo -e "${GREEN}1.${NC} Setup bridge"
+    echo -e "${GREEN}2.${NC} Add node to bridge"
+    echo -e "${RED}3.${NC} Exit"
+    echo
+    echo -ne "${CYAN}Enter your choice (1, 2, or 3): ${NC}"
+}
+
 #===================
 # INPUT FUNCTIONS
 #===================
@@ -142,13 +161,35 @@ input_bridge_domain() {
 }
 
 input_foreign_domain() {
-    echo -ne "${CYAN}Foreign node selfsteal domain (e.g., example.com): ${NC}"
+    echo -ne "${CYAN}Foreign node domain (e.g., example.com): ${NC}"
     read FOREIGN_DOMAIN
     while [[ -z "$FOREIGN_DOMAIN" ]] || ! validate_domain "$FOREIGN_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
         echo -ne "${CYAN}Foreign node domain: ${NC}"
         read FOREIGN_DOMAIN
+    done
+}
+
+input_bridge_port() {
+    echo -ne "${CYAN}Bridge port for new inbound (e.g., 9443): ${NC}"
+    read BRIDGE_PORT
+    while [[ -z "$BRIDGE_PORT" ]] || ! [[ "$BRIDGE_PORT" =~ ^[0-9]+$ ]] || [ "$BRIDGE_PORT" -lt 1024 ] || [ "$BRIDGE_PORT" -gt 65535 ]; do
+        echo -e "${RED}${CROSS}${NC} Invalid port! Please enter a valid port number (1024-65535)."
+        echo
+        echo -ne "${CYAN}Bridge port: ${NC}"
+        read BRIDGE_PORT
+    done
+}
+
+input_host_remark() {
+    echo -ne "${CYAN}Host remark (e.g., France): ${NC}"
+    read HOST_REMARK
+    while [[ -z "$HOST_REMARK" ]]; do
+        echo -e "${RED}${CROSS}${NC} Remark cannot be empty!"
+        echo
+        echo -ne "${CYAN}Host remark: ${NC}"
+        read HOST_REMARK
     done
 }
 
@@ -218,6 +259,51 @@ generate_bridge_keys() {
     fi
 
     echo -e "${GREEN}${CHECK}${NC} Keys generated"
+}
+
+fetch_panel_data() {
+    echo -e "${CYAN}${INFO}${NC} Fetching panel configuration..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching config profiles"
+    local profiles_response
+    profiles_response=$(make_api_request GET "/api/config-profiles")
+
+    BRIDGE_PROFILE_UUID=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "Bridge") | .uuid')
+    BRIDGE_CONFIG=$(echo "$profiles_response" | jq -c '.response.configProfiles[] | select(.name == "Bridge") | .config')
+
+    if [ -z "$BRIDGE_PROFILE_UUID" ] || [ "$BRIDGE_PROFILE_UUID" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} Bridge config profile not found"
+        exit 1
+    fi
+
+    STEALCONFIG_UUID=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "StealConfig") | .uuid')
+    STEALCONFIG_CONFIG=$(echo "$profiles_response" | jq -c '.response.configProfiles[] | select(.name == "StealConfig") | .config')
+
+    if [ -z "$STEALCONFIG_UUID" ] || [ "$STEALCONFIG_UUID" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} StealConfig profile not found"
+        exit 1
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching nodes"
+    local nodes_response
+    nodes_response=$(make_api_request GET "/api/nodes")
+
+    BRIDGE_NODE_UUID=$(echo "$nodes_response" | jq -r \
+        --arg profile_uuid "$BRIDGE_PROFILE_UUID" \
+        '.response[] | select(.configProfile.activeConfigProfileUuid == $profile_uuid) | .uuid')
+    BRIDGE_ADDRESS=$(echo "$nodes_response" | jq -r \
+        --arg profile_uuid "$BRIDGE_PROFILE_UUID" \
+        '.response[] | select(.configProfile.activeConfigProfileUuid == $profile_uuid) | .address')
+    BRIDGE_CURRENT_INBOUNDS=$(echo "$nodes_response" | jq -c \
+        --arg profile_uuid "$BRIDGE_PROFILE_UUID" \
+        '[.response[] | select(.configProfile.activeConfigProfileUuid == $profile_uuid) | .configProfile.activeInbounds[].uuid]')
+
+    if [ -z "$BRIDGE_NODE_UUID" ] || [ "$BRIDGE_NODE_UUID" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} Bridge node not found"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Panel data fetched"
 }
 
 create_bridge_profile() {
@@ -307,6 +393,167 @@ create_bridge_profile() {
     echo -e "${GREEN}${CHECK}${NC} Config profile created"
 }
 
+update_bridge_config_profile() {
+    echo -e "${CYAN}${INFO}${NC} Updating Bridge config profile..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Building new inbound and outbound"
+    local bridge_private_key
+    bridge_private_key=$(echo "$BRIDGE_CONFIG" | jq -r '.inbounds[0].streamSettings.realitySettings.privateKey')
+
+    local inbound_tag="VLESS_INBOUND_${BRIDGE_PORT}"
+    local outbound_tag="VLESS_OUTBOUND_${BRIDGE_PORT}"
+
+    local new_inbound
+    new_inbound=$(jq -n \
+        --arg tag "$inbound_tag" \
+        --arg port "$BRIDGE_PORT" \
+        --arg private_key "$bridge_private_key" \
+        '{
+            tag: $tag,
+            port: ($port | tonumber),
+            listen: "0.0.0.0",
+            protocol: "vless",
+            settings: { clients: [], decryption: "none" },
+            sniffing: { enabled: true, destOverride: ["http", "tls", "quic"] },
+            streamSettings: {
+                network: "raw",
+                security: "reality",
+                realitySettings: {
+                    target: "max.ru:443",
+                    shortIds: [""],
+                    privateKey: $private_key,
+                    serverNames: ["max.ru"]
+                }
+            }
+        }')
+
+    local new_outbound
+    new_outbound=$(jq -n \
+        --arg tag "$outbound_tag" \
+        --arg domain "$FOREIGN_DOMAIN" \
+        --arg uuid "$VLESS_UUID" \
+        --arg pbk "$FOREIGN_PBK" \
+        --arg sid "$FOREIGN_SID" \
+        '{
+            tag: $tag,
+            protocol: "vless",
+            settings: {
+                vnext: [{
+                    address: $domain,
+                    port: 443,
+                    users: [{ id: $uuid, flow: "xtls-rprx-vision", encryption: "none" }]
+                }]
+            },
+            streamSettings: {
+                network: "tcp",
+                security: "reality",
+                realitySettings: {
+                    serverName: $domain,
+                    publicKey: $pbk,
+                    shortId: $sid
+                }
+            }
+        }')
+
+    local new_rule
+    new_rule=$(jq -n \
+        --arg inbound_tag "$inbound_tag" \
+        --arg outbound_tag "$outbound_tag" \
+        '{ inboundTag: [$inbound_tag], outboundTag: $outbound_tag }')
+
+    local updated_config
+    updated_config=$(echo "$BRIDGE_CONFIG" | jq -c \
+        --argjson inbound "$new_inbound" \
+        --argjson outbound "$new_outbound" \
+        --argjson rule "$new_rule" \
+        '.inbounds += [$inbound] | .outbounds += [$outbound] | .routing.rules += [$rule]')
+
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
+    local patch_data
+    patch_data=$(jq -n \
+        --arg uuid "$BRIDGE_PROFILE_UUID" \
+        --argjson config "$updated_config" \
+        '{ uuid: $uuid, config: $config }')
+
+    local patch_response
+    patch_response=$(make_api_request PATCH "/api/config-profiles" "$patch_data")
+
+    NEW_INBOUND_UUID=$(echo "$patch_response" | jq -r \
+        --arg port "$BRIDGE_PORT" \
+        '.response.inbounds[] | select(.port == ($port | tonumber)) | .uuid')
+
+    if [ -z "$NEW_INBOUND_UUID" ] || [ "$NEW_INBOUND_UUID" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} Failed to update Bridge config profile: $patch_response"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Bridge config profile updated"
+}
+
+update_bridge_node_inbounds() {
+    echo -e "${CYAN}${INFO}${NC} Updating Bridge node inbounds..."
+
+    local updated_inbounds
+    updated_inbounds=$(echo "$BRIDGE_CURRENT_INBOUNDS" | jq -c \
+        --arg new_uuid "$NEW_INBOUND_UUID" \
+        '. + [$new_uuid] | unique')
+
+    local patch_data
+    patch_data=$(jq -n \
+        --arg node_uuid "$BRIDGE_NODE_UUID" \
+        --arg profile_uuid "$BRIDGE_PROFILE_UUID" \
+        --argjson inbounds "$updated_inbounds" \
+        '{
+            uuid: $node_uuid,
+            configProfile: {
+                activeConfigProfileUuid: $profile_uuid,
+                activeInbounds: $inbounds
+            }
+        }')
+
+    local patch_response
+    patch_response=$(make_api_request PATCH "/api/nodes" "$patch_data")
+
+    if ! echo "$patch_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to update Bridge node: $patch_response"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Bridge node updated"
+}
+
+update_stealconfig_servernames() {
+    echo -e "${CYAN}${INFO}${NC} Updating StealConfig server names..."
+
+    if echo "$STEALCONFIG_CONFIG" | jq -e \
+        --arg domain "$FOREIGN_DOMAIN" \
+        '.inbounds[0].streamSettings.realitySettings.serverNames | contains([$domain])' > /dev/null 2>&1; then
+        echo -e "${GREEN}${CHECK}${NC} Domain already in StealConfig"
+        return 0
+    fi
+
+    local updated_config
+    updated_config=$(echo "$STEALCONFIG_CONFIG" | jq -c \
+        --arg domain "$FOREIGN_DOMAIN" \
+        '.inbounds[0].streamSettings.realitySettings.serverNames += [$domain]')
+
+    local patch_data
+    patch_data=$(jq -n \
+        --arg uuid "$STEALCONFIG_UUID" \
+        --argjson config "$updated_config" \
+        '{ uuid: $uuid, config: $config }')
+
+    local patch_response
+    patch_response=$(make_api_request PATCH "/api/config-profiles" "$patch_data")
+
+    if ! echo "$patch_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to update StealConfig: $patch_response"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} StealConfig updated"
+}
+
 create_bridge_node() {
     echo -e "${CYAN}${INFO}${NC} Creating Bridge node in panel..."
 
@@ -390,7 +637,42 @@ update_bridge_host() {
     echo -e "${GREEN}${CHECK}${NC} Host updated"
 }
 
+create_bridge_host() {
+    echo -e "${CYAN}${INFO}${NC} Creating host..."
+
+    local host_data
+    host_data=$(jq -n \
+        --arg remark "$HOST_REMARK" \
+        --arg address "$BRIDGE_ADDRESS" \
+        --arg port "$BRIDGE_PORT" \
+        --arg profile_uuid "$BRIDGE_PROFILE_UUID" \
+        --arg inbound_uuid "$NEW_INBOUND_UUID" \
+        '{
+            remark: $remark,
+            address: $address,
+            port: ($port | tonumber),
+            sni: "max.ru",
+            fingerprint: "chrome",
+            inbound: {
+                configProfileUuid: $profile_uuid,
+                configProfileInboundUuid: $inbound_uuid
+            }
+        }')
+
+    local host_response
+    host_response=$(make_api_request POST "/api/hosts" "$host_data")
+
+    if ! echo "$host_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to create host: $host_response"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Host created"
+}
+
 update_bridge_squad() {
+    local target_inbound_uuid="${1:-$BRIDGE_INBOUND_UUID}"
+
     echo -e "${CYAN}${INFO}${NC} Adding inbound to squad..."
 
     echo -e "${GRAY}  ${ARROW}${NC} Fetching squad configuration"
@@ -413,7 +695,7 @@ update_bridge_squad() {
     local inbounds_array
     inbounds_array=$(jq -n \
         --argjson existing "$existing_inbounds" \
-        --arg new "$BRIDGE_INBOUND_UUID" \
+        --arg new "$target_inbound_uuid" \
         '$existing + [$new] | unique')
 
     echo -e "${GRAY}  ${ARROW}${NC} Updating squad"
@@ -495,6 +777,48 @@ setup_bridge() {
     echo
 }
 
+add_node_to_bridge() {
+    set -e
+
+    echo
+    echo -e "${GREEN}Fetching data${NC}"
+    echo -e "${GREEN}=============${NC}"
+    echo
+
+    fetch_foreign_node_data
+
+    echo
+    echo -e "${GREEN}Fetching panel data${NC}"
+    echo -e "${GREEN}===================${NC}"
+    echo
+
+    fetch_panel_data
+
+    echo
+    echo -e "${GREEN}Configuring panel${NC}"
+    echo -e "${GREEN}=================${NC}"
+    echo
+
+    update_bridge_config_profile
+    echo
+    update_bridge_node_inbounds
+    echo
+    update_stealconfig_servernames
+    echo
+    create_bridge_host
+    echo
+    update_bridge_squad "$NEW_INBOUND_UUID"
+
+    echo
+    echo -e "${PURPLE}========================${NC}"
+    echo -e "${GREEN}${CHECK}${NC} Node added successfully"
+    echo -e "${PURPLE}========================${NC}"
+    echo
+    echo -e "${CYAN}Open port on bridge server:${NC}"
+    echo -e "${WHITE}ufw allow ${BRIDGE_PORT}/tcp${NC}"
+    echo
+}
+
 #==================
 # MAIN ENTRY POINT
 #==================
@@ -504,19 +828,52 @@ main() {
     check_root
     check_deps
 
-    echo
-    echo -e "${PURPLE}=======================${NC}"
-    echo -e "${WHITE}REMNAWAVE BRIDGE SETUP${NC}"
-    echo -e "${PURPLE}=======================${NC}"
-    echo
+    show_main_menu
+    read SETUP_TYPE
 
-    input_panel_url
-    input_api_token
-    input_sub_url
-    input_bridge_domain
-    input_foreign_domain
+    case $SETUP_TYPE in
+        1)
+            echo
+            echo -e "${PURPLE}===================${NC}"
+            echo -e "${WHITE}Bridge Setup${NC}"
+            echo -e "${PURPLE}===================${NC}"
+            echo
 
-    setup_bridge
+            input_panel_url
+            input_api_token
+            input_sub_url
+            input_bridge_domain
+            input_foreign_domain
+
+            setup_bridge
+            ;;
+        2)
+            echo
+            echo -e "${PURPLE}======================${NC}"
+            echo -e "${WHITE}Add Node to Bridge${NC}"
+            echo -e "${PURPLE}======================${NC}"
+            echo
+
+            input_panel_url
+            input_api_token
+            input_sub_url
+            input_foreign_domain
+            input_bridge_port
+            input_host_remark
+
+            add_node_to_bridge
+            ;;
+        3)
+            echo
+            echo -e "${YELLOW}${WARNING}${NC} Exiting..."
+            exit 0
+            ;;
+        *)
+            echo
+            echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1, 2, or 3."
+            exit 1
+            ;;
+    esac
 }
 
 main
