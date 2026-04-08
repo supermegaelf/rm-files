@@ -402,8 +402,8 @@ install_system_packages() {
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Checking Docker DNS connectivity"
-    if ! ping -c 1 download.docker.com >/dev/null 2>&1; then
-        echo -e "${RED}${CROSS}${NC} Error: Unable to resolve download.docker.com. Check your DNS settings."
+    if ! curl -s --max-time 5 https://download.docker.com >/dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Error: Unable to reach download.docker.com. Check your DNS settings."
         return 1
     fi
 
