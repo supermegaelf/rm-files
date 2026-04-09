@@ -752,8 +752,76 @@ assign_local_port() {
     NEW_LOCAL_PORT=$((max_port + 1))
 }
 
+install_docker() {
+    echo -e "${CYAN}${INFO}${NC} Installing Docker..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Installing prerequisites"
+    if ! apt-get install -y ca-certificates curl gnupg > /dev/null 2>&1; then
+        error "Failed to install Docker prerequisites"
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Checking Docker DNS connectivity"
+    if ! curl -s --max-time 5 https://download.docker.com >/dev/null 2>&1; then
+        error "Unable to reach download.docker.com. Check your DNS settings."
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Adding Docker repository"
+    install -m 0755 -d /etc/apt/keyrings
+    if grep -q "Ubuntu" /etc/os-release; then
+        if ! curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null; then
+            error "Failed to download Docker GPG key"
+        fi
+        chmod a+r /etc/apt/keyrings/docker.asc
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    elif grep -q "Debian" /etc/os-release; then
+        if ! curl -fsSL https://download.docker.com/linux/debian/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null; then
+            error "Failed to download Docker GPG key"
+        fi
+        chmod a+r /etc/apt/keyrings/docker.asc
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Updating package list"
+    if ! apt-get update > /dev/null 2>&1; then
+        error "Failed to update package list after adding Docker repository"
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Installing Docker packages"
+    if ! apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin > /dev/null 2>&1; then
+        error "Failed to install Docker"
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Starting Docker service"
+    if ! systemctl is-active --quiet docker; then
+        if ! systemctl start docker > /dev/null 2>&1; then
+            error "Failed to start Docker"
+        fi
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Enabling Docker auto-start"
+    if ! systemctl is-enabled --quiet docker; then
+        if ! systemctl enable docker > /dev/null 2>&1; then
+            error "Failed to enable Docker auto-start"
+        fi
+    fi
+
+    if ! docker info >/dev/null 2>&1; then
+        error "Docker is not working properly"
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Docker installed"
+}
+
+check_docker() {
+    if ! command -v docker &> /dev/null; then
+        install_docker
+    fi
+}
+
 setup_nginx_stream() {
     echo -e "${CYAN}${INFO}${NC} Setting up nginx stream..."
+
+    check_docker
 
     mkdir -p /opt/remnabridge
 
