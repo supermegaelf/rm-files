@@ -826,9 +826,9 @@ add_node_to_bridge() {
     update_bridge_squad "$NEW_INBOUND_UUID"
 
     echo
-    echo -e "${PURPLE}========================${NC}"
+    echo -e "${PURPLE}==========================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Node added successfully"
-    echo -e "${PURPLE}========================${NC}"
+    echo -e "${PURPLE}==========================${NC}"
     echo
     if command -v ufw &>/dev/null; then
         echo -e "${GRAY}  ${ARROW}${NC} Opening port ${BRIDGE_PORT}/tcp in ufw"
@@ -867,9 +867,9 @@ main() {
             ;;
         2)
             echo
-            echo -e "${PURPLE}======================${NC}"
+            echo -e "${PURPLE}===================${NC}"
             echo -e "${WHITE}Add Node to Bridge${NC}"
-            echo -e "${PURPLE}======================${NC}"
+            echo -e "${PURPLE}===================${NC}"
             echo
 
             input_panel_url
