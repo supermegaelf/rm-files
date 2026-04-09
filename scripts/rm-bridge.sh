@@ -813,6 +813,15 @@ add_node_to_bridge() {
 
     fetch_panel_data
 
+    local used_ports
+    used_ports=$(echo "$BRIDGE_CONFIG" | jq -r '.inbounds[].port')
+    if echo "$used_ports" | grep -qx "$BRIDGE_PORT"; then
+        local ports_list
+        ports_list=$(echo "$used_ports" | tr '\n' ' ')
+        echo -e "${RED}${CROSS}${NC} Port ${BRIDGE_PORT} is already in use by bridge (used ports: ${ports_list})"
+        exit 1
+    fi
+
     echo
     echo -e "${GREEN}Configuring panel${NC}"
     echo -e "${GREEN}=================${NC}"
