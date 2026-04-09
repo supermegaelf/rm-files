@@ -827,6 +827,7 @@ install_docker() {
     fi
 
     echo -e "${GREEN}${CHECK}${NC} Docker installed"
+    echo
 }
 
 check_docker() {
@@ -935,7 +936,6 @@ setup_bridge() {
     echo
 
     check_docker
-    echo
     setup_nginx_stream
 
     echo
