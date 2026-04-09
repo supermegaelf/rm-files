@@ -814,8 +814,10 @@ add_node_to_bridge() {
     echo -e "${GREEN}${CHECK}${NC} Node added successfully"
     echo -e "${PURPLE}========================${NC}"
     echo
-    echo -e "${CYAN}Open port on bridge server:${NC}"
-    echo -e "${WHITE}ufw allow ${BRIDGE_PORT}/tcp${NC}"
+    if command -v ufw &>/dev/null; then
+        echo -e "${GRAY}  ${ARROW}${NC} Opening port ${BRIDGE_PORT}/tcp in ufw"
+        ufw allow "${BRIDGE_PORT}/tcp" > /dev/null
+    fi
     echo
 }
 
