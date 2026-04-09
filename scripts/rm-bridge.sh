@@ -332,7 +332,7 @@ create_bridge_profile() {
                         network: "raw",
                         security: "reality",
                         realitySettings: {
-                            target: "max.ru:443",
+                            target: ($foreign_domain + ":443"),
                             shortIds: [""],
                             privateKey: $bridge_private_key,
                             serverNames: [$foreign_domain]
@@ -420,7 +420,7 @@ update_bridge_config_profile() {
                 network: "raw",
                 security: "reality",
                 realitySettings: {
-                    target: "max.ru:443",
+                    target: ($foreign_domain + ":443"),
                     shortIds: [""],
                     privateKey: $private_key,
                     serverNames: [$foreign_domain]
