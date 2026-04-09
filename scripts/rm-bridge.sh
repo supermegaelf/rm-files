@@ -852,9 +852,9 @@ main() {
     case $SETUP_TYPE in
         1)
             echo
-            echo -e "${PURPLE}===================${NC}"
+            echo -e "${PURPLE}=============${NC}"
             echo -e "${WHITE}Bridge Setup${NC}"
-            echo -e "${PURPLE}===================${NC}"
+            echo -e "${PURPLE}=============${NC}"
             echo
 
             input_panel_url
