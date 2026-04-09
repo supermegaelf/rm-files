@@ -347,10 +347,10 @@ create_bridge_profile() {
                         network: "raw",
                         security: "reality",
                         realitySettings: {
-                            target: ($reality_sni + ":443"),
+                            target: ($foreign_domain + ":443"),
                             shortIds: [""],
                             privateKey: $bridge_private_key,
-                            serverNames: [$reality_sni]
+                            serverNames: [$foreign_domain]
                         }
                     }
                 }],
@@ -423,7 +423,7 @@ update_bridge_config_profile() {
         --arg tag "$inbound_tag" \
         --arg port "$NEW_LOCAL_PORT" \
         --arg private_key "$bridge_private_key" \
-        --arg reality_sni "$REALITY_SNI" \
+        --arg foreign_domain "$FOREIGN_DOMAIN" \
         '{
             tag: $tag,
             port: ($port | tonumber),
@@ -435,10 +435,10 @@ update_bridge_config_profile() {
                 network: "raw",
                 security: "reality",
                 realitySettings: {
-                    target: ($reality_sni + ":443"),
+                    target: ($foreign_domain + ":443"),
                     shortIds: [""],
                     privateKey: $private_key,
-                    serverNames: [$reality_sni]
+                    serverNames: [$foreign_domain]
                 }
             }
         }')
@@ -682,14 +682,14 @@ update_bridge_host() {
     host_update=$(jq -n \
         --arg host_uuid "$host_uuid" \
         --arg bridge_domain "$BRIDGE_DOMAIN" \
-        --arg reality_sni "$REALITY_SNI" \
+        --arg foreign_domain "$FOREIGN_DOMAIN" \
         --arg profile_uuid "$BRIDGE_PROFILE_UUID" \
         --arg inbound_uuid "$BRIDGE_INBOUND_UUID" \
         '{
             uuid: $host_uuid,
             address: $bridge_domain,
             port: 443,
-            sni: $reality_sni,
+            sni: $foreign_domain,
             fingerprint: "chrome",
             overrideSniFromAddress: false,
             keepSniBlank: false,
@@ -719,21 +719,21 @@ create_bridge_host() {
 
     local existing_host_uuid
     existing_host_uuid=$(echo "$hosts_response" | jq -r \
-        --arg domain "$REALITY_SNI" \
+        --arg domain "$FOREIGN_DOMAIN" \
         '.response[] | select(.sni == $domain) | .uuid' | head -1)
 
     local host_payload
     host_payload=$(jq -n \
         --arg remark "$HOST_REMARK" \
         --arg address "$BRIDGE_ADDRESS" \
-        --arg reality_sni "$REALITY_SNI" \
+        --arg foreign_domain "$FOREIGN_DOMAIN" \
         --arg profile_uuid "$BRIDGE_PROFILE_UUID" \
         --arg inbound_uuid "$NEW_INBOUND_UUID" \
         '{
             remark: $remark,
             address: $address,
             port: 443,
-            sni: $reality_sni,
+            sni: $foreign_domain,
             fingerprint: "chrome",
             overrideSniFromAddress: false,
             keepSniBlank: false,
@@ -903,7 +903,7 @@ events {
 
 stream {
     map \$ssl_preread_server_name \$backend {
-        ${REALITY_SNI}  127.0.0.1:10443;
+        ${FOREIGN_DOMAIN}  127.0.0.1:10443;
         default         127.0.0.1:10443;
     }
 
@@ -940,7 +940,7 @@ update_nginx_stream() {
     local nginx_conf="/opt/remnabridge/nginx.conf"
 
     echo -e "${GRAY}  ${ARROW}${NC} Adding SNI mapping"
-    sed -i "/^        default /i\\        ${REALITY_SNI}  127.0.0.1:${NEW_LOCAL_PORT};" "$nginx_conf"
+    sed -i "/^        default /i\\        ${FOREIGN_DOMAIN}  127.0.0.1:${NEW_LOCAL_PORT};" "$nginx_conf"
 
     echo -e "${GRAY}  ${ARROW}${NC} Reloading nginx"
     docker exec remnabridge-nginx nginx -s reload > /dev/null 2>&1
@@ -1030,10 +1030,10 @@ add_node_to_bridge() {
 
     local existing_domain
     existing_domain=$(echo "$BRIDGE_CONFIG" | jq -r \
-        --arg domain "$REALITY_SNI" \
+        --arg domain "$FOREIGN_DOMAIN" \
         '.inbounds[] | select(.streamSettings.realitySettings.serverNames[]? == $domain) | .port')
     if [ -n "$existing_domain" ]; then
-        echo -e "${RED}${CROSS}${NC} Reality SNI ${REALITY_SNI} is already configured on bridge"
+        echo -e "${RED}${CROSS}${NC} Foreign domain ${FOREIGN_DOMAIN} is already configured on bridge"
         exit 1
     fi
 
