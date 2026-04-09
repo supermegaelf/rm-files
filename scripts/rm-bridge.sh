@@ -183,7 +183,7 @@ input_bridge_port() {
 }
 
 input_host_remark() {
-    echo -ne "${CYAN}Host remark (e.g., France): ${NC}"
+    echo -ne "${CYAN}Host remark (e.g., 🇳🇱 Нидерланды): ${NC}"
     read HOST_REMARK
     while [[ -z "$HOST_REMARK" ]]; do
         echo -e "${RED}${CROSS}${NC} Remark cannot be empty!"
@@ -511,6 +511,7 @@ update_bridge_node_inbounds() {
             }
         }')
 
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
     local patch_response
     patch_response=$(make_api_request PATCH "/api/nodes" "$patch_data")
 
@@ -528,7 +529,8 @@ update_stealconfig_servernames() {
     if echo "$STEALCONFIG_CONFIG" | jq -e \
         --arg domain "$FOREIGN_DOMAIN" \
         '.inbounds[0].streamSettings.realitySettings.serverNames | contains([$domain])' > /dev/null 2>&1; then
-        echo -e "${GREEN}${CHECK}${NC} Domain already in StealConfig"
+        echo -e "${GRAY}  ${ARROW}${NC} Domain already present"
+        echo -e "${GREEN}${CHECK}${NC} StealConfig unchanged"
         return 0
     fi
 
@@ -543,6 +545,7 @@ update_stealconfig_servernames() {
         --argjson config "$updated_config" \
         '{ uuid: $uuid, config: $config }')
 
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
     local patch_response
     patch_response=$(make_api_request PATCH "/api/config-profiles" "$patch_data")
 
@@ -824,16 +827,16 @@ add_node_to_bridge() {
     create_bridge_host
     echo
     update_bridge_squad "$NEW_INBOUND_UUID"
-
-    echo
-    echo -e "${PURPLE}==========================${NC}"
-    echo -e "${GREEN}${CHECK}${NC} Node added successfully"
-    echo -e "${PURPLE}==========================${NC}"
     echo
     if command -v ufw &>/dev/null; then
         echo -e "${GRAY}  ${ARROW}${NC} Opening port ${BRIDGE_PORT}/tcp in ufw"
         ufw allow "${BRIDGE_PORT}/tcp" > /dev/null
     fi
+
+    echo
+    echo -e "${PURPLE}===================${NC}"
+    echo -e "${GREEN}${CHECK}${NC} Node added successfully"
+    echo -e "${PURPLE}===================${NC}"
     echo
 }
 
