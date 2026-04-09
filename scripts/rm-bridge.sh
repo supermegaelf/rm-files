@@ -784,7 +784,7 @@ EOF
     cat > /opt/remnabridge/docker-compose.yml <<EOF
 services:
   remnabridge-nginx:
-    image: nginx:1.28
+    image: nginx:stable
     container_name: remnabridge-nginx
     restart: always
     volumes:
