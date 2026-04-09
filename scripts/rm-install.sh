@@ -219,6 +219,7 @@ input_node_selfsteal_domain() {
     done
 }
 
+
 input_panel_ip() {
     echo -ne "${CYAN}Panel IP address: ${NC}"
     read PANEL_IP
@@ -2240,28 +2241,32 @@ EOL
     randomhtml
     echo -e "${GREEN}${CHECK}${NC} Camouflage template installed successfully"
     echo
-    echo -e "${CYAN}${INFO}${NC} Checking node connection..."
-    local max_attempts=5
-    local attempt=1
-    local delay=15
+    if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^remnabridge-nginx$"; then
+        echo -e "${CYAN}${INFO}${NC} Bridge server detected, skipping connection check"
+    else
+        echo -e "${CYAN}${INFO}${NC} Checking node connection..."
+        local max_attempts=5
+        local attempt=1
+        local delay=15
 
-    while [ $attempt -le $max_attempts ]; do
-        echo -e "${GRAY}  ${ARROW}${NC} Attempt $attempt of $max_attempts"
-        if curl -sk --max-time 10 "https://$SELFSTEAL_DOMAIN" | grep -qi "html"; then
-            echo -e "${GREEN}${CHECK}${NC} Node connection established successfully"
-            break
-        else
-            echo -e "${GRAY}  ${ARROW}${NC} Node unavailable on attempt $attempt"
-            if [ $attempt -eq $max_attempts ]; then
-                echo -e "${RED}${CROSS}${NC} Node connection failed"
-                echo -e "${YELLOW}${WARNING}${NC} Check configuration or restart panel"
-                echo
-                exit 1
+        while [ $attempt -le $max_attempts ]; do
+            echo -e "${GRAY}  ${ARROW}${NC} Attempt $attempt of $max_attempts"
+            if curl -sk --max-time 10 "https://$SELFSTEAL_DOMAIN" | grep -qi "html"; then
+                echo -e "${GREEN}${CHECK}${NC} Node connection established successfully"
+                break
+            else
+                echo -e "${GRAY}  ${ARROW}${NC} Node unavailable on attempt $attempt"
+                if [ $attempt -eq $max_attempts ]; then
+                    echo -e "${RED}${CROSS}${NC} Node connection failed"
+                    echo -e "${YELLOW}${WARNING}${NC} Check configuration or restart panel"
+                    echo
+                    exit 1
+                fi
+                sleep $delay
             fi
-            sleep $delay
-        fi
-        ((attempt++))
-    done
+            ((attempt++))
+        done
+    fi
 }
 
 docker_compose_up() {
