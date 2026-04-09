@@ -638,10 +638,19 @@ update_bridge_host() {
 }
 
 create_bridge_host() {
-    echo -e "${CYAN}${INFO}${NC} Creating host..."
+    echo -e "${CYAN}${INFO}${NC} Configuring host..."
 
-    local host_data
-    host_data=$(jq -n \
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching existing hosts"
+    local hosts_response
+    hosts_response=$(make_api_request GET "/api/hosts")
+
+    local existing_host_uuid
+    existing_host_uuid=$(echo "$hosts_response" | jq -r \
+        --arg domain "$FOREIGN_DOMAIN" \
+        '.response[] | select(.address == $domain) | .uuid' | head -1)
+
+    local host_payload
+    host_payload=$(jq -n \
         --arg remark "$HOST_REMARK" \
         --arg address "$BRIDGE_ADDRESS" \
         --arg port "$BRIDGE_PORT" \
@@ -660,14 +669,21 @@ create_bridge_host() {
         }')
 
     local host_response
-    host_response=$(make_api_request POST "/api/hosts" "$host_data")
+    if [ -n "$existing_host_uuid" ] && [ "$existing_host_uuid" != "null" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Updating existing host"
+        host_payload=$(echo "$host_payload" | jq --arg uuid "$existing_host_uuid" '. + {uuid: $uuid}')
+        host_response=$(make_api_request PATCH "/api/hosts" "$host_payload")
+    else
+        echo -e "${GRAY}  ${ARROW}${NC} Creating new host"
+        host_response=$(make_api_request POST "/api/hosts" "$host_payload")
+    fi
 
     if ! echo "$host_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
-        echo -e "${RED}${CROSS}${NC} Failed to create host: $host_response"
+        echo -e "${RED}${CROSS}${NC} Failed to configure host: $host_response"
         exit 1
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} Host created"
+    echo -e "${GREEN}${CHECK}${NC} Host configured"
 }
 
 update_bridge_squad() {
