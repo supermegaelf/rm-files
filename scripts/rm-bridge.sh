@@ -171,6 +171,17 @@ input_foreign_domain() {
     done
 }
 
+input_reality_sni() {
+    echo -ne "${CYAN}Reality SNI (e.g., max.ru): ${NC}"
+    read REALITY_SNI
+    while [[ -z "$REALITY_SNI" ]] || ! validate_domain "$REALITY_SNI"; do
+        echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
+        echo
+        echo -ne "${CYAN}Reality SNI: ${NC}"
+        read REALITY_SNI
+    done
+}
+
 input_bridge_port() {
     echo -ne "${CYAN}Bridge port for new inbound (e.g., 9443): ${NC}"
     read BRIDGE_PORT
@@ -314,6 +325,7 @@ create_bridge_profile() {
     profile_data=$(jq -n \
         --arg bridge_private_key "$BRIDGE_PRIVATE_KEY" \
         --arg foreign_domain "$FOREIGN_DOMAIN" \
+        --arg reality_sni "$REALITY_SNI" \
         --arg vless_uuid "$VLESS_UUID" \
         --arg foreign_pbk "$FOREIGN_PBK" \
         --arg foreign_sid "$FOREIGN_SID" \
@@ -360,7 +372,7 @@ create_bridge_profile() {
                             network: "tcp",
                             security: "reality",
                             realitySettings: {
-                                serverName: $foreign_domain,
+                                serverName: $reality_sni,
                                 publicKey: $foreign_pbk,
                                 shortId: $foreign_sid
                             }
@@ -432,6 +444,7 @@ update_bridge_config_profile() {
     new_outbound=$(jq -n \
         --arg tag "$outbound_tag" \
         --arg domain "$FOREIGN_DOMAIN" \
+        --arg reality_sni "$REALITY_SNI" \
         --arg uuid "$VLESS_UUID" \
         --arg pbk "$FOREIGN_PBK" \
         --arg sid "$FOREIGN_SID" \
@@ -449,7 +462,7 @@ update_bridge_config_profile() {
                 network: "tcp",
                 security: "reality",
                 realitySettings: {
-                    serverName: $domain,
+                    serverName: $reality_sni,
                     publicKey: $pbk,
                     shortId: $sid
                 }
@@ -1022,6 +1035,7 @@ main() {
             input_sub_url
             input_bridge_domain
             input_foreign_domain
+            input_reality_sni
 
             setup_bridge
             ;;
@@ -1036,6 +1050,7 @@ main() {
             input_api_token
             input_sub_url
             input_foreign_domain
+            input_reality_sni
             input_host_remark
 
             add_node_to_bridge
