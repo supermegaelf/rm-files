@@ -938,11 +938,6 @@ setup_bridge() {
         echo -e "${WHITE}${BRIDGE_SECRET_KEY}${NC}"
         echo
     fi
-
-    echo -e "${CYAN}Useful Commands:${NC}"
-    echo -e "${WHITE}• Check logs: cd /opt/remnanode && docker compose logs -f${NC}"
-    echo -e "${WHITE}• Restart node: cd /opt/remnanode && docker compose restart${NC}"
-    echo
 }
 
 add_node_to_bridge() {
