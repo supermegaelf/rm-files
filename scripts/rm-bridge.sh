@@ -21,6 +21,7 @@ readonly INFO="*"
 readonly ARROW="→"
 
 DIR_BRIDGE="/usr/local/remnawave_bridge/"
+NODE_VERSION="2.7.0"
 
 #======================
 # VALIDATION FUNCTIONS
@@ -37,6 +38,14 @@ validate_domain() {
 validate_url() {
     local url=$1
     if [[ "$url" =~ ^https?://[a-zA-Z0-9.-]+(:[0-9]+)?(/.*)?$ ]]; then
+        return 0
+    fi
+    return 1
+}
+
+validate_ip() {
+    local ip=$1
+    if [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
         return 0
     fi
     return 1
@@ -63,33 +72,82 @@ check_root() {
     fi
 }
 
-install_deps() {
-    echo
-    echo -e "${CYAN}${INFO}${NC} Installing dependencies..."
+install_system_packages() {
+    echo -e "${CYAN}${INFO}${NC} Installing system packages..."
 
     echo -e "${GRAY}  ${ARROW}${NC} Updating package lists"
     if ! apt-get update -y > /dev/null 2>&1; then
         error "Failed to update package list"
     fi
 
-    echo -e "${GRAY}  ${ARROW}${NC} Installing curl and jq"
-    if ! apt-get install -y curl jq > /dev/null 2>&1; then
+    echo -e "${GRAY}  ${ARROW}${NC} Installing essential packages"
+    if ! apt-get install -y ca-certificates curl jq ufw gnupg unattended-upgrades > /dev/null 2>&1; then
         error "Failed to install required packages"
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} Dependencies installed"
-}
-
-check_deps() {
-    local missing=()
-    for dep in curl jq; do
-        if ! command -v "$dep" &> /dev/null; then
-            missing+=("$dep")
-        fi
-    done
-    if [ ${#missing[@]} -gt 0 ]; then
-        install_deps
+    echo -e "${GRAY}  ${ARROW}${NC} Configuring TCP optimizations (BBR)"
+    if ! grep -qE '^\s*net\.core\.default_qdisc\s*=\s*fq' /etc/sysctl.conf; then
+        echo "net.core.default_qdisc = fq" >> /etc/sysctl.conf
     fi
+    if ! grep -qE '^\s*net\.ipv4\.tcp_congestion_control\s*=\s*bbr' /etc/sysctl.conf; then
+        echo "net.ipv4.tcp_congestion_control = bbr" >> /etc/sysctl.conf
+    fi
+    sysctl -p >/dev/null
+
+    echo -e "${GRAY}  ${ARROW}${NC} Configuring UFW firewall"
+    ufw allow 22/tcp comment 'SSH' > /dev/null 2>&1
+    ufw allow 443/tcp comment 'HTTPS' > /dev/null 2>&1
+    ufw allow from "$PANEL_IP" to any port 2222 comment 'Remnawave panel' > /dev/null 2>&1
+    ufw --force enable > /dev/null 2>&1
+
+    if ! command -v docker &> /dev/null; then
+        echo -e "${GRAY}  ${ARROW}${NC} Checking Docker DNS connectivity"
+        if ! curl -s --max-time 5 https://download.docker.com >/dev/null 2>&1; then
+            error "Unable to reach download.docker.com. Check your DNS settings."
+        fi
+
+        echo -e "${GRAY}  ${ARROW}${NC} Adding Docker repository"
+        install -m 0755 -d /etc/apt/keyrings
+        if grep -q "Ubuntu" /etc/os-release; then
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null
+            chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+        elif grep -q "Debian" /etc/os-release; then
+            curl -fsSL https://download.docker.com/linux/debian/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null
+            chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+        fi
+
+        echo -e "${GRAY}  ${ARROW}${NC} Updating package list"
+        if ! apt-get update > /dev/null 2>&1; then
+            error "Failed to update package list after adding Docker repository"
+        fi
+
+        echo -e "${GRAY}  ${ARROW}${NC} Installing Docker packages"
+        if ! apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin > /dev/null 2>&1; then
+            error "Failed to install Docker"
+        fi
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Starting Docker service"
+    if ! systemctl is-active --quiet docker; then
+        systemctl start docker > /dev/null 2>&1 || error "Failed to start Docker"
+    fi
+    if ! systemctl is-enabled --quiet docker; then
+        systemctl enable docker > /dev/null 2>&1 || error "Failed to enable Docker"
+    fi
+
+    if ! docker info >/dev/null 2>&1; then
+        error "Docker is not working properly"
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Configuring automatic security updates"
+    echo 'Unattended-Upgrade::Mail "root";' >> /etc/apt/apt.conf.d/50unattended-upgrades
+    echo unattended-upgrades unattended-upgrades/enable_auto_updates boolean true | debconf-set-selections
+    dpkg-reconfigure -f noninteractive unattended-upgrades > /dev/null 2>&1
+    systemctl restart unattended-upgrades > /dev/null 2>&1
+
+    echo -e "${GREEN}${CHECK}${NC} System packages configured"
 }
 
 #=====================
@@ -179,6 +237,17 @@ input_reality_sni() {
         echo
         echo -ne "${CYAN}Reality SNI: ${NC}"
         read REALITY_SNI
+    done
+}
+
+input_panel_ip() {
+    echo -ne "${CYAN}Panel IP address: ${NC}"
+    read PANEL_IP
+    while [[ -z "$PANEL_IP" ]] || ! validate_ip "$PANEL_IP"; do
+        echo -e "${RED}${CROSS}${NC} Invalid IP! Please enter a valid IPv4 address (e.g., 1.2.3.4)."
+        echo
+        echo -ne "${CYAN}Panel IP address: ${NC}"
+        read PANEL_IP
     done
 }
 
@@ -821,77 +890,16 @@ assign_local_port() {
     NEW_LOCAL_PORT=$((max_port + 1))
 }
 
-install_docker() {
-    echo -e "${CYAN}${INFO}${NC} Installing Docker..."
-
-    echo -e "${GRAY}  ${ARROW}${NC} Installing prerequisites"
-    if ! apt-get install -y ca-certificates curl gnupg > /dev/null 2>&1; then
-        error "Failed to install Docker prerequisites"
-    fi
-
-    echo -e "${GRAY}  ${ARROW}${NC} Checking Docker DNS connectivity"
-    if ! curl -s --max-time 5 https://download.docker.com >/dev/null 2>&1; then
-        error "Unable to reach download.docker.com. Check your DNS settings."
-    fi
-
-    echo -e "${GRAY}  ${ARROW}${NC} Adding Docker repository"
-    install -m 0755 -d /etc/apt/keyrings
-    if grep -q "Ubuntu" /etc/os-release; then
-        if ! curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null; then
-            error "Failed to download Docker GPG key"
-        fi
-        chmod a+r /etc/apt/keyrings/docker.asc
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    elif grep -q "Debian" /etc/os-release; then
-        if ! curl -fsSL https://download.docker.com/linux/debian/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null; then
-            error "Failed to download Docker GPG key"
-        fi
-        chmod a+r /etc/apt/keyrings/docker.asc
-        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    fi
-
-    echo -e "${GRAY}  ${ARROW}${NC} Updating package list"
-    if ! apt-get update > /dev/null 2>&1; then
-        error "Failed to update package list after adding Docker repository"
-    fi
-
-    echo -e "${GRAY}  ${ARROW}${NC} Installing Docker packages"
-    if ! apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin > /dev/null 2>&1; then
-        error "Failed to install Docker"
-    fi
-
-    echo -e "${GRAY}  ${ARROW}${NC} Starting Docker service"
-    if ! systemctl is-active --quiet docker; then
-        if ! systemctl start docker > /dev/null 2>&1; then
-            error "Failed to start Docker"
-        fi
-    fi
-
-    echo -e "${GRAY}  ${ARROW}${NC} Enabling Docker auto-start"
-    if ! systemctl is-enabled --quiet docker; then
-        if ! systemctl enable docker > /dev/null 2>&1; then
-            error "Failed to enable Docker auto-start"
-        fi
-    fi
-
-    if ! docker info >/dev/null 2>&1; then
-        error "Docker is not working properly"
-    fi
-
-    echo -e "${GREEN}${CHECK}${NC} Docker installed"
-    echo
-}
-
-check_docker() {
-    if ! command -v docker &> /dev/null; then
-        install_docker
-    fi
-}
-
-setup_nginx_stream() {
-    echo -e "${CYAN}${INFO}${NC} Setting up nginx stream..."
+deploy_bridge_services() {
+    echo -e "${CYAN}${INFO}${NC} Deploying bridge services..."
 
     mkdir -p /opt/remnabridge
+
+    echo -e "${GRAY}  ${ARROW}${NC} Writing .env-node"
+    cat > /opt/remnabridge/.env-node <<EOF
+NODE_PORT=2222
+SECRET_KEY=${BRIDGE_SECRET_KEY}
+EOF
 
     echo -e "${GRAY}  ${ARROW}${NC} Writing nginx.conf"
     cat > /opt/remnabridge/nginx.conf <<EOF
@@ -926,12 +934,41 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     network_mode: host
+    depends_on:
+      - remnanode
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '30m'
+        max-file: '5'
+
+  remnanode:
+    image: remnawave/node:${NODE_VERSION}
+    container_name: remnanode
+    hostname: remnanode
+    restart: always
+    cap_add:
+      - NET_ADMIN
+    network_mode: host
+    env_file:
+      - path: ./.env-node
+        required: false
+    volumes:
+      - /dev/shm:/dev/shm:rw
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '30m'
+        max-file: '5'
 EOF
 
-    echo -e "${GRAY}  ${ARROW}${NC} Starting nginx container"
-    cd /opt/remnabridge && docker compose up -d > /dev/null 2>&1
+    echo -e "${GRAY}  ${ARROW}${NC} Starting bridge services"
+    cd /opt/remnabridge && docker compose pull > /dev/null 2>&1
+    if ! docker compose up -d > /dev/null 2>&1; then
+        error "Failed to start bridge services"
+    fi
 
-    echo -e "${GREEN}${CHECK}${NC} Nginx stream started"
+    echo -e "${GREEN}${CHECK}${NC} Bridge services started"
 }
 
 update_nginx_stream() {
@@ -954,6 +991,13 @@ update_nginx_stream() {
 
 setup_bridge() {
     set -e
+
+    echo
+    echo -e "${GREEN}Installing packages${NC}"
+    echo -e "${GREEN}===================${NC}"
+    echo
+
+    install_system_packages
 
     echo
     echo -e "${GREEN}Fetching data${NC}"
@@ -985,30 +1029,21 @@ setup_bridge() {
     update_bridge_squad
 
     echo
-    echo -e "${GREEN}Setting up nginx${NC}"
-    echo -e "${GREEN}================${NC}"
+    echo -e "${GREEN}Deploying services${NC}"
+    echo -e "${GREEN}==================${NC}"
     echo
 
-    check_docker
-    setup_nginx_stream
+    deploy_bridge_services
 
     echo
     echo -e "${PURPLE}========================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Installation complete"
     echo -e "${PURPLE}========================${NC}"
     echo
-    echo -e "${CYAN}Install node on Bridge server:${NC}"
-    echo -e "${WHITE}bash <(curl -s https://raw.githubusercontent.com/supermegaelf/rm-files/main/scripts/rm-install.sh)${NC}"
+    echo -e "${CYAN}Useful Commands:${NC}"
+    echo -e "${WHITE}• Check logs: cd /opt/remnabridge && docker compose logs -f${NC}"
+    echo -e "${WHITE}• Restart service: cd /opt/remnabridge && docker compose restart${NC}"
     echo
-    echo -e "${CYAN}Selfsteal domain:${NC}"
-    echo -e "${WHITE}${BRIDGE_DOMAIN}${NC}"
-    echo
-
-    if [ -n "$BRIDGE_SECRET_KEY" ]; then
-        echo -e "${CYAN}Secret Key (${YELLOW}paste into install script${CYAN}):${NC}"
-        echo -e "${WHITE}${BRIDGE_SECRET_KEY}${NC}"
-        echo
-    fi
 }
 
 add_node_to_bridge() {
@@ -1075,7 +1110,6 @@ add_node_to_bridge() {
 main() {
     log_entry
     check_root
-    check_deps
 
     show_main_menu
     read SETUP_TYPE
@@ -1094,6 +1128,7 @@ main() {
             input_bridge_domain
             input_foreign_domain
             input_reality_sni
+            input_panel_ip
 
             setup_bridge
             ;;
