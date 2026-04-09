@@ -236,7 +236,10 @@ fetch_foreign_node_data() {
 
     echo -e "${GRAY}  ${ARROW}${NC} Parsing foreign node entry"
     local foreign_line
-    foreign_line=$(echo "$sub_data" | grep "@${FOREIGN_DOMAIN}:" || true)
+    foreign_line=$(echo "$sub_data" | grep "sni=${FOREIGN_DOMAIN}" || true)
+    if [ -z "$foreign_line" ]; then
+        foreign_line=$(echo "$sub_data" | grep "@${FOREIGN_DOMAIN}:" || true)
+    fi
 
     if [ -z "$foreign_line" ]; then
         echo -e "${RED}${CROSS}${NC} Domain $FOREIGN_DOMAIN not found in subscription"
