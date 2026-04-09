@@ -323,8 +323,8 @@ create_bridge_profile() {
                 log: { loglevel: "warning" },
                 inbounds: [{
                     tag: "VLESS_PUBLIC_INBOUND",
-                    port: 443,
-                    listen: "0.0.0.0",
+                    port: 10443,
+                    listen: "127.0.0.1",
                     protocol: "vless",
                     settings: { clients: [], decryption: "none" },
                     sniffing: { enabled: true, destOverride: ["http", "tls", "quic"] },
@@ -335,7 +335,7 @@ create_bridge_profile() {
                             target: "max.ru:443",
                             shortIds: [""],
                             privateKey: $bridge_private_key,
-                            serverNames: ["max.ru"]
+                            serverNames: [$foreign_domain]
                         }
                     }
                 }],
@@ -400,18 +400,19 @@ update_bridge_config_profile() {
     local bridge_private_key
     bridge_private_key=$(echo "$BRIDGE_CONFIG" | jq -r '.inbounds[0].streamSettings.realitySettings.privateKey')
 
-    local inbound_tag="VLESS_INBOUND_${BRIDGE_PORT}"
-    local outbound_tag="VLESS_OUTBOUND_${BRIDGE_PORT}"
+    local inbound_tag="VLESS_INBOUND_${NEW_LOCAL_PORT}"
+    local outbound_tag="VLESS_OUTBOUND_${NEW_LOCAL_PORT}"
 
     local new_inbound
     new_inbound=$(jq -n \
         --arg tag "$inbound_tag" \
-        --arg port "$BRIDGE_PORT" \
+        --arg port "$NEW_LOCAL_PORT" \
         --arg private_key "$bridge_private_key" \
+        --arg foreign_domain "$FOREIGN_DOMAIN" \
         '{
             tag: $tag,
             port: ($port | tonumber),
-            listen: "0.0.0.0",
+            listen: "127.0.0.1",
             protocol: "vless",
             settings: { clients: [], decryption: "none" },
             sniffing: { enabled: true, destOverride: ["http", "tls", "quic"] },
@@ -422,7 +423,7 @@ update_bridge_config_profile() {
                     target: "max.ru:443",
                     shortIds: [""],
                     privateKey: $private_key,
-                    serverNames: ["max.ru"]
+                    serverNames: [$foreign_domain]
                 }
             }
         }')
@@ -479,7 +480,7 @@ update_bridge_config_profile() {
     patch_response=$(make_api_request PATCH "/api/config-profiles" "$patch_data")
 
     NEW_INBOUND_UUID=$(echo "$patch_response" | jq -r \
-        --arg port "$BRIDGE_PORT" \
+        --arg port "$NEW_LOCAL_PORT" \
         '.response.inbounds[] | select(.port == ($port | tonumber)) | .uuid')
 
     if [ -z "$NEW_INBOUND_UUID" ] || [ "$NEW_INBOUND_UUID" = "null" ]; then
@@ -616,12 +617,14 @@ update_bridge_host() {
     host_update=$(jq -n \
         --arg host_uuid "$host_uuid" \
         --arg bridge_domain "$BRIDGE_DOMAIN" \
+        --arg foreign_domain "$FOREIGN_DOMAIN" \
         --arg profile_uuid "$BRIDGE_PROFILE_UUID" \
         --arg inbound_uuid "$BRIDGE_INBOUND_UUID" \
         '{
             uuid: $host_uuid,
             address: $bridge_domain,
-            sni: "max.ru",
+            port: 443,
+            sni: $foreign_domain,
             fingerprint: "chrome",
             inbound: {
                 configProfileUuid: $profile_uuid,
@@ -656,14 +659,14 @@ create_bridge_host() {
     host_payload=$(jq -n \
         --arg remark "$HOST_REMARK" \
         --arg address "$BRIDGE_ADDRESS" \
-        --arg port "$BRIDGE_PORT" \
+        --arg foreign_domain "$FOREIGN_DOMAIN" \
         --arg profile_uuid "$BRIDGE_PROFILE_UUID" \
         --arg inbound_uuid "$NEW_INBOUND_UUID" \
         '{
             remark: $remark,
             address: $address,
-            port: ($port | tonumber),
-            sni: "max.ru",
+            port: 443,
+            sni: $foreign_domain,
             fingerprint: "chrome",
             inbound: {
                 configProfileUuid: $profile_uuid,
@@ -738,6 +741,77 @@ update_bridge_squad() {
     echo -e "${GREEN}${CHECK}${NC} Inbound added to squad"
 }
 
+assign_local_port() {
+    local max_port=10442
+    local port
+    while IFS= read -r port; do
+        if [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -ge 10443 ] && [ "$port" -gt "$max_port" ]; then
+            max_port=$port
+        fi
+    done <<< "$(echo "$BRIDGE_CONFIG" | jq -r '.inbounds[].port')"
+    NEW_LOCAL_PORT=$((max_port + 1))
+}
+
+setup_nginx_stream() {
+    echo -e "${CYAN}${INFO}${NC} Setting up nginx stream..."
+
+    mkdir -p /opt/remnabridge
+
+    echo -e "${GRAY}  ${ARROW}${NC} Writing nginx.conf"
+    cat > /opt/remnabridge/nginx.conf <<EOF
+worker_processes auto;
+
+events {
+    worker_connections 1024;
+}
+
+stream {
+    map \$ssl_preread_server_name \$backend {
+        ${FOREIGN_DOMAIN}  127.0.0.1:10443;
+        default            127.0.0.1:10443;
+    }
+
+    server {
+        listen 443;
+        proxy_pass \$backend;
+        ssl_preread on;
+        proxy_buffer_size 16k;
+    }
+}
+EOF
+
+    echo -e "${GRAY}  ${ARROW}${NC} Writing docker-compose.yml"
+    cat > /opt/remnabridge/docker-compose.yml <<EOF
+services:
+  remnabridge-nginx:
+    image: nginx:1.28
+    container_name: remnabridge-nginx
+    restart: always
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    network_mode: host
+EOF
+
+    echo -e "${GRAY}  ${ARROW}${NC} Starting nginx container"
+    cd /opt/remnabridge && docker compose up -d > /dev/null 2>&1
+
+    echo -e "${GREEN}${CHECK}${NC} Nginx stream started"
+}
+
+update_nginx_stream() {
+    echo -e "${CYAN}${INFO}${NC} Updating nginx stream..."
+
+    local nginx_conf="/opt/remnabridge/nginx.conf"
+
+    echo -e "${GRAY}  ${ARROW}${NC} Adding SNI mapping"
+    sed -i "/^        default /i\\        ${FOREIGN_DOMAIN}  127.0.0.1:${NEW_LOCAL_PORT};" "$nginx_conf"
+
+    echo -e "${GRAY}  ${ARROW}${NC} Reloading nginx"
+    docker exec remnabridge-nginx nginx -s reload > /dev/null 2>&1
+
+    echo -e "${GREEN}${CHECK}${NC} Nginx stream updated"
+}
+
 #======================
 # MAIN ENTRY FUNCTIONS
 #======================
@@ -771,6 +845,13 @@ setup_bridge() {
     update_bridge_host
     echo
     update_bridge_squad
+
+    echo
+    echo -e "${GREEN}Setting up nginx${NC}"
+    echo -e "${GREEN}================${NC}"
+    echo
+
+    setup_nginx_stream
 
     echo
     echo -e "${PURPLE}========================${NC}"
@@ -813,14 +894,16 @@ add_node_to_bridge() {
 
     fetch_panel_data
 
-    local used_ports
-    used_ports=$(echo "$BRIDGE_CONFIG" | jq -r '.inbounds[].port')
-    if echo "$used_ports" | grep -qx "$BRIDGE_PORT"; then
-        local ports_list
-        ports_list=$(echo "$used_ports" | tr '\n' ' ')
-        echo -e "${RED}${CROSS}${NC} Port ${BRIDGE_PORT} is already in use by bridge (used ports: ${ports_list})"
+    local existing_domain
+    existing_domain=$(echo "$BRIDGE_CONFIG" | jq -r \
+        --arg domain "$FOREIGN_DOMAIN" \
+        '.inbounds[] | select(.streamSettings.realitySettings.serverNames[]? == $domain) | .port')
+    if [ -n "$existing_domain" ]; then
+        echo -e "${RED}${CROSS}${NC} Domain ${FOREIGN_DOMAIN} is already configured on bridge"
         exit 1
     fi
+
+    assign_local_port
 
     echo
     echo -e "${GREEN}Configuring panel${NC}"
@@ -836,11 +919,13 @@ add_node_to_bridge() {
     create_bridge_host
     echo
     update_bridge_squad "$NEW_INBOUND_UUID"
+
     echo
-    if command -v ufw &>/dev/null; then
-        echo -e "${GRAY}  ${ARROW}${NC} Opening port ${BRIDGE_PORT}/tcp in ufw"
-        ufw allow "${BRIDGE_PORT}/tcp" > /dev/null
-    fi
+    echo -e "${GREEN}Updating nginx${NC}"
+    echo -e "${GREEN}==============${NC}"
+    echo
+
+    update_nginx_stream
 
     echo
     echo -e "${PURPLE}===================${NC}"
@@ -888,7 +973,6 @@ main() {
             input_api_token
             input_sub_url
             input_foreign_domain
-            input_bridge_port
             input_host_remark
 
             add_node_to_bridge
