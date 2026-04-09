@@ -322,7 +322,7 @@ create_bridge_profile() {
             config: {
                 log: { loglevel: "warning" },
                 inbounds: [{
-                    tag: "VLESS_PUBLIC_INBOUND",
+                    tag: "VLESS_INBOUND_10443",
                     port: 10443,
                     listen: "127.0.0.1",
                     protocol: "vless",
@@ -343,7 +343,7 @@ create_bridge_profile() {
                     { tag: "DIRECT", protocol: "freedom" },
                     { tag: "BLOCK", protocol: "blackhole" },
                     {
-                        tag: "VLESS_OUTBOUND_TO_FREEDOM",
+                        tag: "VLESS_OUTBOUND_10443",
                         protocol: "vless",
                         settings: {
                             vnext: [{
@@ -372,7 +372,7 @@ create_bridge_profile() {
                         { ip: ["geoip:private"], outboundTag: "BLOCK" },
                         { domain: ["geosite:private"], outboundTag: "BLOCK" },
                         { protocol: ["bittorrent"], outboundTag: "BLOCK" },
-                        { inboundTag: ["VLESS_PUBLIC_INBOUND"], outboundTag: "VLESS_OUTBOUND_TO_FREEDOM" }
+                        { inboundTag: ["VLESS_INBOUND_10443"], outboundTag: "VLESS_OUTBOUND_10443" }
                     ]
                 }
             }
