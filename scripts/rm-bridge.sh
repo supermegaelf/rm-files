@@ -721,7 +721,6 @@ create_bridge_node() {
     node_response=$(make_api_request POST "/api/nodes" "$node_data")
 
     BRIDGE_NODE_UUID=$(echo "$node_response" | jq -r '.response.uuid')
-    BRIDGE_SECRET_KEY=$(echo "$node_response" | jq -r '.response.secretKey // ""')
 
     if [ -z "$BRIDGE_NODE_UUID" ] || [ "$BRIDGE_NODE_UUID" = "null" ]; then
         echo -e "${RED}${CROSS}${NC} Failed to create node: $node_response"
@@ -729,6 +728,16 @@ create_bridge_node() {
     fi
 
     echo -e "${GREEN}${CHECK}${NC} Node created"
+    echo
+    echo -e "${YELLOW}${WARNING}${NC} Copy the Secret Key from the panel (Nodes → Bridge → Secret Key)"
+    echo -ne "${CYAN}Secret Key: ${NC}"
+    read BRIDGE_SECRET_KEY
+    while [[ -z "$BRIDGE_SECRET_KEY" ]]; do
+        echo -e "${RED}${CROSS}${NC} Secret Key cannot be empty!"
+        echo
+        echo -ne "${CYAN}Secret Key: ${NC}"
+        read BRIDGE_SECRET_KEY
+    done
 }
 
 update_bridge_host() {
