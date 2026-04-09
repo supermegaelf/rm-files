@@ -540,11 +540,59 @@ update_bridge_node_inbounds() {
     echo -e "${GREEN}${CHECK}${NC} Bridge node updated"
 }
 
+update_stealconfig_setup() {
+    echo -e "${CYAN}${INFO}${NC} Updating StealConfig server names..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching StealConfig profile"
+    local profiles_response
+    profiles_response=$(make_api_request GET "/api/config-profiles")
+
+    local stealconfig_uuid
+    stealconfig_uuid=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "StealConfig") | .uuid')
+    local stealconfig_config
+    stealconfig_config=$(echo "$profiles_response" | jq -c '.response.configProfiles[] | select(.name == "StealConfig") | .config')
+
+    if [ -z "$stealconfig_uuid" ] || [ "$stealconfig_uuid" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} StealConfig profile not found"
+        exit 1
+    fi
+
+    if echo "$stealconfig_config" | jq -e \
+        --arg domain "$REALITY_SNI" \
+        '.inbounds[0].streamSettings.realitySettings.serverNames | contains([$domain])' > /dev/null 2>&1; then
+        echo -e "${GRAY}  ${ARROW}${NC} Domain already present"
+        echo -e "${GREEN}${CHECK}${NC} StealConfig unchanged"
+        return 0
+    fi
+
+    local updated_config
+    updated_config=$(echo "$stealconfig_config" | jq -c \
+        --arg domain "$REALITY_SNI" \
+        '.inbounds[0].streamSettings.realitySettings.serverNames += [$domain]')
+
+    local patch_data
+    patch_data=$(jq -n \
+        --arg uuid "$stealconfig_uuid" \
+        --argjson config "$updated_config" \
+        '{ uuid: $uuid, config: $config }')
+
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
+    local patch_response
+    patch_response=$(make_api_request PATCH "/api/config-profiles" "$patch_data")
+
+    if ! echo "$patch_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to update StealConfig: $patch_response"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} StealConfig updated"
+}
+
 update_stealconfig_servernames() {
     echo -e "${CYAN}${INFO}${NC} Updating StealConfig server names..."
 
     if echo "$STEALCONFIG_CONFIG" | jq -e \
-        --arg domain "$FOREIGN_DOMAIN" \
+        --arg domain "$REALITY_SNI" \
         '.inbounds[0].streamSettings.realitySettings.serverNames | contains([$domain])' > /dev/null 2>&1; then
         echo -e "${GRAY}  ${ARROW}${NC} Domain already present"
         echo -e "${GREEN}${CHECK}${NC} StealConfig unchanged"
@@ -553,7 +601,7 @@ update_stealconfig_servernames() {
 
     local updated_config
     updated_config=$(echo "$STEALCONFIG_CONFIG" | jq -c \
-        --arg domain "$FOREIGN_DOMAIN" \
+        --arg domain "$REALITY_SNI" \
         '.inbounds[0].streamSettings.realitySettings.serverNames += [$domain]')
 
     local patch_data
@@ -931,6 +979,8 @@ setup_bridge() {
     create_bridge_node
     echo
     update_bridge_host
+    echo
+    update_stealconfig_setup
     echo
     update_bridge_squad
 
