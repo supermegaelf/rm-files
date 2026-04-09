@@ -583,6 +583,7 @@ create_bridge_node() {
             consumptionMultiplier: 1.0
         }')
 
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
     local node_response
     node_response=$(make_api_request POST "/api/nodes" "$node_data")
 
@@ -821,8 +822,6 @@ check_docker() {
 setup_nginx_stream() {
     echo -e "${CYAN}${INFO}${NC} Setting up nginx stream..."
 
-    check_docker
-
     mkdir -p /opt/remnabridge
 
     echo -e "${GRAY}  ${ARROW}${NC} Writing nginx.conf"
@@ -919,6 +918,8 @@ setup_bridge() {
     echo -e "${GREEN}================${NC}"
     echo
 
+    check_docker
+    echo
     setup_nginx_stream
 
     echo
