@@ -327,6 +327,67 @@ fetch_foreign_node_data() {
     echo -e "${GREEN}${CHECK}${NC} Foreign node data fetched"
 }
 
+fetch_foreign_node_data_api() {
+    echo -e "${CYAN}${INFO}${NC} Fetching foreign node data from panel..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Finding foreign node"
+    local nodes_response
+    nodes_response=$(make_api_request GET "/api/nodes")
+
+    local foreign_node
+    foreign_node=$(echo "$nodes_response" | jq -c \
+        --arg domain "$FOREIGN_DOMAIN" \
+        '.response[] | select(.address == $domain)')
+
+    if [ -z "$foreign_node" ] || [ "$foreign_node" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} Node with address $FOREIGN_DOMAIN not found in panel"
+        exit 1
+    fi
+
+    local foreign_profile_uuid
+    foreign_profile_uuid=$(echo "$foreign_node" | jq -r '.configProfile.activeConfigProfileUuid')
+
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching config profile"
+    local profile_response
+    profile_response=$(make_api_request GET "/api/config-profiles")
+
+    local foreign_config
+    foreign_config=$(echo "$profile_response" | jq -c \
+        --arg uuid "$foreign_profile_uuid" \
+        '.response.configProfiles[] | select(.uuid == $uuid) | .config')
+
+    if [ -z "$foreign_config" ] || [ "$foreign_config" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} Config profile for $FOREIGN_DOMAIN not found"
+        exit 1
+    fi
+
+    local private_key
+    private_key=$(echo "$foreign_config" | jq -r '.inbounds[0].streamSettings.realitySettings.privateKey')
+    FOREIGN_SID=$(echo "$foreign_config" | jq -r '.inbounds[0].streamSettings.realitySettings.shortIds[0]')
+
+    echo -e "${GRAY}  ${ARROW}${NC} Deriving public key"
+    local xray_output
+    xray_output=$(docker exec remnanode xray x25519 -i "$private_key" 2>&1 || true)
+    FOREIGN_PBK=$(echo "$xray_output" | grep -oP 'Password \(PublicKey\): \K.*' || true)
+
+    if [ -z "$FOREIGN_PBK" ]; then
+        echo -e "${RED}${CROSS}${NC} Failed to derive public key. xray output: $xray_output"
+        exit 1
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching user data"
+    local users_response
+    users_response=$(make_api_request GET "/api/users?size=1&start=0")
+    VLESS_UUID=$(echo "$users_response" | jq -r '.response.users[0].vlessUuid')
+
+    if [ -z "$VLESS_UUID" ] || [ "$VLESS_UUID" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} No users found in panel"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Foreign node data fetched"
+}
+
 generate_bridge_keys() {
     echo -e "${CYAN}${INFO}${NC} Generating Reality keys for Bridge node..."
 
@@ -990,6 +1051,23 @@ EOF
     echo -e "${GREEN}${CHECK}${NC} Bridge services started"
 }
 
+restart_bridge_node() {
+    echo -e "${CYAN}${INFO}${NC} Restarting bridge node..."
+
+    local restart_data
+    restart_data=$(jq -n --arg uuid "$BRIDGE_NODE_UUID" '{ uuid: $uuid }')
+
+    local restart_response
+    restart_response=$(make_api_request POST "/api/nodes/restart" "$restart_data")
+
+    if ! echo "$restart_response" | jq -e '.response' > /dev/null 2>&1; then
+        echo -e "${YELLOW}${WARNING}${NC} API restart failed, restarting via Docker"
+        cd /opt/remnabridge && docker compose restart remnanode > /dev/null 2>&1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Bridge node restarted"
+}
+
 update_nginx_stream() {
     echo -e "${CYAN}${INFO}${NC} Updating nginx stream..."
 
@@ -998,8 +1076,8 @@ update_nginx_stream() {
     echo -e "${GRAY}  ${ARROW}${NC} Adding SNI mapping"
     sed -i "/^        default /i\\        ${REALITY_SNI}  127.0.0.1:${NEW_LOCAL_PORT};" "$nginx_conf"
 
-    echo -e "${GRAY}  ${ARROW}${NC} Reloading nginx"
-    docker exec remnabridge-nginx nginx -s reload > /dev/null 2>&1
+    echo -e "${GRAY}  ${ARROW}${NC} Restarting nginx"
+    docker restart remnabridge-nginx > /dev/null 2>&1
 
     echo -e "${GREEN}${CHECK}${NC} Nginx stream updated"
 }
@@ -1073,14 +1151,9 @@ add_node_to_bridge() {
     echo -e "${GREEN}=============${NC}"
     echo
 
-    fetch_foreign_node_data
-
-    echo
-    echo -e "${GREEN}Fetching panel data${NC}"
-    echo -e "${GREEN}===================${NC}"
-    echo
-
     fetch_panel_data
+    echo
+    fetch_foreign_node_data_api
 
     local existing_domain
     existing_domain=$(echo "$BRIDGE_CONFIG" | jq -r \
@@ -1114,6 +1187,13 @@ add_node_to_bridge() {
     echo
 
     update_nginx_stream
+
+    echo
+    echo -e "${GREEN}Restarting node${NC}"
+    echo -e "${GREEN}===============${NC}"
+    echo
+
+    restart_bridge_node
 
     echo
     echo -e "${PURPLE}===================${NC}"
@@ -1160,7 +1240,6 @@ main() {
 
             input_panel_url
             input_api_token
-            input_sub_url
             input_foreign_domain
             input_reality_sni
             input_host_remark
