@@ -1207,10 +1207,18 @@ remove_bridge() {
     local hosts_response
     hosts_response=$(make_api_request GET "/api/hosts")
 
-    local bridge_host_uuids
-    bridge_host_uuids=$(echo "$hosts_response" | jq -c \
+    local bridge_hosts
+    bridge_hosts=$(echo "$hosts_response" | jq -c \
         --arg profile_uuid "$bridge_profile_uuid" \
-        '[.response[] | select(.inbound.configProfileUuid == $profile_uuid) | .uuid]')
+        '[.response[] | select(.inbound.configProfileUuid == $profile_uuid)]')
+
+    local bridge_profile_data
+    bridge_profile_data=$(echo "$profiles_response" | jq -c \
+        '.response.configProfiles[] | select(.name == "Bridge")')
+
+    local stealconfig_inbound_uuid
+    stealconfig_inbound_uuid=$(echo "$profiles_response" | jq -r \
+        '.response.configProfiles[] | select(.name == "StealConfig") | .inbounds[0].uuid')
 
     echo -e "${GREEN}${CHECK}${NC} Data fetched"
 
@@ -1219,18 +1227,56 @@ remove_bridge() {
     echo -e "${GREEN}=================${NC}"
     echo
 
-    echo -e "${CYAN}${INFO}${NC} Deleting bridge hosts..."
-    local host_uuid
-    for host_uuid in $(echo "$bridge_host_uuids" | jq -r '.[]'); do
-        local response
-        response=$(make_api_request DELETE "/api/hosts/${host_uuid}")
-        if echo "$response" | jq -e '.response.isDeleted' > /dev/null 2>&1; then
-            echo -e "${GRAY}  ${ARROW}${NC} Deleted host ${host_uuid:0:8}..."
-        else
-            echo -e "${YELLOW}  ${WARNING}${NC} Failed to delete host ${host_uuid:0:8}..."
+    echo -e "${CYAN}${INFO}${NC} Restoring bridge hosts to direct connection..."
+    local host
+    for host in $(echo "$bridge_hosts" | jq -r '.[] | @base64'); do
+        local host_data
+        host_data=$(echo "$host" | base64 -d)
+
+        local host_uuid
+        host_uuid=$(echo "$host_data" | jq -r '.uuid')
+        local host_remark
+        host_remark=$(echo "$host_data" | jq -r '.remark')
+        local host_inbound_uuid
+        host_inbound_uuid=$(echo "$host_data" | jq -r '.inbound.configProfileInboundUuid')
+
+        local inbound_port
+        inbound_port=$(echo "$bridge_profile_data" | jq -r \
+            --arg uuid "$host_inbound_uuid" \
+            '.inbounds[] | select(.uuid == $uuid) | .port')
+
+        local foreign_domain
+        foreign_domain=$(echo "$bridge_config" | jq -r \
+            --arg tag "VLESS_OUTBOUND_${inbound_port}" \
+            '.outbounds[] | select(.tag == $tag) | .settings.vnext[0].address')
+
+        if [ -z "$foreign_domain" ] || [ "$foreign_domain" = "null" ]; then
+            echo -e "${YELLOW}  ${WARNING}${NC} Could not resolve domain for host ${host_remark}, skipping"
+            continue
         fi
+
+        echo -e "${GRAY}  ${ARROW}${NC} Restoring ${host_remark} ${ARROW} ${foreign_domain}"
+        local host_patch
+        host_patch=$(jq -n \
+            --arg uuid "$host_uuid" \
+            --arg address "$foreign_domain" \
+            --arg sni "$foreign_domain" \
+            --arg profile_uuid "$stealconfig_uuid" \
+            --arg inbound_uuid "$stealconfig_inbound_uuid" \
+            '{
+                uuid: $uuid,
+                address: $address,
+                port: 443,
+                sni: $sni,
+                inbound: {
+                    configProfileUuid: $profile_uuid,
+                    configProfileInboundUuid: $inbound_uuid
+                }
+            }')
+
+        make_api_request PATCH "/api/hosts" "$host_patch" > /dev/null 2>&1
     done
-    echo -e "${GREEN}${CHECK}${NC} Bridge hosts deleted"
+    echo -e "${GREEN}${CHECK}${NC} Hosts restored"
 
     echo
     echo -e "${CYAN}${INFO}${NC} Removing bridge inbounds from squad..."
