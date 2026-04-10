@@ -164,9 +164,10 @@ show_main_menu() {
     echo
     echo -e "${GREEN}1.${NC} Setup bridge"
     echo -e "${GREEN}2.${NC} Add node to bridge"
-    echo -e "${RED}3.${NC} Exit"
+    echo -e "${RED}3.${NC} Remove bridge"
+    echo -e "${YELLOW}4.${NC} Exit"
     echo
-    echo -ne "${CYAN}Enter your choice (1, 2, or 3): ${NC}"
+    echo -ne "${CYAN}Enter your choice (1-4): ${NC}"
 }
 
 #===================
@@ -1152,9 +1153,190 @@ add_node_to_bridge() {
     restart_bridge_node
 
     echo
-    echo -e "${PURPLE}===================${NC}"
+    echo -e "${PURPLE}===========================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Node added successfully"
-    echo -e "${PURPLE}===================${NC}"
+    echo -e "${PURPLE}===========================${NC}"
+    echo
+}
+
+remove_bridge() {
+    echo
+    echo -e "${GREEN}Fetching data${NC}"
+    echo -e "${GREEN}=============${NC}"
+    echo
+
+    echo -e "${CYAN}${INFO}${NC} Fetching Bridge configuration from panel..."
+
+    local profiles_response
+    profiles_response=$(make_api_request GET "/api/config-profiles")
+
+    local bridge_profile_uuid
+    bridge_profile_uuid=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "Bridge") | .uuid')
+
+    if [ -z "$bridge_profile_uuid" ] || [ "$bridge_profile_uuid" = "null" ]; then
+        error "Bridge config profile not found in panel"
+    fi
+
+    local bridge_config
+    bridge_config=$(echo "$profiles_response" | jq -c '.response.configProfiles[] | select(.name == "Bridge") | .config')
+
+    local bridge_inbound_uuids
+    bridge_inbound_uuids=$(echo "$profiles_response" | jq -c \
+        '[.response.configProfiles[] | select(.name == "Bridge") | .inbounds[].uuid]')
+
+    local bridge_snis
+    bridge_snis=$(echo "$bridge_config" | jq -c \
+        '[.inbounds[].streamSettings.realitySettings.serverNames[]] | unique')
+
+    local stealconfig_uuid
+    stealconfig_uuid=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "StealConfig") | .uuid')
+    local stealconfig_config
+    stealconfig_config=$(echo "$profiles_response" | jq -c '.response.configProfiles[] | select(.name == "StealConfig") | .config')
+
+    local nodes_response
+    nodes_response=$(make_api_request GET "/api/nodes")
+
+    local bridge_node_uuid
+    bridge_node_uuid=$(echo "$nodes_response" | jq -r \
+        --arg profile_uuid "$bridge_profile_uuid" \
+        '.response[] | select(.configProfile.activeConfigProfileUuid == $profile_uuid) | .uuid')
+
+    local hosts_response
+    hosts_response=$(make_api_request GET "/api/hosts")
+
+    local bridge_host_uuids
+    bridge_host_uuids=$(echo "$hosts_response" | jq -c \
+        --arg profile_uuid "$bridge_profile_uuid" \
+        '[.response[] | select(.inbound.configProfileUuid == $profile_uuid) | .uuid]')
+
+    local host_count
+    host_count=$(echo "$bridge_host_uuids" | jq 'length')
+    local inbound_count
+    inbound_count=$(echo "$bridge_inbound_uuids" | jq 'length')
+    local sni_list
+    sni_list=$(echo "$bridge_snis" | jq -r 'join(", ")')
+
+    echo -e "${GREEN}${CHECK}${NC} Data fetched"
+
+    echo
+    echo -e "${YELLOW}${WARNING} This will permanently remove the Bridge${NC}"
+    echo
+    echo -e "${WHITE}  The following will be deleted:${NC}"
+    echo -e "${GRAY}  ${ARROW}${NC} Bridge config profile"
+    [ -n "$bridge_node_uuid" ] && [ "$bridge_node_uuid" != "null" ] && \
+        echo -e "${GRAY}  ${ARROW}${NC} Bridge node"
+    echo -e "${GRAY}  ${ARROW}${NC} ${host_count} bridge host(s)"
+    echo -e "${GRAY}  ${ARROW}${NC} ${inbound_count} bridge inbound(s) from squad"
+    [ -n "$sni_list" ] && \
+        echo -e "${GRAY}  ${ARROW}${NC} StealConfig server names: ${sni_list}"
+    echo -e "${GRAY}  ${ARROW}${NC} Docker services and files on this server"
+    echo
+    echo -ne "${RED}Type 'REMOVE' to confirm: ${NC}"
+    read confirm
+    if [ "$confirm" != "REMOVE" ]; then
+        echo -e "${YELLOW}${WARNING}${NC} Aborted"
+        exit 0
+    fi
+
+    echo
+    echo -e "${GREEN}Cleaning up panel${NC}"
+    echo -e "${GREEN}=================${NC}"
+    echo
+
+    echo -e "${CYAN}${INFO}${NC} Deleting bridge hosts..."
+    local host_uuid
+    for host_uuid in $(echo "$bridge_host_uuids" | jq -r '.[]'); do
+        local delete_data
+        delete_data=$(jq -n --arg uuid "$host_uuid" '{ uuid: $uuid }')
+        if make_api_request DELETE "/api/hosts" "$delete_data" > /dev/null 2>&1; then
+            echo -e "${GRAY}  ${ARROW}${NC} Deleted host ${host_uuid:0:8}..."
+        else
+            echo -e "${YELLOW}  ${WARNING}${NC} Failed to delete host ${host_uuid:0:8}..."
+        fi
+    done
+    echo -e "${GREEN}${CHECK}${NC} Bridge hosts deleted"
+
+    echo -e "${CYAN}${INFO}${NC} Removing bridge inbounds from squad..."
+    local squad_response
+    squad_response=$(make_api_request GET "/api/internal-squads")
+
+    local squad_uuid
+    squad_uuid=$(echo "$squad_response" | jq -r '.response.internalSquads[0].uuid')
+
+    if [ -n "$squad_uuid" ] && [ "$squad_uuid" != "null" ]; then
+        local remaining_inbounds
+        remaining_inbounds=$(echo "$squad_response" | jq -c \
+            --argjson bridge_uuids "$bridge_inbound_uuids" \
+            --arg uuid "$squad_uuid" \
+            '[.response.internalSquads[] | select(.uuid == $uuid) | .inbounds[].uuid]
+             | map(select(. as $id | $bridge_uuids | index($id) | not))')
+
+        local squad_update
+        squad_update=$(jq -n \
+            --arg squad_uuid "$squad_uuid" \
+            --argjson inbounds "$remaining_inbounds" \
+            '{ uuid: $squad_uuid, inbounds: $inbounds }')
+
+        make_api_request PATCH "/api/internal-squads" "$squad_update" > /dev/null 2>&1
+        echo -e "${GREEN}${CHECK}${NC} Squad updated"
+    else
+        echo -e "${GRAY}  ${ARROW}${NC} No squad found, skipping"
+    fi
+
+    if [ -n "$stealconfig_uuid" ] && [ "$stealconfig_uuid" != "null" ]; then
+        echo -e "${CYAN}${INFO}${NC} Restoring StealConfig server names..."
+        local updated_config
+        updated_config=$(echo "$stealconfig_config" | jq -c \
+            --argjson bridge_snis "$bridge_snis" \
+            '.inbounds[0].streamSettings.realitySettings.serverNames |=
+                map(select(. as $s | $bridge_snis | index($s) | not))')
+
+        local patch_data
+        patch_data=$(jq -n \
+            --arg uuid "$stealconfig_uuid" \
+            --argjson config "$updated_config" \
+            '{ uuid: $uuid, config: $config }')
+
+        make_api_request PATCH "/api/config-profiles" "$patch_data" > /dev/null 2>&1
+        echo -e "${GREEN}${CHECK}${NC} StealConfig restored"
+    fi
+
+    if [ -n "$bridge_node_uuid" ] && [ "$bridge_node_uuid" != "null" ]; then
+        echo -e "${CYAN}${INFO}${NC} Deleting bridge node..."
+        local delete_data
+        delete_data=$(jq -n --arg uuid "$bridge_node_uuid" '{ uuid: $uuid }')
+        make_api_request DELETE "/api/nodes" "$delete_data" > /dev/null 2>&1
+        echo -e "${GREEN}${CHECK}${NC} Bridge node deleted"
+    fi
+
+    echo -e "${CYAN}${INFO}${NC} Deleting bridge config profile..."
+    local delete_data
+    delete_data=$(jq -n --arg uuid "$bridge_profile_uuid" '{ uuid: $uuid }')
+    make_api_request DELETE "/api/config-profiles" "$delete_data" > /dev/null 2>&1
+    echo -e "${GREEN}${CHECK}${NC} Bridge config profile deleted"
+
+    echo
+    echo -e "${GREEN}Cleaning up server${NC}"
+    echo -e "${GREEN}==================${NC}"
+    echo
+
+    echo -e "${CYAN}${INFO}${NC} Stopping Docker services..."
+    if [ -f /opt/remnabridge/docker-compose.yml ]; then
+        cd /opt/remnabridge && docker compose down > /dev/null 2>&1 || true
+        echo -e "${GREEN}${CHECK}${NC} Docker services stopped"
+    else
+        echo -e "${GRAY}  ${ARROW}${NC} No Docker services found, skipping"
+    fi
+
+    echo -e "${CYAN}${INFO}${NC} Cleaning up files..."
+    rm -rf /opt/remnabridge
+    rm -rf "${DIR_BRIDGE}"
+    echo -e "${GREEN}${CHECK}${NC} Files removed"
+
+    echo
+    echo -e "${PURPLE}=========================${NC}"
+    echo -e "${GREEN}${CHECK}${NC} Bridge removed"
+    echo -e "${PURPLE}=========================${NC}"
     echo
 }
 
@@ -1203,12 +1385,24 @@ main() {
             ;;
         3)
             echo
+            echo -e "${PURPLE}===============${NC}"
+            echo -e "${WHITE}Remove Bridge${NC}"
+            echo -e "${PURPLE}===============${NC}"
+            echo
+
+            input_panel_url
+            input_api_token
+
+            remove_bridge
+            ;;
+        4)
+            echo
             echo -e "${YELLOW}${WARNING}${NC} Exiting..."
             exit 0
             ;;
         *)
             echo
-            echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1, 2, or 3."
+            echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1-4."
             exit 1
             ;;
     esac
