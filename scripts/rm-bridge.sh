@@ -164,10 +164,12 @@ show_main_menu() {
     echo
     echo -e "${GREEN}1.${NC} Setup bridge"
     echo -e "${GREEN}2.${NC} Add node to bridge"
-    echo -e "${RED}3.${NC} Remove bridge"
+    if [ -d /opt/remnabridge ]; then
+        echo -e "${RED}3.${NC} Remove bridge"
+    fi
     echo -e "${YELLOW}4.${NC} Exit"
     echo
-    echo -ne "${CYAN}Enter your choice (1-4): ${NC}"
+    echo -ne "${CYAN}Enter your choice: ${NC}"
 }
 
 #===================
@@ -1011,18 +1013,17 @@ EOF
 restart_bridge_node() {
     echo -e "${CYAN}${INFO}${NC} Restarting bridge node..."
 
-    local restart_data
-    restart_data=$(jq -n --arg uuid "$BRIDGE_NODE_UUID" '{ uuid: $uuid }')
-
+    echo -e "${GRAY}  ${ARROW}${NC} Sending restart request"
     local restart_response
-    restart_response=$(make_api_request POST "/api/nodes/restart" "$restart_data")
+    restart_response=$(make_api_request POST "/api/nodes/${BRIDGE_NODE_UUID}/actions/restart")
 
-    if ! echo "$restart_response" | jq -e '.response' > /dev/null 2>&1; then
+    if echo "$restart_response" | jq -e '.response.eventSent' > /dev/null 2>&1; then
+        echo -e "${GREEN}${CHECK}${NC} Bridge node restarted"
+    else
         echo -e "${YELLOW}${WARNING}${NC} API restart failed, restarting via Docker"
         cd /opt/remnabridge && docker compose restart remnanode > /dev/null 2>&1
+        echo -e "${GREEN}${CHECK}${NC} Bridge node restarted via Docker"
     fi
-
-    echo -e "${GREEN}${CHECK}${NC} Bridge node restarted"
 }
 
 update_nginx_stream() {
@@ -1175,7 +1176,8 @@ remove_bridge() {
     bridge_profile_uuid=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "Bridge") | .uuid')
 
     if [ -z "$bridge_profile_uuid" ] || [ "$bridge_profile_uuid" = "null" ]; then
-        error "Bridge config profile not found in panel"
+        echo -e "${YELLOW}${WARNING}${NC} Bridge is not installed"
+        exit 0
     fi
 
     local bridge_config
@@ -1375,9 +1377,9 @@ remove_bridge() {
     echo -e "${GREEN}${CHECK}${NC} Files removed"
 
     echo
-    echo -e "${PURPLE}=========================${NC}"
+    echo -e "${PURPLE}=================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Bridge removed"
-    echo -e "${PURPLE}=========================${NC}"
+    echo -e "${PURPLE}=================${NC}"
     echo
 }
 
@@ -1426,9 +1428,9 @@ main() {
             ;;
         3)
             echo
-            echo -e "${PURPLE}===============${NC}"
+            echo -e "${PURPLE}==============${NC}"
             echo -e "${WHITE}Remove Bridge${NC}"
-            echo -e "${PURPLE}===============${NC}"
+            echo -e "${PURPLE}==============${NC}"
             echo
 
             input_panel_url
