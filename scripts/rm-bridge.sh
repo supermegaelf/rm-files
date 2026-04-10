@@ -991,8 +991,8 @@ events {
 
 stream {
     map \$ssl_preread_server_name \$backend {
-        ${REALITY_SNI}  127.0.0.1:10443;
-        default         127.0.0.1:10443;
+        ${REALITY_SNI} 127.0.0.1:10443;
+        default 127.0.0.1:10443;
     }
 
     server {
@@ -1074,7 +1074,7 @@ update_nginx_stream() {
     local nginx_conf="/opt/remnabridge/nginx.conf"
 
     echo -e "${GRAY}  ${ARROW}${NC} Adding SNI mapping"
-    sed -i "/^        default /i\\        ${REALITY_SNI}  127.0.0.1:${NEW_LOCAL_PORT};" "$nginx_conf"
+    sed -i "/^        default /i\\        ${REALITY_SNI} 127.0.0.1:${NEW_LOCAL_PORT};" "$nginx_conf"
 
     echo -e "${GRAY}  ${ARROW}${NC} Restarting nginx"
     docker restart remnabridge-nginx > /dev/null 2>&1
