@@ -825,8 +825,8 @@ create_bridge_host() {
 
     local existing_host_uuid
     existing_host_uuid=$(echo "$hosts_response" | jq -r \
-        --arg domain "$REALITY_SNI" \
-        '.response[] | select(.sni == $domain) | .uuid' | head -1)
+        --arg domain "$FOREIGN_DOMAIN" \
+        '.response[] | select(.address == $domain) | .uuid' | head -1)
 
     local host_payload
     host_payload=$(jq -n \
