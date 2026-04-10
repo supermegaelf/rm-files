@@ -1209,34 +1209,7 @@ remove_bridge() {
         --arg profile_uuid "$bridge_profile_uuid" \
         '[.response[] | select(.inbound.configProfileUuid == $profile_uuid) | .uuid]')
 
-    local host_count
-    host_count=$(echo "$bridge_host_uuids" | jq 'length')
-    local inbound_count
-    inbound_count=$(echo "$bridge_inbound_uuids" | jq 'length')
-    local sni_list
-    sni_list=$(echo "$bridge_snis" | jq -r 'join(", ")')
-
     echo -e "${GREEN}${CHECK}${NC} Data fetched"
-
-    echo
-    echo -e "${YELLOW}${WARNING} This will permanently remove the Bridge${NC}"
-    echo
-    echo -e "${WHITE}  The following will be deleted:${NC}"
-    echo -e "${GRAY}  ${ARROW}${NC} Bridge config profile"
-    [ -n "$bridge_node_uuid" ] && [ "$bridge_node_uuid" != "null" ] && \
-        echo -e "${GRAY}  ${ARROW}${NC} Bridge node"
-    echo -e "${GRAY}  ${ARROW}${NC} ${host_count} bridge host(s)"
-    echo -e "${GRAY}  ${ARROW}${NC} ${inbound_count} bridge inbound(s) from squad"
-    [ -n "$sni_list" ] && \
-        echo -e "${GRAY}  ${ARROW}${NC} StealConfig server names: ${sni_list}"
-    echo -e "${GRAY}  ${ARROW}${NC} Docker services and files on this server"
-    echo
-    echo -ne "${RED}Type 'REMOVE' to confirm: ${NC}"
-    read confirm
-    if [ "$confirm" != "REMOVE" ]; then
-        echo -e "${YELLOW}${WARNING}${NC} Aborted"
-        exit 0
-    fi
 
     echo
     echo -e "${GREEN}Cleaning up panel${NC}"
