@@ -1153,9 +1153,9 @@ add_node_to_bridge() {
     restart_bridge_node
 
     echo
-    echo -e "${PURPLE}===========================${NC}"
+    echo -e "${PURPLE}==========================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Node added successfully"
-    echo -e "${PURPLE}===========================${NC}"
+    echo -e "${PURPLE}==========================${NC}"
     echo
 }
 
