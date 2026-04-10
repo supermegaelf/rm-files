@@ -155,6 +155,9 @@ install_system_packages() {
 #=====================
 
 show_main_menu() {
+    BRIDGE_INSTALLED=false
+    [ -d /opt/remnabridge ] && BRIDGE_INSTALLED=true
+
     echo
     echo -e "${PURPLE}=======================${NC}"
     echo -e "${WHITE}REMNAWAVE BRIDGE SETUP${NC}"
@@ -164,10 +167,12 @@ show_main_menu() {
     echo
     echo -e "${GREEN}1.${NC} Setup bridge"
     echo -e "${GREEN}2.${NC} Add node to bridge"
-    if [ -d /opt/remnabridge ]; then
+    if [ "$BRIDGE_INSTALLED" = true ]; then
         echo -e "${RED}3.${NC} Remove bridge"
+        echo -e "${YELLOW}4.${NC} Exit"
+    else
+        echo -e "${YELLOW}3.${NC} Exit"
     fi
-    echo -e "${YELLOW}4.${NC} Exit"
     echo
     echo -ne "${CYAN}Enter your choice: ${NC}"
 }
@@ -1427,25 +1432,39 @@ main() {
             add_node_to_bridge
             ;;
         3)
-            echo
-            echo -e "${PURPLE}==============${NC}"
-            echo -e "${WHITE}Remove Bridge${NC}"
-            echo -e "${PURPLE}==============${NC}"
-            echo
+            if [ "$BRIDGE_INSTALLED" = true ]; then
+                echo
+                echo -e "${PURPLE}==============${NC}"
+                echo -e "${WHITE}Remove Bridge${NC}"
+                echo -e "${PURPLE}==============${NC}"
+                echo
 
-            input_panel_url
-            input_api_token
+                input_panel_url
+                input_api_token
 
-            remove_bridge
+                remove_bridge
+            else
+                echo
+                echo -e "${YELLOW}${WARNING}${NC} Exiting..."
+                exit 0
+            fi
             ;;
         4)
-            echo
-            echo -e "${YELLOW}${WARNING}${NC} Exiting..."
-            exit 0
+            if [ "$BRIDGE_INSTALLED" = true ]; then
+                echo
+                echo -e "${YELLOW}${WARNING}${NC} Exiting..."
+                exit 0
+            else
+                echo
+                echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1-3."
+                exit 1
+            fi
             ;;
         *)
+            local max_option=3
+            [ "$BRIDGE_INSTALLED" = true ] && max_option=4
             echo
-            echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1-4."
+            echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1-${max_option}."
             exit 1
             ;;
     esac
