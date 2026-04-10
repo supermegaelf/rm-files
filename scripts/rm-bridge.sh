@@ -186,18 +186,18 @@ input_panel_url() {
 }
 
 input_api_token() {
-    echo -ne "${CYAN}API token (from panel settings): ${NC}"
+    echo -ne "${CYAN}API token (e.g., eyJhbGciOi...): ${NC}"
     read API_TOKEN
     while [[ -z "$API_TOKEN" ]]; do
         echo -e "${RED}${CROSS}${NC} API token cannot be empty!"
         echo
-        echo -ne "${CYAN}API token: ${NC}"
+        echo -ne "${CYAN}API token (e.g., eyJhbGciOi...): ${NC}"
         read API_TOKEN
     done
 }
 
 input_sub_url() {
-    echo -ne "${CYAN}Subscription URL (e.g., https://example.com/sub/...): ${NC}"
+    echo -ne "${CYAN}Sub URL (e.g., https://example.com/sub/...): ${NC}"
     read SUB_URL
     while [[ -z "$SUB_URL" ]] || ! validate_url "$SUB_URL"; do
         echo -e "${RED}${CROSS}${NC} Invalid URL! Please enter a valid subscription URL."
@@ -208,7 +208,7 @@ input_sub_url() {
 }
 
 input_bridge_domain() {
-    echo -ne "${CYAN}Bridge domain (e.g., bridge.example.com): ${NC}"
+    echo -ne "${CYAN}Bridge domain (e.g., bridge.example.com or example.com): ${NC}"
     read BRIDGE_DOMAIN
     while [[ -z "$BRIDGE_DOMAIN" ]] || ! validate_domain "$BRIDGE_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
@@ -219,7 +219,7 @@ input_bridge_domain() {
 }
 
 input_foreign_domain() {
-    echo -ne "${CYAN}Foreign node domain (e.g., example.com): ${NC}"
+    echo -ne "${CYAN}Self-steal domain (e.g., example.com): ${NC}"
     read FOREIGN_DOMAIN
     while [[ -z "$FOREIGN_DOMAIN" ]] || ! validate_domain "$FOREIGN_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
@@ -444,7 +444,7 @@ create_bridge_profile() {
                             network: "tcp",
                             security: "reality",
                             realitySettings: {
-                                serverName: $reality_sni,
+                                serverName: $foreign_domain,
                                 publicKey: $foreign_pbk,
                                 shortId: $foreign_sid
                             }
@@ -534,7 +534,7 @@ update_bridge_config_profile() {
                 network: "tcp",
                 security: "reality",
                 realitySettings: {
-                    serverName: $reality_sni,
+                    serverName: $domain,
                     publicKey: $pbk,
                     shortId: $sid
                 }
@@ -729,15 +729,25 @@ create_bridge_node() {
 
     echo -e "${GREEN}${CHECK}${NC} Node created"
     echo
-    echo -e "${YELLOW}${WARNING}${NC} Copy the Secret Key from the panel (Nodes → Bridge → Secret Key)"
-    echo -ne "${CYAN}Secret Key: ${NC}"
-    read BRIDGE_SECRET_KEY
-    while [[ -z "$BRIDGE_SECRET_KEY" ]]; do
-        echo -e "${RED}${CROSS}${NC} Secret Key cannot be empty!"
-        echo
-        echo -ne "${CYAN}Secret Key: ${NC}"
-        read BRIDGE_SECRET_KEY
+    echo -e "${CYAN}Enter the node's Secret Key from the panel and press \"Enter\" twice:${NC}"
+    BRIDGE_SECRET_KEY=""
+    while IFS= read -r line; do
+        if [ -z "$line" ]; then
+            if [ -n "$BRIDGE_SECRET_KEY" ]; then
+                break
+            fi
+        else
+            BRIDGE_SECRET_KEY="$BRIDGE_SECRET_KEY$line"
+        fi
     done
+
+    echo -ne "${YELLOW}Are you sure the Secret Key is correct? (y/n): ${NC}"
+    read confirm
+
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo -e "${RED}${CROSS}${NC} Installation aborted by user"
+        exit 1
+    fi
 }
 
 update_bridge_host() {
@@ -1131,13 +1141,13 @@ main() {
             echo -e "${PURPLE}=============${NC}"
             echo
 
+            input_panel_ip
             input_panel_url
             input_api_token
             input_sub_url
             input_bridge_domain
             input_foreign_domain
             input_reality_sni
-            input_panel_ip
 
             setup_bridge
             ;;
