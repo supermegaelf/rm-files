@@ -196,16 +196,6 @@ input_api_token() {
     done
 }
 
-input_sub_url() {
-    echo -ne "${CYAN}Sub URL (e.g., https://example.com/sub/...): ${NC}"
-    read SUB_URL
-    while [[ -z "$SUB_URL" ]] || ! validate_url "$SUB_URL"; do
-        echo -e "${RED}${CROSS}${NC} Invalid URL! Please enter a valid subscription URL."
-        echo
-        echo -ne "${CYAN}Subscription URL: ${NC}"
-        read SUB_URL
-    done
-}
 
 input_bridge_domain() {
     echo -ne "${CYAN}Bridge domain (e.g., bridge.example.com or example.com): ${NC}"
@@ -251,16 +241,6 @@ input_panel_ip() {
     done
 }
 
-input_bridge_port() {
-    echo -ne "${CYAN}Bridge port for new inbound (e.g., 9443): ${NC}"
-    read BRIDGE_PORT
-    while [[ -z "$BRIDGE_PORT" ]] || ! [[ "$BRIDGE_PORT" =~ ^[0-9]+$ ]] || [ "$BRIDGE_PORT" -lt 1024 ] || [ "$BRIDGE_PORT" -gt 65535 ]; do
-        echo -e "${RED}${CROSS}${NC} Invalid port! Please enter a valid port number (1024-65535)."
-        echo
-        echo -ne "${CYAN}Bridge port: ${NC}"
-        read BRIDGE_PORT
-    done
-}
 
 input_host_remark() {
     echo -ne "${CYAN}Host remark (e.g., 🇳🇱 Нидерланды): ${NC}"
@@ -296,38 +276,10 @@ make_api_request() {
     fi
 }
 
-fetch_foreign_node_data() {
-    echo -e "${CYAN}${INFO}${NC} Fetching foreign node data from subscription..."
-
-    echo -e "${GRAY}  ${ARROW}${NC} Downloading subscription"
-    local sub_data
-    sub_data=$(curl -s "$SUB_URL" | base64 -d)
-
-    echo -e "${GRAY}  ${ARROW}${NC} Parsing foreign node entry"
-    local foreign_line
-    foreign_line=$(echo "$sub_data" | grep "sni=${FOREIGN_DOMAIN}" || true)
-    if [ -z "$foreign_line" ]; then
-        foreign_line=$(echo "$sub_data" | grep "@${FOREIGN_DOMAIN}:" || true)
-    fi
-
-    if [ -z "$foreign_line" ]; then
-        echo -e "${RED}${CROSS}${NC} Domain $FOREIGN_DOMAIN not found in subscription"
-        exit 1
-    fi
-
-    VLESS_UUID=$(echo "$foreign_line" | grep -oP 'vless://\K[^@]+' || echo "")
-    FOREIGN_PBK=$(echo "$foreign_line" | grep -oP '(?<=pbk=)[^&]+' || echo "")
-    FOREIGN_SID=$(echo "$foreign_line" | grep -oP '(?<=sid=)[^&#]+' || echo "")
-
-    if [ -z "$VLESS_UUID" ] || [ -z "$FOREIGN_PBK" ]; then
-        echo -e "${RED}${CROSS}${NC} Failed to extract required data from subscription"
-        exit 1
-    fi
-
-    echo -e "${GREEN}${CHECK}${NC} Foreign node data fetched"
-}
 
 fetch_foreign_node_data_api() {
+    local use_docker_run="${1:-false}"
+
     echo -e "${CYAN}${INFO}${NC} Fetching foreign node data from panel..."
 
     echo -e "${GRAY}  ${ARROW}${NC} Finding foreign node"
@@ -367,7 +319,11 @@ fetch_foreign_node_data_api() {
 
     echo -e "${GRAY}  ${ARROW}${NC} Deriving public key"
     local xray_output
-    xray_output=$(docker exec remnanode xray x25519 -i "$private_key" 2>&1 || true)
+    if [ "$use_docker_run" = "true" ]; then
+        xray_output=$(docker run --rm remnawave/node:${NODE_VERSION} xray x25519 -i "$private_key" 2>&1 || true)
+    else
+        xray_output=$(docker exec remnanode xray x25519 -i "$private_key" 2>&1 || true)
+    fi
     FOREIGN_PBK=$(echo "$xray_output" | grep -oP 'Password \(PublicKey\): \K.*' || true)
 
     if [ -z "$FOREIGN_PBK" ]; then
@@ -1101,7 +1057,7 @@ setup_bridge() {
     echo -e "${GREEN}=============${NC}"
     echo
 
-    fetch_foreign_node_data
+    fetch_foreign_node_data_api "true"
 
     echo
     echo -e "${GREEN}Generating keys${NC}"
@@ -1224,7 +1180,6 @@ main() {
             input_panel_ip
             input_panel_url
             input_api_token
-            input_sub_url
             input_bridge_domain
             input_foreign_domain
             input_reality_sni
