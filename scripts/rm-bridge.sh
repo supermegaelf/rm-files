@@ -209,7 +209,7 @@ input_bridge_domain() {
 }
 
 input_foreign_domain() {
-    echo -ne "${CYAN}Self-steal domain (e.g., example.com): ${NC}"
+    echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
     read FOREIGN_DOMAIN
     while [[ -z "$FOREIGN_DOMAIN" ]] || ! validate_domain "$FOREIGN_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."

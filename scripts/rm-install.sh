@@ -172,12 +172,12 @@ input_sub_domain() {
 }
 
 input_selfsteal_domain() {
-    echo -ne "${CYAN}Self-steal domain (e.g., example.com): ${NC}"
+    echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
     read SELFSTEAL_DOMAIN
     while [[ -z "$SELFSTEAL_DOMAIN" ]] || ! validate_domain "$SELFSTEAL_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
-        echo -ne "${CYAN}Selfsteal domain: ${NC}"
+        echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
         read SELFSTEAL_DOMAIN
     done
 }
@@ -209,12 +209,12 @@ input_cloudflare_email() {
 #======================
 
 input_node_selfsteal_domain() {
-    echo -ne "${CYAN}Selfsteal domain (e.g., example.com): ${NC}"
+    echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
     read SELFSTEAL_DOMAIN
     while [[ -z "$SELFSTEAL_DOMAIN" ]] || ! validate_domain "$SELFSTEAL_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
-        echo -ne "${CYAN}Selfsteal domain for node: ${NC}"
+        echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
         read SELFSTEAL_DOMAIN
     done
 }
