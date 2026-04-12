@@ -910,9 +910,10 @@ EOF
     echo -e "${GRAY}  ${ARROW}${NC} Writing nginx.conf"
     cat > /opt/remnabridge/nginx.conf <<EOF
 worker_processes auto;
+worker_rlimit_nofile 65535;
 
 events {
-    worker_connections 1024;
+    worker_connections 16384;
 }
 
 stream {
@@ -942,6 +943,10 @@ services:
     network_mode: host
     depends_on:
       - remnanode
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
     logging:
       driver: 'json-file'
       options:
