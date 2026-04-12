@@ -629,6 +629,7 @@ update_bridge_node_inbounds() {
 fetch_stealconfig() {
     echo -e "${CYAN}${INFO}${NC} Fetching StealConfig profile..."
 
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching config profiles"
     local profiles_response
     profiles_response=$(make_api_request GET "/api/config-profiles")
 
