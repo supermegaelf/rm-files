@@ -472,8 +472,7 @@ show_main_menu() {
         echo -e "${RED}3.${NC} Exit"
     else
         echo -e "${GREEN}1.${NC} Install"
-        echo -e "${YELLOW}2.${NC} Uninstall"
-        echo -e "${RED}3.${NC} Exit"
+        echo -e "${RED}2.${NC} Exit"
     fi
     echo
 }
@@ -485,33 +484,44 @@ handle_user_choice() {
     while true; do
         if [ "$agent_installed" = "true" ]; then
             echo -ne "${CYAN}Enter your choice (1-3): ${NC}"
-            read CHOICE
         else
-            echo -ne "${CYAN}Enter your choice (1-3): ${NC}"
-            read CHOICE
+            echo -ne "${CYAN}Enter your choice (1-2): ${NC}"
         fi
-        
-        case $CHOICE in
-            1)
-                if [ "$agent_installed" = "true" ]; then
+        read CHOICE
+
+        if [ "$agent_installed" = "true" ]; then
+            case $CHOICE in
+                1)
                     show_status
-                else
+                    break
+                    ;;
+                2)
+                    uninstall_beszel
+                    break
+                    ;;
+                3)
+                    echo -e "${CYAN}Goodbye!${NC}"
+                    exit 0
+                    ;;
+                *)
+                    echo -e "${RED}${CROSS}${NC} Invalid choice. Please enter 1, 2, or 3."
+                    ;;
+            esac
+        else
+            case $CHOICE in
+                1)
                     install_beszel
-                fi
-                break
-                ;;
-            2)
-                uninstall_beszel
-                break
-                ;;
-            3)
-                echo -e "${CYAN}Goodbye!${NC}"
-                exit 0
-                ;;
-            *)
-                echo -e "${RED}${CROSS}${NC} Invalid choice. Please enter 1, 2, or 3."
-                ;;
-        esac
+                    break
+                    ;;
+                2)
+                    echo -e "${CYAN}Goodbye!${NC}"
+                    exit 0
+                    ;;
+                *)
+                    echo -e "${RED}${CROSS}${NC} Invalid choice. Please enter 1 or 2."
+                    ;;
+            esac
+        fi
     done
 }
 
