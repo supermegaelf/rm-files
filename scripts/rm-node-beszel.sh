@@ -192,13 +192,8 @@ start_agent_container() {
         echo -e "${RED}${CROSS}${NC} Directory /opt/beszel-agent does not exist"
         exit 1
     fi
-    
-    cd /opt/beszel-agent || {
-        echo -e "${RED}${CROSS}${NC} Failed to change directory to /opt/beszel-agent"
-        exit 1
-    }
-    
-    docker compose up -d > /dev/null 2>&1
+
+    (cd /opt/beszel-agent && docker compose up -d > /dev/null 2>&1)
     
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}${CHECK}${NC} Beszel Agent started successfully!"
@@ -296,10 +291,7 @@ rollback_installation() {
     if [ "$AGENT_STARTED" = "true" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Stopping Beszel Agent"
         if [ -d "/opt/beszel-agent" ]; then
-            cd /opt/beszel-agent || {
-                echo -e "${YELLOW}${WARNING}${NC} Failed to change directory, continuing..."
-            }
-            docker compose down > /dev/null 2>&1 || true
+            (cd /opt/beszel-agent && docker compose down > /dev/null 2>&1 || true)
         fi
         rm -rf /opt/beszel-agent || true
     fi
@@ -418,10 +410,7 @@ uninstall_beszel() {
     # Stop and remove Beszel Agent
     if [ -d "/opt/beszel-agent" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Stopping Beszel Agent"
-        cd /opt/beszel-agent || {
-            echo -e "${YELLOW}${WARNING}${NC} Failed to change directory, continuing..."
-        }
-        docker compose down > /dev/null 2>&1 || true
+        (cd /opt/beszel-agent && docker compose down > /dev/null 2>&1 || true)
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Removing container images"
