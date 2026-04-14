@@ -1338,7 +1338,7 @@ remove_bridge() {
     echo -e "${CYAN}${INFO}${NC} Stopping Docker services..."
     if [ -f /opt/remnabridge/docker-compose.yml ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Running docker compose down"
-        cd /opt/remnabridge && docker compose down > /dev/null 2>&1 || true
+        (cd /opt/remnabridge && docker compose down > /dev/null 2>&1 || true)
         echo -e "${GREEN}${CHECK}${NC} Docker services stopped"
     else
         echo -e "${GRAY}  ${ARROW}${NC} No Docker services found, skipping"
