@@ -157,13 +157,15 @@ show_main_menu() {
     echo
     echo -e "${CYAN}Please select an option:${NC}"
     echo
-    echo -e "${GREEN}1.${NC} Setup bridge"
-    echo -e "${GREEN}2.${NC} Add node to bridge"
     if [ "$BRIDGE_INSTALLED" = true ]; then
+        echo -e "${GREEN}1.${NC} Add node to bridge"
+        echo -e "${RED}2.${NC} Remove bridge"
+        echo -e "${YELLOW}3.${NC} Exit"
+    else
+        echo -e "${GREEN}1.${NC} Setup bridge"
+        echo -e "${GREEN}2.${NC} Add node to bridge"
         echo -e "${RED}3.${NC} Remove bridge"
         echo -e "${YELLOW}4.${NC} Exit"
-    else
-        echo -e "${YELLOW}3.${NC} Exit"
     fi
     echo
     echo -ne "${CYAN}Enter your choice: ${NC}"
@@ -1370,37 +1372,38 @@ main() {
 
     case $SETUP_TYPE in
         1)
-            echo
-            echo -e "${PURPLE}=============${NC}"
-            echo -e "${WHITE}Bridge Setup${NC}"
-            echo -e "${PURPLE}=============${NC}"
-            echo
+            if [ "$BRIDGE_INSTALLED" = true ]; then
+                echo
+                echo -e "${PURPLE}===================${NC}"
+                echo -e "${WHITE}Add Node to Bridge${NC}"
+                echo -e "${PURPLE}===================${NC}"
+                echo
 
-            input_panel_ip
-            input_panel_url
-            input_api_token
-            input_bridge_domain
-            input_foreign_domain
-            input_reality_sni
+                input_panel_url
+                input_api_token
+                input_foreign_domain
+                input_reality_sni
+                input_host_remark
 
-            setup_bridge
+                add_node_to_bridge
+            else
+                echo
+                echo -e "${PURPLE}=============${NC}"
+                echo -e "${WHITE}Bridge Setup${NC}"
+                echo -e "${PURPLE}=============${NC}"
+                echo
+
+                input_panel_ip
+                input_panel_url
+                input_api_token
+                input_bridge_domain
+                input_foreign_domain
+                input_reality_sni
+
+                setup_bridge
+            fi
             ;;
         2)
-            echo
-            echo -e "${PURPLE}===================${NC}"
-            echo -e "${WHITE}Add Node to Bridge${NC}"
-            echo -e "${PURPLE}===================${NC}"
-            echo
-
-            input_panel_url
-            input_api_token
-            input_foreign_domain
-            input_reality_sni
-            input_host_remark
-
-            add_node_to_bridge
-            ;;
-        3)
             if [ "$BRIDGE_INSTALLED" = true ]; then
                 echo
                 echo -e "${PURPLE}==============${NC}"
@@ -1414,24 +1417,52 @@ main() {
                 remove_bridge
             else
                 echo
-                echo -e "${YELLOW}${WARNING}${NC} Exiting..."
-                exit 0
+                echo -e "${PURPLE}===================${NC}"
+                echo -e "${WHITE}Add Node to Bridge${NC}"
+                echo -e "${PURPLE}===================${NC}"
+                echo
+
+                input_panel_url
+                input_api_token
+                input_foreign_domain
+                input_reality_sni
+                input_host_remark
+
+                add_node_to_bridge
             fi
             ;;
-        4)
+        3)
             if [ "$BRIDGE_INSTALLED" = true ]; then
                 echo
                 echo -e "${YELLOW}${WARNING}${NC} Exiting..."
                 exit 0
             else
                 echo
+                echo -e "${PURPLE}==============${NC}"
+                echo -e "${WHITE}Remove Bridge${NC}"
+                echo -e "${PURPLE}==============${NC}"
+                echo
+
+                input_panel_url
+                input_api_token
+
+                remove_bridge
+            fi
+            ;;
+        4)
+            if [ "$BRIDGE_INSTALLED" = true ]; then
+                echo
                 echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1-3."
                 exit 1
+            else
+                echo
+                echo -e "${YELLOW}${WARNING}${NC} Exiting..."
+                exit 0
             fi
             ;;
         *)
-            local max_option=3
-            [ "$BRIDGE_INSTALLED" = true ] && max_option=4
+            local max_option=4
+            [ "$BRIDGE_INSTALLED" = true ] && max_option=3
             echo
             echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1-${max_option}."
             exit 1
