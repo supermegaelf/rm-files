@@ -255,17 +255,6 @@ input_host_remark() {
     done
 }
 
-input_bridge_username() {
-    echo -e "${YELLOW}${WARNING}${NC} The bridge user must have no traffic limit and expiry set to year 2099."
-    echo -ne "${CYAN}Bridge username (e.g., bridge_user): ${NC}"
-    read BRIDGE_USERNAME
-    while [[ -z "$BRIDGE_USERNAME" ]]; do
-        echo -e "${RED}${CROSS}${NC} Username cannot be empty!"
-        echo
-        echo -ne "${CYAN}Bridge username: ${NC}"
-        read BRIDGE_USERNAME
-    done
-}
 
 #=================
 # API FUNCTIONS
@@ -345,14 +334,28 @@ fetch_foreign_node_data_api() {
         exit 1
     fi
 
-    echo -e "${GRAY}  ${ARROW}${NC} Fetching user data"
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching bridge user data"
     local user_response
-    user_response=$(make_api_request GET "/api/users/username/${BRIDGE_USERNAME}")
+    user_response=$(make_api_request GET "/api/users/username/bridge_user")
     VLESS_UUID=$(echo "$user_response" | jq -r '.response.vlessUuid')
 
     if [ -z "$VLESS_UUID" ] || [ "$VLESS_UUID" = "null" ]; then
-        echo -e "${RED}${CROSS}${NC} User '${BRIDGE_USERNAME}' not found in panel"
-        exit 1
+        echo -e "${GRAY}  ${ARROW}${NC} Creating bridge_user"
+        local create_response
+        create_response=$(make_api_request POST "/api/users" \
+            "$(jq -n '{
+                username: "bridge_user",
+                expireAt: "2099-01-01T00:00:00.000Z",
+                trafficLimitBytes: 0,
+                trafficLimitStrategy: "NO_RESET",
+                status: "ACTIVE"
+            }')")
+        VLESS_UUID=$(echo "$create_response" | jq -r '.response.vlessUuid')
+
+        if [ -z "$VLESS_UUID" ] || [ "$VLESS_UUID" = "null" ]; then
+            echo -e "${RED}${CROSS}${NC} Failed to create bridge_user"
+            exit 1
+        fi
     fi
 
     echo -e "${GREEN}${CHECK}${NC} Foreign node data fetched"
@@ -1393,7 +1396,6 @@ main() {
 
                 input_panel_url
                 input_api_token
-                input_bridge_username
                 input_foreign_domain
                 input_reality_sni
                 input_host_remark
@@ -1410,7 +1412,6 @@ main() {
                 input_panel_url
                 input_api_token
                 input_bridge_domain
-                input_bridge_username
                 input_foreign_domain
                 input_reality_sni
 
@@ -1438,7 +1439,6 @@ main() {
 
                 input_panel_url
                 input_api_token
-                input_bridge_username
                 input_foreign_domain
                 input_reality_sni
                 input_host_remark
