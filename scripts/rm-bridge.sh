@@ -1512,6 +1512,6 @@ main() {
 }
 
 main
-exec 1>&- 2>&-
+exec 1>&-
 wait
 exit 0
