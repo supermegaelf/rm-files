@@ -374,15 +374,8 @@ fetch_foreign_node_data_api() {
     squad_uuid=$(echo "$squads_response" | jq -r '.response.internalSquads[0].uuid')
 
     if [ -n "$squad_uuid" ] && [ "$squad_uuid" != "null" ]; then
-        local active_squads
-        active_squads=$(echo "$users_list_response" | jq -r '[.response.users[] | select(.username == "bridge_user") | .activeInternalSquads // []] | flatten')
-        local already_in_squad
-        already_in_squad=$(echo "$active_squads" | jq -r --arg uuid "$squad_uuid" '.[] | select(.uuid == $uuid) | .uuid')
-
-        if [ -z "$already_in_squad" ]; then
-            make_api_request POST "/api/internal-squads/${squad_uuid}/users" \
-                "$(jq -n --arg uuid "$bridge_user_uuid" '{ userUuids: [$uuid] }')" > /dev/null 2>&1
-        fi
+        make_api_request POST "/api/internal-squads/${squad_uuid}/users" \
+            "$(jq -n --arg uuid "$bridge_user_uuid" '{ userUuids: [$uuid] }')" > /dev/null 2>&1
     fi
 
     echo -e "${GREEN}${CHECK}${NC} Foreign node data fetched"
@@ -1018,8 +1011,8 @@ services:
 EOF
 
     echo -e "${GRAY}  ${ARROW}${NC} Starting bridge services"
-    cd /opt/remnabridge && docker compose pull > /dev/null 2>&1
-    if ! docker compose up -d > /dev/null 2>&1; then
+    (cd /opt/remnabridge && docker compose pull > /dev/null 2>&1)
+    if ! (cd /opt/remnabridge && docker compose up -d > /dev/null 2>&1); then
         error "Failed to start bridge services"
     fi
 
@@ -1037,7 +1030,7 @@ restart_bridge_node() {
         echo -e "${GREEN}${CHECK}${NC} Bridge node restarted"
     else
         echo -e "${YELLOW}${WARNING}${NC} API restart failed, restarting via Docker"
-        cd /opt/remnabridge && docker compose restart remnanode > /dev/null 2>&1
+        (cd /opt/remnabridge && docker compose restart remnanode > /dev/null 2>&1)
         echo -e "${GREEN}${CHECK}${NC} Bridge node restarted via Docker"
     fi
 }
