@@ -84,6 +84,12 @@ install_system_packages() {
     if ! grep -qE '^\s*net\.ipv4\.tcp_congestion_control\s*=\s*bbr' /etc/sysctl.conf; then
         echo "net.ipv4.tcp_congestion_control = bbr" >> /etc/sysctl.conf
     fi
+    if ! grep -qE '^\s*net\.core\.somaxconn\s*=' /etc/sysctl.conf; then
+        echo "net.core.somaxconn = 8192" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*net\.ipv4\.tcp_max_syn_backlog\s*=' /etc/sysctl.conf; then
+        echo "net.ipv4.tcp_max_syn_backlog = 8192" >> /etc/sysctl.conf
+    fi
     sysctl -p >/dev/null
 
     echo -e "${GRAY}  ${ARROW}${NC} Configuring UFW firewall"
@@ -948,7 +954,7 @@ EOF
     echo -e "${GRAY}  ${ARROW}${NC} Writing nginx.conf"
     cat > /opt/remnabridge/nginx.conf <<EOF
 worker_processes auto;
-worker_rlimit_nofile 65535;
+worker_rlimit_nofile 262144;
 
 events {
     worker_connections 16384;
@@ -961,7 +967,7 @@ stream {
     }
 
     server {
-        listen 443;
+        listen 443 backlog=8192;
         proxy_pass \$backend;
         ssl_preread on;
         proxy_buffer_size 16k;
@@ -983,8 +989,8 @@ services:
       - remnanode
     ulimits:
       nofile:
-        soft: 65535
-        hard: 65535
+        soft: 262144
+        hard: 262144
     logging:
       driver: 'json-file'
       options:
