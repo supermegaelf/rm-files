@@ -374,8 +374,13 @@ fetch_foreign_node_data_api() {
     squad_uuid=$(echo "$squads_response" | jq -r '.response.internalSquads[0].uuid')
 
     if [ -n "$squad_uuid" ] && [ "$squad_uuid" != "null" ]; then
-        make_api_request POST "/api/internal-squads/${squad_uuid}/users" \
-            "$(jq -n --arg uuid "$bridge_user_uuid" '{ userUuids: [$uuid] }')" > /dev/null 2>&1
+        local squad_add_response
+        squad_add_response=$(make_api_request POST "/api/internal-squads/${squad_uuid}/users" \
+            "$(jq -n --arg uuid "$bridge_user_uuid" '{ userUuids: [$uuid] }')")
+        if ! echo "$squad_add_response" | jq -e '.response.eventSent' > /dev/null 2>&1; then
+            echo -e "${RED}${CROSS}${NC} Failed to add bridge_user to squad: $squad_add_response"
+            exit 1
+        fi
     fi
 
     echo -e "${GREEN}${CHECK}${NC} Foreign node data fetched"
