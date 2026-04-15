@@ -1512,4 +1512,5 @@ main() {
 }
 
 main
+wait
 exit 0
