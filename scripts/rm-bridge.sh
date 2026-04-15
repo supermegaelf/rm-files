@@ -338,6 +338,8 @@ fetch_foreign_node_data_api() {
     local user_response
     user_response=$(make_api_request GET "/api/users/username/bridge_user")
     VLESS_UUID=$(echo "$user_response" | jq -r '.response.vlessUuid')
+    local bridge_user_uuid
+    bridge_user_uuid=$(echo "$user_response" | jq -r '.response.uuid')
 
     if [ -z "$VLESS_UUID" ] || [ "$VLESS_UUID" = "null" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Creating bridge_user"
@@ -351,10 +353,29 @@ fetch_foreign_node_data_api() {
                 status: "ACTIVE"
             }')")
         VLESS_UUID=$(echo "$create_response" | jq -r '.response.vlessUuid')
+        bridge_user_uuid=$(echo "$create_response" | jq -r '.response.uuid')
 
         if [ -z "$VLESS_UUID" ] || [ "$VLESS_UUID" = "null" ]; then
             echo -e "${RED}${CROSS}${NC} Failed to create bridge_user"
             exit 1
+        fi
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Adding bridge_user to squad"
+    local squads_response
+    squads_response=$(make_api_request GET "/api/internal-squads")
+    local squad_uuid
+    squad_uuid=$(echo "$squads_response" | jq -r '.response.internalSquads[0].uuid')
+
+    if [ -n "$squad_uuid" ] && [ "$squad_uuid" != "null" ]; then
+        local active_squads
+        active_squads=$(echo "$user_response" | jq -r '.response.activeInternalSquads // []')
+        local already_in_squad
+        already_in_squad=$(echo "$active_squads" | jq -r --arg uuid "$squad_uuid" '.[] | select(.uuid == $uuid) | .uuid')
+
+        if [ -z "$already_in_squad" ]; then
+            make_api_request POST "/api/internal-squads/${squad_uuid}/users" \
+                "$(jq -n --arg uuid "$bridge_user_uuid" '{ userUuids: [$uuid] }')" > /dev/null 2>&1
         fi
     fi
 
