@@ -206,7 +206,7 @@ input_api_token() {
 
 
 input_bridge_domain() {
-    echo -ne "${CYAN}Bridge domain (e.g., bridge.example.com or example.com): ${NC}"
+    echo -ne "${CYAN}Bridge domain (e.g., example.com): ${NC}"
     read BRIDGE_DOMAIN
     while [[ -z "$BRIDGE_DOMAIN" ]] || ! validate_domain "$BRIDGE_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
@@ -228,7 +228,7 @@ input_foreign_domain() {
 }
 
 input_reality_sni() {
-    echo -ne "${CYAN}Reality SNI (e.g., max.ru): ${NC}"
+    echo -ne "${CYAN}Reality SNI (e.g., max.ru, vk.com, 5ka.ru, rutube.ru, rbc.ru, t2.ru): ${NC}"
     read REALITY_SNI
     while [[ -z "$REALITY_SNI" ]] || ! validate_domain "$REALITY_SNI"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
@@ -251,7 +251,7 @@ input_panel_ip() {
 
 
 input_host_remark() {
-    echo -ne "${CYAN}Host remark (e.g., 🇳🇱 Нидерланды): ${NC}"
+    echo -ne "${CYAN}Host remark (e.g., 🇳🇱 Нидерланды, 🇩🇪 Германия, 🇫🇮 Финляндия, 🇵🇱 Польша): ${NC}"
     read HOST_REMARK
     while [[ -z "$HOST_REMARK" ]]; do
         echo -e "${RED}${CROSS}${NC} Remark cannot be empty!"
