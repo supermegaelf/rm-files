@@ -788,10 +788,12 @@ update_bridge_host() {
     hosts_response=$(make_api_request GET "/api/hosts")
 
     local host_uuid
-    host_uuid=$(echo "$hosts_response" | jq -r '.response[0].uuid')
+    host_uuid=$(echo "$hosts_response" | jq -r \
+        --arg domain "$FOREIGN_DOMAIN" \
+        '.response[] | select(.address == $domain) | .uuid' | head -1)
 
     if [ -z "$host_uuid" ] || [ "$host_uuid" = "null" ]; then
-        echo -e "${RED}${CROSS}${NC} No hosts found"
+        echo -e "${RED}${CROSS}${NC} Host for $FOREIGN_DOMAIN not found"
         exit 1
     fi
 
