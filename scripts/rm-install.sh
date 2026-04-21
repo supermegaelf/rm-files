@@ -473,7 +473,55 @@ install_system_packages() {
     if ! grep -qE '^\s*net\.ipv4\.tcp_congestion_control\s*=\s*bbr' /etc/sysctl.conf; then
         echo "net.ipv4.tcp_congestion_control = bbr" >> /etc/sysctl.conf
     fi
+    if ! grep -qE '^\s*net\.core\.somaxconn\s*=' /etc/sysctl.conf; then
+        echo "net.core.somaxconn = 65535" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*net\.ipv4\.tcp_max_syn_backlog\s*=' /etc/sysctl.conf; then
+        echo "net.ipv4.tcp_max_syn_backlog = 8192" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*net\.ipv4\.ip_local_port_range\s*=' /etc/sysctl.conf; then
+        echo "net.ipv4.ip_local_port_range = 10240 65535" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*net\.ipv4\.tcp_fin_timeout\s*=' /etc/sysctl.conf; then
+        echo "net.ipv4.tcp_fin_timeout = 15" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*net\.ipv4\.tcp_tw_reuse\s*=' /etc/sysctl.conf; then
+        echo "net.ipv4.tcp_tw_reuse = 1" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*net\.core\.rmem_max\s*=' /etc/sysctl.conf; then
+        echo "net.core.rmem_max = 67108864" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*net\.core\.wmem_max\s*=' /etc/sysctl.conf; then
+        echo "net.core.wmem_max = 67108864" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*net\.ipv4\.tcp_rmem\s*=' /etc/sysctl.conf; then
+        echo "net.ipv4.tcp_rmem = 4096 87380 67108864" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*net\.ipv4\.tcp_wmem\s*=' /etc/sysctl.conf; then
+        echo "net.ipv4.tcp_wmem = 4096 65536 67108864" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*net\.ipv4\.tcp_mtu_probing\s*=' /etc/sysctl.conf; then
+        echo "net.ipv4.tcp_mtu_probing = 1" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*net\.ipv4\.tcp_fastopen\s*=' /etc/sysctl.conf; then
+        echo "net.ipv4.tcp_fastopen = 3" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*net\.ipv4\.tcp_syncookies\s*=' /etc/sysctl.conf; then
+        echo "net.ipv4.tcp_syncookies = 1" >> /etc/sysctl.conf
+    fi
+    if ! grep -qE '^\s*fs\.file-max\s*=' /etc/sysctl.conf; then
+        echo "fs.file-max = 1000000" >> /etc/sysctl.conf
+    fi
     sysctl -p >/dev/null
+
+    echo -e "${GRAY}  ${ARROW}${NC} Configuring file descriptor limits"
+    if ! grep -q '^\* hard nofile' /etc/security/limits.conf; then
+        echo "* hard nofile 1048576" >> /etc/security/limits.conf
+    fi
+    if ! grep -q '^\* soft nofile' /etc/security/limits.conf; then
+        echo "* soft nofile 1048576" >> /etc/security/limits.conf
+    fi
+    ulimit -n 1048576
 
     echo -e "${GRAY}  ${ARROW}${NC} Configuring UFW firewall"
     if ! ufw allow 22/tcp comment 'SSH' > /dev/null 2>&1 || ! ufw allow 443/tcp comment 'HTTPS' > /dev/null 2>&1 || ! ufw --force enable > /dev/null 2>&1; then
