@@ -249,7 +249,7 @@ input_node_api_token() {
     while [[ -z "$PANEL_NODE_TOKEN" ]]; do
         echo -e "${RED}${CROSS}${NC} API token cannot be empty!"
         echo
-        echo -ne "${CYAN}API token: ${NC}"
+        echo -ne "${CYAN}API token (e.g., eyJhbGciOi...): ${NC}"
         read PANEL_NODE_TOKEN
     done
 }
@@ -266,7 +266,7 @@ input_node_name() {
 }
 
 input_node_host_remark() {
-    echo -ne "${CYAN}Host remark (e.g., 🇳🇱 Нидерланды, 🇩🇪 Германия, 🇫🇮 Финляндия): ${NC}"
+    echo -ne "${CYAN}Host remark (e.g., 🇳🇱 Нидерланды, 🇩🇪 Германия, 🇫🇮 Финляндия, 🇵🇱 Польша): ${NC}"
     read HOST_REMARK
     while [[ -z "$HOST_REMARK" ]]; do
         echo -e "${RED}${CROSS}${NC} Host remark cannot be empty!"
