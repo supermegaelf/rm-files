@@ -255,7 +255,7 @@ input_node_api_token() {
 }
 
 input_node_name() {
-    echo -ne "${CYAN}Node name (e.g., DE-1, NL-1, 🇩🇪 Германия): ${NC}"
+    echo -ne "${CYAN}Node name (e.g., NL-1, DE-1, FI-1, PL-1, RU-1): ${NC}"
     read NODE_NAME
     while [[ -z "$NODE_NAME" ]]; do
         echo -e "${RED}${CROSS}${NC} Node name cannot be empty!"
@@ -266,7 +266,7 @@ input_node_name() {
 }
 
 input_node_host_remark() {
-    echo -ne "${CYAN}Host remark (e.g., 🇳🇱 Нидерланды, 🇩🇪 Германия, 🇫🇮 Финляндия, 🇵🇱 Польша): ${NC}"
+    echo -ne "${CYAN}Host remark (e.g., 🇳🇱 Нидерланды, 🇩🇪 Германия, 🇫🇮 Финляндия, 🇵🇱 Польша, 🇷🇺 Россия): ${NC}"
     read HOST_REMARK
     while [[ -z "$HOST_REMARK" ]]; do
         echo -e "${RED}${CROSS}${NC} Host remark cannot be empty!"
@@ -2283,6 +2283,7 @@ create_node_in_panel() {
 create_node_host_in_panel() {
     echo -e "${CYAN}${INFO}${NC} Creating host in panel..."
 
+    echo -e "${GRAY}  ${ARROW}${NC} Building host config"
     local host_data
     host_data=$(jq -n \
         --arg remark "$HOST_REMARK" \
@@ -2303,6 +2304,7 @@ create_node_host_in_panel() {
             }
         }')
 
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
     local host_response
     host_response=$(make_panel_api_request POST "/api/hosts" "$host_data")
 
@@ -2325,6 +2327,7 @@ update_stealconfig_servernames_for_node() {
         return 0
     fi
 
+    echo -e "${GRAY}  ${ARROW}${NC} Adding domain to server names"
     local updated_config
     updated_config=$(echo "$STEALCONFIG_CONFIG" | jq -c \
         --arg domain "$SELFSTEAL_DOMAIN" \
@@ -2336,6 +2339,7 @@ update_stealconfig_servernames_for_node() {
         --argjson config "$updated_config" \
         '{ uuid: $uuid, config: $config }')
 
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
     local patch_response
     patch_response=$(make_panel_api_request PATCH "/api/config-profiles" "$patch_data")
 
@@ -2687,14 +2691,14 @@ main() {
             echo -e "${WHITE}Node Installation${NC}"
             echo -e "${PURPLE}==================${NC}"
             echo
-            input_node_selfsteal_domain
             input_panel_ip
-            input_cloudflare_email
-            input_cloudflare_api_key
             input_node_panel_domain
             input_node_api_token
+            input_node_selfsteal_domain
             input_node_name
             input_node_host_remark
+            input_cloudflare_email
+            input_cloudflare_api_key
 
             echo
             echo -e "${GREEN}Environment variables${NC}"
