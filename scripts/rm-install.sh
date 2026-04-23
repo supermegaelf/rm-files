@@ -231,26 +231,49 @@ input_panel_ip() {
     done
 }
 
-input_ssl_certificate() {
-    echo -e "${CYAN}Enter the node's SSL certificate from the panel and press \"Enter\" twice:${NC}"
-    CERTIFICATE=""
-    while IFS= read -r line; do
-        if [ -z "$line" ]; then
-            if [ -n "$CERTIFICATE" ]; then
-                break
-            fi
-        else
-            CERTIFICATE="$CERTIFICATE$line\n"
-        fi
+input_node_panel_domain() {
+    echo -ne "${CYAN}Panel domain (e.g., example.com): ${NC}"
+    read PANEL_NODE_DOMAIN
+    while [[ -z "$PANEL_NODE_DOMAIN" ]] || ! validate_domain "$PANEL_NODE_DOMAIN"; do
+        echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
+        echo
+        echo -ne "${CYAN}Panel domain: ${NC}"
+        read PANEL_NODE_DOMAIN
     done
+    PANEL_NODE_URL="https://${PANEL_NODE_DOMAIN}"
+}
 
-    echo -ne "${YELLOW}Are you sure the certificate is correct? (y/n): ${NC}"
-    read confirm
+input_node_api_token() {
+    echo -ne "${CYAN}API token (e.g., eyJhbGciOi...): ${NC}"
+    read PANEL_NODE_TOKEN
+    while [[ -z "$PANEL_NODE_TOKEN" ]]; do
+        echo -e "${RED}${CROSS}${NC} API token cannot be empty!"
+        echo
+        echo -ne "${CYAN}API token: ${NC}"
+        read PANEL_NODE_TOKEN
+    done
+}
 
-    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        echo -e "${RED}${CROSS}${NC} Installation aborted by user"
-        exit 1
-    fi
+input_node_name() {
+    echo -ne "${CYAN}Node name (e.g., DE-1, NL-1, 🇩🇪 Германия): ${NC}"
+    read NODE_NAME
+    while [[ -z "$NODE_NAME" ]]; do
+        echo -e "${RED}${CROSS}${NC} Node name cannot be empty!"
+        echo
+        echo -ne "${CYAN}Node name: ${NC}"
+        read NODE_NAME
+    done
+}
+
+input_node_host_remark() {
+    echo -ne "${CYAN}Host remark (e.g., 🇳🇱 Нидерланды, 🇩🇪 Германия, 🇫🇮 Финляндия): ${NC}"
+    read HOST_REMARK
+    while [[ -z "$HOST_REMARK" ]]; do
+        echo -e "${RED}${CROSS}${NC} Host remark cannot be empty!"
+        echo
+        echo -ne "${CYAN}Host remark: ${NC}"
+        read HOST_REMARK
+    done
 }
 
 #====================================
@@ -325,9 +348,13 @@ save_node_variables_to_file() {
 # User provided node configuration
 export SELFSTEAL_DOMAIN="$SELFSTEAL_DOMAIN"
 export PANEL_IP="$PANEL_IP"
-export CERTIFICATE="$CERTIFICATE"
+export PANEL_NODE_DOMAIN="$PANEL_NODE_DOMAIN"
+export PANEL_NODE_TOKEN="$PANEL_NODE_TOKEN"
+export PANEL_NODE_URL="https://${PANEL_NODE_DOMAIN}"
+export NODE_NAME="$NODE_NAME"
+export HOST_REMARK="$HOST_REMARK"
 EOF
-    
+
     echo -e "${GRAY}  ${ARROW}${NC} Loading environment variables"
     source remnawave-node-vars.sh
     echo -e "${GREEN}${CHECK}${NC} Variables saved to remnawave-node-vars.sh"
@@ -2151,6 +2178,175 @@ EOL
     fi
 }
 
+#=====================================
+# NODE PANEL INTEGRATION FUNCTIONS
+#=====================================
+
+make_panel_api_request() {
+    local method=$1
+    local path=$2
+    local data=${3:-}
+
+    if [ -n "$data" ]; then
+        curl -s -X "$method" "${PANEL_NODE_URL}${path}" \
+            -H "Authorization: Bearer $PANEL_NODE_TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "X-Remnawave-Client-Type: browser" \
+            -d "$data"
+    else
+        curl -s -X "$method" "${PANEL_NODE_URL}${path}" \
+            -H "Authorization: Bearer $PANEL_NODE_TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "X-Remnawave-Client-Type: browser"
+    fi
+}
+
+fetch_stealconfig_from_panel() {
+    echo -e "${CYAN}${INFO}${NC} Fetching StealConfig profile from panel..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching config profiles"
+    local profiles_response
+    profiles_response=$(make_panel_api_request GET "/api/config-profiles")
+
+    STEALCONFIG_UUID=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "StealConfig") | .uuid')
+    STEALCONFIG_CONFIG=$(echo "$profiles_response" | jq -c '.response.configProfiles[] | select(.name == "StealConfig") | .config')
+    STEALCONFIG_INBOUND_UUID=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "StealConfig") | .inbounds[0].uuid')
+
+    if [ -z "$STEALCONFIG_UUID" ] || [ "$STEALCONFIG_UUID" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} StealConfig profile not found in panel"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} StealConfig profile fetched"
+}
+
+create_node_in_panel() {
+    echo -e "${CYAN}${INFO}${NC} Creating node in panel..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
+    local node_data
+    node_data=$(jq -n \
+        --arg name "$NODE_NAME" \
+        --arg address "$SELFSTEAL_DOMAIN" \
+        --arg profile_uuid "$STEALCONFIG_UUID" \
+        --arg inbound_uuid "$STEALCONFIG_INBOUND_UUID" \
+        '{
+            name: $name,
+            address: $address,
+            port: 2222,
+            configProfile: {
+                activeConfigProfileUuid: $profile_uuid,
+                activeInbounds: [$inbound_uuid]
+            },
+            isTrafficTrackingActive: false,
+            trafficLimitBytes: 0,
+            notifyPercent: 0,
+            trafficResetDay: 1,
+            excludedInbounds: [],
+            countryCode: "XX",
+            consumptionMultiplier: 1.0
+        }')
+
+    local node_response
+    node_response=$(make_panel_api_request POST "/api/nodes" "$node_data")
+
+    NODE_UUID=$(echo "$node_response" | jq -r '.response.uuid')
+
+    if [ -z "$NODE_UUID" ] || [ "$NODE_UUID" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} Failed to create node: $node_response"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Node created"
+    echo
+    echo -e "${CYAN}Enter the node's Secret Key from the panel and press \"Enter\" twice:${NC}"
+    CERTIFICATE=""
+    while IFS= read -r line; do
+        if [ -z "$line" ]; then
+            if [ -n "$CERTIFICATE" ]; then
+                break
+            fi
+        else
+            CERTIFICATE="$CERTIFICATE$line"
+        fi
+    done
+
+    echo -ne "${YELLOW}Are you sure the Secret Key is correct? (y/n): ${NC}"
+    read confirm
+
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo -e "${RED}${CROSS}${NC} Installation aborted by user"
+        exit 1
+    fi
+}
+
+create_node_host_in_panel() {
+    echo -e "${CYAN}${INFO}${NC} Creating host in panel..."
+
+    local host_data
+    host_data=$(jq -n \
+        --arg remark "$HOST_REMARK" \
+        --arg address "$SELFSTEAL_DOMAIN" \
+        --arg profile_uuid "$STEALCONFIG_UUID" \
+        --arg inbound_uuid "$STEALCONFIG_INBOUND_UUID" \
+        '{
+            remark: $remark,
+            address: $address,
+            port: 443,
+            sni: $address,
+            fingerprint: "chrome",
+            allowInsecure: false,
+            isDisabled: false,
+            inbound: {
+                configProfileUuid: $profile_uuid,
+                configProfileInboundUuid: $inbound_uuid
+            }
+        }')
+
+    local host_response
+    host_response=$(make_panel_api_request POST "/api/hosts" "$host_data")
+
+    if ! echo "$host_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to create host: $host_response"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Host created"
+}
+
+update_stealconfig_servernames_for_node() {
+    echo -e "${CYAN}${INFO}${NC} Updating StealConfig server names..."
+
+    if echo "$STEALCONFIG_CONFIG" | jq -e \
+        --arg domain "$SELFSTEAL_DOMAIN" \
+        '.inbounds[0].streamSettings.realitySettings.serverNames | contains([$domain])' > /dev/null 2>&1; then
+        echo -e "${GRAY}  ${ARROW}${NC} Domain already present in StealConfig"
+        echo -e "${GREEN}${CHECK}${NC} StealConfig unchanged"
+        return 0
+    fi
+
+    local updated_config
+    updated_config=$(echo "$STEALCONFIG_CONFIG" | jq -c \
+        --arg domain "$SELFSTEAL_DOMAIN" \
+        '.inbounds[0].streamSettings.realitySettings.serverNames += [$domain]')
+
+    local patch_data
+    patch_data=$(jq -n \
+        --arg uuid "$STEALCONFIG_UUID" \
+        --argjson config "$updated_config" \
+        '{ uuid: $uuid, config: $config }')
+
+    local patch_response
+    patch_response=$(make_panel_api_request PATCH "/api/config-profiles" "$patch_data")
+
+    if ! echo "$patch_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to update StealConfig: $patch_response"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} StealConfig updated"
+}
+
 #=============================
 # NODE INSTALLATION FUNCTIONS
 #=============================
@@ -2416,12 +2612,30 @@ install_node() {
     move_variables_file
 
     echo
+    echo -e "${GREEN}Configuring panel${NC}"
+    echo -e "${GREEN}=================${NC}"
+    echo
+
+    fetch_stealconfig_from_panel
+    echo
+    create_node_in_panel
+
+    echo
     echo -e "${GREEN}Installing node${NC}"
     echo -e "${GREEN}===============${NC}"
     echo
 
     create_node
     start_node_services
+
+    echo
+    echo -e "${GREEN}Configuring panel${NC}"
+    echo -e "${GREEN}=================${NC}"
+    echo
+
+    create_node_host_in_panel
+    echo
+    update_stealconfig_servernames_for_node
 
     echo
     echo -e "${PURPLE}========================${NC}"
@@ -2477,8 +2691,11 @@ main() {
             input_panel_ip
             input_cloudflare_email
             input_cloudflare_api_key
-            input_ssl_certificate
-            
+            input_node_panel_domain
+            input_node_api_token
+            input_node_name
+            input_node_host_remark
+
             echo
             echo -e "${GREEN}Environment variables${NC}"
             echo -e "${GREEN}=====================${NC}"
