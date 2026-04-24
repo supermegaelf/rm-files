@@ -2542,7 +2542,7 @@ select_node_to_delete() {
         name=$(echo "$node" | jq -r '.name')
         local address
         address=$(echo "$node" | jq -r '.address')
-        echo -e "  ${GREEN}$i.${NC} $name ${GRAY}($address)${NC}"
+        echo -e "${GREEN}$i.${NC} $name ${GRAY}($address)${NC}"
         ((i++))
     done < <(echo "$NODE_LIST_JSON" | jq -c '.[]')
 
