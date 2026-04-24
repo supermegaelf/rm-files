@@ -2679,8 +2679,9 @@ cleanup_node_server() {
         echo -e "${GRAY}  ${ARROW}${NC} Certificate for $cert_domain not found, skipping"
     fi
 
-    echo -e "${GRAY}  ${ARROW}${NC} Removing UFW rule for port 2222"
+    echo -e "${GRAY}  ${ARROW}${NC} Removing UFW rules"
     ufw delete allow from "$PANEL_IP" to any port 2222 > /dev/null 2>&1 || true
+    ufw delete allow 443/tcp > /dev/null 2>&1 || true
     ufw reload > /dev/null 2>&1 || true
 
     echo -e "${GREEN}${CHECK}${NC} Server cleanup complete"
