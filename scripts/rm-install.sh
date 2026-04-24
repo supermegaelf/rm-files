@@ -1129,33 +1129,6 @@ get_panel_token() {
     fi
 }
 
-get_public_key() {
-    local domain_url=$1
-    local token=$2
-    local target_dir=$3
-
-    local api_response=$(make_api_request "GET" "http://$domain_url/api/keygen" "$token")
-
-    if [ -z "$api_response" ]; then
-        echo -e "${RED}Failed to get public key.${NC}"
-    fi
-
-    local pubkey=$(echo "$api_response" | jq -r '.response.pubKey')
-    if [ -z "$pubkey" ]; then
-        echo -e "${RED}Failed to extract public key from response.${NC}"
-    fi
-
-    local env_node_file="$target_dir/.env-node"
-    cat > "$env_node_file" <<EOL
-### APP ###
-NODE_PORT=2222
-
-### XRAY ###
-SSL_CERT="$pubkey"
-EOL
-    echo -e "${YELLOW}Public key successfully obtained${NC}"
-    echo "$pubkey"
-}
 
 generate_xray_keys() {
     local domain_url=$1
@@ -2541,12 +2514,10 @@ docker_compose_up() {
 
 install_panel() {
     set -e
-    
+
     INSTALL_DIR="/opt"
     APP_NAME="remnawave"
     APP_DIR="$INSTALL_DIR/$APP_NAME"
-    DATA_DIR="/var/lib/$APP_NAME"
-    COMPOSE_FILE="$APP_DIR/docker-compose.yml"
     ENV_FILE="$APP_DIR/.env"
 
     echo
@@ -2594,12 +2565,10 @@ install_panel() {
 
 install_node() {
     set -e
-    
+
     INSTALL_DIR="/opt"
     APP_NAME="remnanode"
     APP_DIR="$INSTALL_DIR/$APP_NAME"
-    DATA_DIR="/var/lib/$APP_NAME"
-    COMPOSE_FILE="$APP_DIR/docker-compose.yml"
 
     echo
     echo -e "${GREEN}Installing packages${NC}"
