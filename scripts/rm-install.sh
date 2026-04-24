@@ -87,9 +87,10 @@ show_main_menu() {
     echo
     echo -e "${GREEN}1.${NC} Install Panel"
     echo -e "${GREEN}2.${NC} Add Node"
-    echo -e "${RED}3.${NC} Exit"
+    echo -e "${RED}3.${NC} Delete Node"
+    echo -e "${RED}4.${NC} Exit"
     echo
-    echo -ne "${CYAN}Enter your choice (1, 2, or 3): ${NC}"
+    echo -ne "${CYAN}Enter your choice (1, 2, 3, or 4): ${NC}"
 }
 
 #===================
@@ -2508,6 +2509,239 @@ docker_compose_up() {
     done
 }
 
+#==========================
+# NODE DELETE FUNCTIONS
+#==========================
+
+list_nodes_from_panel() {
+    echo -e "${CYAN}${INFO}${NC} Fetching nodes from panel..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
+    local nodes_response
+    nodes_response=$(make_panel_api_request GET "/api/nodes")
+
+    NODE_COUNT=$(echo "$nodes_response" | jq '.response | length')
+
+    if [ -z "$NODE_COUNT" ] || [ "$NODE_COUNT" = "null" ] || [ "$NODE_COUNT" -eq 0 ]; then
+        echo -e "${RED}${CROSS}${NC} No nodes found in panel"
+        exit 1
+    fi
+
+    NODE_LIST_JSON=$(echo "$nodes_response" | jq -c '.response')
+    echo -e "${GREEN}${CHECK}${NC} Found $NODE_COUNT node(s)"
+}
+
+select_node_to_delete() {
+    echo
+    echo -e "${CYAN}Available nodes:${NC}"
+    echo
+
+    local i=1
+    while IFS= read -r node; do
+        local name
+        name=$(echo "$node" | jq -r '.name')
+        local address
+        address=$(echo "$node" | jq -r '.address')
+        echo -e "  ${GREEN}$i.${NC} $name ${GRAY}($address)${NC}"
+        ((i++))
+    done < <(echo "$NODE_LIST_JSON" | jq -c '.[]')
+
+    echo
+    echo -ne "${CYAN}Select node to delete (1-$NODE_COUNT): ${NC}"
+    read NODE_SELECTION
+
+    while ! [[ "$NODE_SELECTION" =~ ^[0-9]+$ ]] || [ "$NODE_SELECTION" -lt 1 ] || [ "$NODE_SELECTION" -gt "$NODE_COUNT" ]; do
+        echo -e "${RED}${CROSS}${NC} Invalid selection. Enter a number between 1 and $NODE_COUNT."
+        echo
+        echo -ne "${CYAN}Select node to delete (1-$NODE_COUNT): ${NC}"
+        read NODE_SELECTION
+    done
+
+    local selected_node
+    selected_node=$(echo "$NODE_LIST_JSON" | jq -c ".[$(( NODE_SELECTION - 1 ))]")
+
+    DELETE_NODE_UUID=$(echo "$selected_node" | jq -r '.uuid')
+    DELETE_NODE_NAME=$(echo "$selected_node" | jq -r '.name')
+    DELETE_NODE_ADDRESS=$(echo "$selected_node" | jq -r '.address')
+}
+
+delete_node_host_from_panel() {
+    echo -e "${CYAN}${INFO}${NC} Removing host from panel..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching hosts list"
+    local hosts_response
+    hosts_response=$(make_panel_api_request GET "/api/hosts")
+
+    local host_uuid
+    host_uuid=$(echo "$hosts_response" | jq -r \
+        --arg addr "$DELETE_NODE_ADDRESS" \
+        '.response[] | select(.address == $addr) | .uuid' | head -n 1)
+
+    if [ -z "$host_uuid" ] || [ "$host_uuid" = "null" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} No host found for this node, skipping"
+        echo -e "${GREEN}${CHECK}${NC} Host step skipped"
+        return 0
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Deleting host"
+    local delete_response
+    delete_response=$(make_panel_api_request DELETE "/api/hosts/$host_uuid")
+
+    if echo "$delete_response" | jq -e '.response.isDeleted' > /dev/null 2>&1; then
+        echo -e "${GREEN}${CHECK}${NC} Host removed"
+    else
+        echo -e "${YELLOW}${WARNING}${NC} Host delete response unexpected: $delete_response"
+    fi
+}
+
+remove_domain_from_stealconfig() {
+    echo -e "${CYAN}${INFO}${NC} Removing domain from StealConfig..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching config profiles"
+    local profiles_response
+    profiles_response=$(make_panel_api_request GET "/api/config-profiles")
+
+    local sc_uuid
+    sc_uuid=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "StealConfig") | .uuid')
+    local sc_config
+    sc_config=$(echo "$profiles_response" | jq -c '.response.configProfiles[] | select(.name == "StealConfig") | .config')
+
+    if [ -z "$sc_uuid" ] || [ "$sc_uuid" = "null" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} StealConfig profile not found, skipping"
+        echo -e "${GREEN}${CHECK}${NC} StealConfig step skipped"
+        return 0
+    fi
+
+    if ! echo "$sc_config" | jq -e \
+        --arg domain "$DELETE_NODE_ADDRESS" \
+        '.inbounds[0].streamSettings.realitySettings.serverNames | contains([$domain])' > /dev/null 2>&1; then
+        echo -e "${GRAY}  ${ARROW}${NC} Domain not present in StealConfig, skipping"
+        echo -e "${GREEN}${CHECK}${NC} StealConfig unchanged"
+        return 0
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Removing domain from server names"
+    local updated_config
+    updated_config=$(echo "$sc_config" | jq -c \
+        --arg domain "$DELETE_NODE_ADDRESS" \
+        '.inbounds[0].streamSettings.realitySettings.serverNames -= [$domain]')
+
+    local patch_data
+    patch_data=$(jq -n \
+        --arg uuid "$sc_uuid" \
+        --argjson config "$updated_config" \
+        '{ uuid: $uuid, config: $config }')
+
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
+    local patch_response
+    patch_response=$(make_panel_api_request PATCH "/api/config-profiles" "$patch_data")
+
+    if ! echo "$patch_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to update StealConfig: $patch_response"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} StealConfig updated"
+}
+
+delete_node_from_panel() {
+    echo -e "${CYAN}${INFO}${NC} Deleting node from panel..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Sending delete request"
+    local delete_response
+    delete_response=$(make_panel_api_request DELETE "/api/nodes/$DELETE_NODE_UUID")
+
+    if echo "$delete_response" | jq -e '.response.isDeleted' > /dev/null 2>&1; then
+        echo -e "${GREEN}${CHECK}${NC} Node deleted from panel"
+    else
+        echo -e "${RED}${CROSS}${NC} Failed to delete node: $delete_response"
+        exit 1
+    fi
+}
+
+cleanup_node_server() {
+    echo -e "${CYAN}${INFO}${NC} Cleaning up server..."
+
+    if [ -f /opt/remnanode/docker-compose.yml ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Stopping Docker containers"
+        (cd /opt/remnanode && docker compose down > /dev/null 2>&1 || true)
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Removing node directory"
+    rm -rf /opt/remnanode
+
+    local cert_domain
+    cert_domain=$(extract_domain "$DELETE_NODE_ADDRESS")
+    if certbot certificates 2>/dev/null | grep -q "Certificate Name: $cert_domain"; then
+        echo -e "${GRAY}  ${ARROW}${NC} Removing SSL certificate for $cert_domain"
+        certbot delete --cert-name "$cert_domain" --non-interactive > /dev/null 2>&1 || true
+    else
+        echo -e "${GRAY}  ${ARROW}${NC} Certificate for $cert_domain not found, skipping"
+    fi
+
+    if [ -n "${DELETE_PANEL_IP:-}" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Removing UFW rule for port 2222"
+        ufw delete allow from "$DELETE_PANEL_IP" to any port 2222 > /dev/null 2>&1 || true
+        ufw reload > /dev/null 2>&1 || true
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Server cleanup complete"
+}
+
+delete_node() {
+    set -e
+
+    echo
+    echo -e "${GREEN}Selecting node${NC}"
+    echo -e "${GREEN}===============${NC}"
+    echo
+
+    list_nodes_from_panel
+    select_node_to_delete
+
+    echo
+    echo -e "${YELLOW}${WARNING}${NC} You are about to delete node: ${WHITE}$DELETE_NODE_NAME${NC} ${GRAY}($DELETE_NODE_ADDRESS)${NC}"
+    echo -e "${RED}This will remove the node from the panel and clean up this server.${NC}"
+    echo
+    echo -ne "${YELLOW}Are you sure? (y/n): ${NC}"
+    read confirm
+
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo -e "${YELLOW}${WARNING}${NC} Deletion cancelled"
+        exit 0
+    fi
+
+    DELETE_PANEL_IP=""
+    if [ -f /opt/remnanode/remnawave-node-vars.sh ]; then
+        source /opt/remnanode/remnawave-node-vars.sh 2>/dev/null || true
+        DELETE_PANEL_IP="${PANEL_IP:-}"
+    fi
+
+    echo
+    echo -e "${GREEN}Removing from panel${NC}"
+    echo -e "${GREEN}===================${NC}"
+    echo
+
+    delete_node_host_from_panel
+    echo
+    remove_domain_from_stealconfig
+    echo
+    delete_node_from_panel
+
+    echo
+    echo -e "${GREEN}Cleaning up server${NC}"
+    echo -e "${GREEN}==================${NC}"
+    echo
+
+    cleanup_node_server
+
+    echo
+    echo -e "${PURPLE}========================${NC}"
+    echo -e "${GREEN}${CHECK}${NC} Node deletion complete"
+    echo -e "${PURPLE}========================${NC}"
+    echo
+}
+
 #======================
 # MAIN ENTRY FUNCTIONS
 #======================
@@ -2677,12 +2911,21 @@ main() {
             ;;
         3)
             echo
+            echo -e "${PURPLE}==================${NC}"
+            echo -e "${WHITE}Node Deletion${NC}"
+            echo -e "${PURPLE}==================${NC}"
+            echo
+            input_node_panel_domain
+            input_node_api_token
+            ;;
+        4)
+            echo
             echo -e "${YELLOW}${WARNING}${NC} Exiting installation..."
             exit 0
             ;;
         *)
             echo
-            echo -e "${RED}${CROSS}${NC} Invalid choice. Please select 1, 2, or 3."
+            echo -e "${RED}${CROSS}${NC} Invalid choice. Please select 1, 2, 3, or 4."
             exit 1
             ;;
     esac
@@ -2693,6 +2936,9 @@ main() {
             ;;
         2)
             install_node
+            ;;
+        3)
+            delete_node
             ;;
     esac
 }
