@@ -2735,9 +2735,9 @@ delete_node() {
     cleanup_node_server
 
     echo
-    echo -e "${PURPLE}========================${NC}"
+    echo -e "${PURPLE}=========================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Node deletion complete"
-    echo -e "${PURPLE}========================${NC}"
+    echo -e "${PURPLE}=========================${NC}"
     echo
 }
 
@@ -2910,9 +2910,9 @@ main() {
             ;;
         3)
             echo
-            echo -e "${PURPLE}==================${NC}"
+            echo -e "${PURPLE}==============${NC}"
             echo -e "${WHITE}Node Deletion${NC}"
-            echo -e "${PURPLE}==================${NC}"
+            echo -e "${PURPLE}==============${NC}"
             echo
             input_node_panel_domain
             input_node_api_token
