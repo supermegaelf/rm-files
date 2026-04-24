@@ -2670,15 +2670,6 @@ cleanup_node_server() {
     echo -e "${GRAY}  ${ARROW}${NC} Removing node directory"
     rm -rf /opt/remnanode
 
-    local cert_domain
-    cert_domain=$(extract_domain "$DELETE_NODE_ADDRESS")
-    if certbot certificates 2>/dev/null | grep -q "Certificate Name: $cert_domain"; then
-        echo -e "${GRAY}  ${ARROW}${NC} Removing SSL certificate for $cert_domain"
-        certbot delete --cert-name "$cert_domain" --non-interactive > /dev/null 2>&1 || true
-    else
-        echo -e "${GRAY}  ${ARROW}${NC} Certificate for $cert_domain not found, skipping"
-    fi
-
     echo -e "${GRAY}  ${ARROW}${NC} Removing UFW rules"
     ufw delete allow from "$PANEL_IP" to any port 2222 > /dev/null 2>&1 || true
     ufw delete allow 443/tcp > /dev/null 2>&1 || true
