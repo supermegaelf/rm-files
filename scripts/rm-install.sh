@@ -86,7 +86,7 @@ show_main_menu() {
     echo -e "${CYAN}Please select installation type:${NC}"
     echo
     echo -e "${GREEN}1.${NC} Install Panel"
-    echo -e "${GREEN}2.${NC} Install Node"
+    echo -e "${GREEN}2.${NC} Add Node"
     echo -e "${RED}3.${NC} Exit"
     echo
     echo -ne "${CYAN}Enter your choice (1, 2, or 3): ${NC}"
