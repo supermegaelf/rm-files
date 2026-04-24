@@ -2679,11 +2679,9 @@ cleanup_node_server() {
         echo -e "${GRAY}  ${ARROW}${NC} Certificate for $cert_domain not found, skipping"
     fi
 
-    if [ -n "${DELETE_PANEL_IP:-}" ]; then
-        echo -e "${GRAY}  ${ARROW}${NC} Removing UFW rule for port 2222"
-        ufw delete allow from "$DELETE_PANEL_IP" to any port 2222 > /dev/null 2>&1 || true
-        ufw reload > /dev/null 2>&1 || true
-    fi
+    echo -e "${GRAY}  ${ARROW}${NC} Removing UFW rule for port 2222"
+    ufw delete allow from "$PANEL_IP" to any port 2222 > /dev/null 2>&1 || true
+    ufw reload > /dev/null 2>&1 || true
 
     echo -e "${GREEN}${CHECK}${NC} Server cleanup complete"
 }
@@ -2709,11 +2707,6 @@ delete_node() {
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo -e "${YELLOW}${WARNING}${NC} Deletion cancelled"
         exit 0
-    fi
-
-    DELETE_PANEL_IP=""
-    if [ -f /opt/remnanode/remnawave-node-vars.sh ]; then
-        DELETE_PANEL_IP=$(grep '^export PANEL_IP=' /opt/remnanode/remnawave-node-vars.sh | cut -d'"' -f2)
     fi
 
     echo
@@ -2916,6 +2909,7 @@ main() {
             echo
             input_node_panel_domain
             input_node_api_token
+            input_panel_ip
             ;;
         4)
             echo
