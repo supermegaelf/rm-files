@@ -2713,8 +2713,7 @@ delete_node() {
 
     DELETE_PANEL_IP=""
     if [ -f /opt/remnanode/remnawave-node-vars.sh ]; then
-        source /opt/remnanode/remnawave-node-vars.sh 2>/dev/null || true
-        DELETE_PANEL_IP="${PANEL_IP:-}"
+        DELETE_PANEL_IP=$(grep '^export PANEL_IP=' /opt/remnanode/remnawave-node-vars.sh | cut -d'"' -f2)
     fi
 
     echo
