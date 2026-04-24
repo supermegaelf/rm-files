@@ -2907,9 +2907,9 @@ main() {
             echo -e "${WHITE}Node Deletion${NC}"
             echo -e "${PURPLE}==============${NC}"
             echo
+            input_panel_ip
             input_node_panel_domain
             input_node_api_token
-            input_panel_ip
             ;;
         4)
             echo
