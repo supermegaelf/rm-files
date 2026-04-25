@@ -2182,9 +2182,21 @@ fetch_stealconfig_from_panel() {
     local profiles_response
     profiles_response=$(make_panel_api_request GET "/api/config-profiles")
 
-    STEALCONFIG_UUID=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "StealConfig") | .uuid')
-    STEALCONFIG_CONFIG=$(echo "$profiles_response" | jq -c '.response.configProfiles[] | select(.name == "StealConfig") | .config')
-    STEALCONFIG_INBOUND_UUID=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "StealConfig") | .inbounds[0].uuid')
+    if [ -z "$profiles_response" ] || ! echo "$profiles_response" | jq -e '.' > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} No response from panel API — check domain and token"
+        exit 1
+    fi
+
+    local api_error
+    api_error=$(echo "$profiles_response" | jq -r '.message // empty')
+    if [ -n "$api_error" ]; then
+        echo -e "${RED}${CROSS}${NC} Panel API error: $api_error"
+        exit 1
+    fi
+
+    STEALCONFIG_UUID=$(echo "$profiles_response" | jq -r '(.response.configProfiles // [])[] | select(.name == "StealConfig") | .uuid')
+    STEALCONFIG_CONFIG=$(echo "$profiles_response" | jq -c '(.response.configProfiles // [])[] | select(.name == "StealConfig") | .config')
+    STEALCONFIG_INBOUND_UUID=$(echo "$profiles_response" | jq -r '(.response.configProfiles // [])[] | select(.name == "StealConfig") | .inbounds[0].uuid')
 
     if [ -z "$STEALCONFIG_UUID" ] || [ "$STEALCONFIG_UUID" = "null" ]; then
         echo -e "${RED}${CROSS}${NC} StealConfig profile not found in panel"
