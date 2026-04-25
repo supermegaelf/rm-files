@@ -485,7 +485,7 @@ rollback_panel_installation() {
     echo -e "${YELLOW}${WARNING}${NC} Starting rollback..."
     echo
 
-    if [ "$NGINX_MODIFIED" = "true" ]; then
+    if [ "$NGINX_MODIFIED" = "true" ] || [ "$NGINX_BACKUPED" = "true" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Restoring nginx configuration"
         if [ -f "/opt/remnawave/nginx.conf.backup" ]; then
             mv /opt/remnawave/nginx.conf.backup /opt/remnawave/nginx.conf
