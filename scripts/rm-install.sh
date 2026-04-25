@@ -2117,10 +2117,10 @@ EOL
     read config_profile_uuid inbound_uuid <<< $(create_config_profile "$domain_url" "$token" "StealConfig" "$SELFSTEAL_DOMAIN" "$private_key")
 
     echo -e "${GRAY}  ${ARROW}${NC} Creating node configuration"
-    create_node_api "$domain_url" "$token" "$config_profile_uuid" "$inbound_uuid" "$SELFSTEAL_DOMAIN"
+    create_node_api "$domain_url" "$token" "$config_profile_uuid" "$inbound_uuid" "$SELFSTEAL_DOMAIN" "$NODE_NAME"
 
     echo -e "${GRAY}  ${ARROW}${NC} Setting up host configuration"
-    create_host "$domain_url" "$token" "$inbound_uuid" "$SELFSTEAL_DOMAIN" "$config_profile_uuid"
+    create_host "$domain_url" "$token" "$inbound_uuid" "$SELFSTEAL_DOMAIN" "$config_profile_uuid" "$HOST_REMARK"
 
     echo -e "${GRAY}  ${ARROW}${NC} Configuring default squad"
     local squad_uuid=$(get_default_squad "$domain_url" "$token")
@@ -2863,7 +2863,9 @@ main() {
             input_selfsteal_domain
             input_cloudflare_email
             input_cloudflare_api_key
-            
+            input_node_name
+            input_node_host_remark
+
             echo
             echo -e "${GREEN}Environment variables${NC}"
             echo -e "${GREEN}=====================${NC}"
