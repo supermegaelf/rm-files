@@ -174,7 +174,7 @@ start_hub_container() {
 
     if [ ! -d "/opt/beszel" ]; then
         echo -e "${RED}${CROSS}${NC} Directory /opt/beszel does not exist"
-        exit 1
+        return 1
     fi
 
     (cd /opt/beszel && docker compose up -d > /dev/null 2>&1)
@@ -183,7 +183,7 @@ start_hub_container() {
         echo -e "${GREEN}${CHECK}${NC} Beszel Hub started successfully!"
     else
         echo -e "${RED}${CROSS}${NC} Failed to start Beszel Hub"
-        exit 1
+        return 1
     fi
 }
 
@@ -234,7 +234,7 @@ start_panel_agent_container() {
 
     if [ ! -d "/opt/beszel-agent" ]; then
         echo -e "${RED}${CROSS}${NC} Directory /opt/beszel-agent does not exist"
-        exit 1
+        return 1
     fi
 
     (cd /opt/beszel-agent && docker compose up -d > /dev/null 2>&1)
@@ -243,7 +243,7 @@ start_panel_agent_container() {
         echo -e "${GREEN}${CHECK}${NC} Beszel Agent started successfully!"
     else
         echo -e "${RED}${CROSS}${NC} Failed to start Beszel Agent"
-        exit 1
+        return 1
     fi
 }
 
@@ -276,7 +276,7 @@ backup_nginx_config() {
         echo -e "${GREEN}${CHECK}${NC} Nginx configuration backed up!"
     else
         echo -e "${RED}${CROSS}${NC} Nginx config not found at /opt/remnawave/nginx.conf"
-        exit 1
+        return 1
     fi
 }
 
@@ -292,16 +292,16 @@ add_beszel_to_nginx() {
     local total_lines=$(wc -l < /opt/remnawave/nginx.conf)
     if [ "$total_lines" -lt 6 ]; then
         echo -e "${RED}${CROSS}${NC} Nginx config file is too small ($total_lines lines), cannot safely remove last 5 lines"
-        exit 1
+        return 1
     fi
 
     head -n -5 /opt/remnawave/nginx.conf > /opt/remnawave/nginx.conf.tmp || {
         echo -e "${RED}${CROSS}${NC} Failed to process nginx config"
-        exit 1
+        return 1
     }
     mv /opt/remnawave/nginx.conf.tmp /opt/remnawave/nginx.conf || {
         echo -e "${RED}${CROSS}${NC} Failed to update nginx config"
-        exit 1
+        return 1
     }
 
     echo -e "${GRAY}  ${ARROW}${NC} Inserting Beszel server block"
@@ -365,13 +365,13 @@ restart_nginx_container() {
                 mv /opt/remnawave/nginx.conf.backup /opt/remnawave/nginx.conf
                 echo -e "${GREEN}${CHECK}${NC} Backup configuration restored"
             fi
-            exit 1
+            return 1
         fi
     fi
 
     if [ ! -d "/opt/remnawave" ]; then
         echo -e "${RED}${CROSS}${NC} Directory /opt/remnawave does not exist"
-        exit 1
+        return 1
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Restarting remnawave-nginx service"
@@ -381,7 +381,7 @@ restart_nginx_container() {
         echo -e "${GREEN}${CHECK}${NC} Nginx restarted successfully!"
     else
         echo -e "${RED}${CROSS}${NC} Failed to restart Nginx"
-        exit 1
+        return 1
     fi
 }
 
@@ -730,7 +730,7 @@ start_node_agent_container() {
 
     if [ ! -d "/opt/beszel-agent" ]; then
         echo -e "${RED}${CROSS}${NC} Directory /opt/beszel-agent does not exist"
-        exit 1
+        return 1
     fi
 
     (cd /opt/beszel-agent && docker compose up -d > /dev/null 2>&1)
@@ -739,7 +739,7 @@ start_node_agent_container() {
         echo -e "${GREEN}${CHECK}${NC} Beszel Agent started successfully!"
     else
         echo -e "${RED}${CROSS}${NC} Failed to start Beszel Agent"
-        exit 1
+        return 1
     fi
 }
 
