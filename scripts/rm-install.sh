@@ -2861,10 +2861,10 @@ main() {
             input_panel_domain
             input_sub_domain
             input_selfsteal_domain
-            input_cloudflare_email
-            input_cloudflare_api_key
             input_node_name
             input_node_host_remark
+            input_cloudflare_email
+            input_cloudflare_api_key
 
             echo
             echo -e "${GREEN}Environment variables${NC}"
