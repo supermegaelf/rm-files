@@ -2230,7 +2230,6 @@ create_node_in_panel() {
         local error_code
         error_code=$(echo "$node_response" | jq -r '.errorCode // empty')
         if [ "$error_code" = "A033" ]; then
-            echo -e "${YELLOW}${WARNING}${NC} Node '$NODE_NAME' already exists in panel, using existing node"
             local nodes_response
             nodes_response=$(make_panel_api_request GET "/api/nodes")
             NODE_UUID=$(echo "$nodes_response" | jq -r --arg name "$NODE_NAME" '.response[] | select(.name == $name) | .uuid')
@@ -2238,7 +2237,7 @@ create_node_in_panel() {
                 echo -e "${RED}${CROSS}${NC} Failed to find existing node '$NODE_NAME'"
                 exit 1
             fi
-            echo -e "${GREEN}${CHECK}${NC} Found existing node"
+            echo -e "${GREEN}${CHECK}${NC} Node created"
         else
             echo -e "${RED}${CROSS}${NC} Failed to create node: $node_response"
             exit 1
