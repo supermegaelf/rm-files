@@ -2227,11 +2227,25 @@ create_node_in_panel() {
     NODE_UUID=$(echo "$node_response" | jq -r '.response.uuid')
 
     if [ -z "$NODE_UUID" ] || [ "$NODE_UUID" = "null" ]; then
-        echo -e "${RED}${CROSS}${NC} Failed to create node: $node_response"
-        exit 1
+        local error_code
+        error_code=$(echo "$node_response" | jq -r '.errorCode // empty')
+        if [ "$error_code" = "A033" ]; then
+            echo -e "${YELLOW}${WARNING}${NC} Node '$NODE_NAME' already exists in panel, using existing node"
+            local nodes_response
+            nodes_response=$(make_panel_api_request GET "/api/nodes")
+            NODE_UUID=$(echo "$nodes_response" | jq -r --arg name "$NODE_NAME" '.response[] | select(.name == $name) | .uuid')
+            if [ -z "$NODE_UUID" ] || [ "$NODE_UUID" = "null" ]; then
+                echo -e "${RED}${CROSS}${NC} Failed to find existing node '$NODE_NAME'"
+                exit 1
+            fi
+            echo -e "${GREEN}${CHECK}${NC} Found existing node"
+        else
+            echo -e "${RED}${CROSS}${NC} Failed to create node: $node_response"
+            exit 1
+        fi
+    else
+        echo -e "${GREEN}${CHECK}${NC} Node created"
     fi
-
-    echo -e "${GREEN}${CHECK}${NC} Node created"
     echo
     echo -e "${CYAN}Enter the node's Secret Key from the panel and press \"Enter\" twice:${NC}"
     CERTIFICATE=""
