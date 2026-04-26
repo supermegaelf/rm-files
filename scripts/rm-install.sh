@@ -2851,7 +2851,6 @@ install_node() {
     echo
 
     create_node
-    start_node_services
 
     echo
     echo -e "${GREEN}Configuring panel${NC}"
@@ -2861,6 +2860,13 @@ install_node() {
     create_node_host_in_panel
     echo
     update_stealconfig_servernames_for_node
+
+    echo
+    echo -e "${GREEN}Starting node${NC}"
+    echo -e "${GREEN}=============${NC}"
+    echo
+
+    start_node_services
 
     echo
     echo -e "${PURPLE}========================${NC}"
