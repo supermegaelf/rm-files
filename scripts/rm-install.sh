@@ -2282,7 +2282,6 @@ create_node_in_panel() {
 create_node_host_in_panel() {
     echo -e "${CYAN}${INFO}${NC} Creating host in panel..."
 
-    echo -e "${GRAY}  ${ARROW}${NC} Checking for existing host"
     local hosts_response
     hosts_response=$(make_panel_api_request GET "/api/hosts")
     local existing_uuid
