@@ -2282,6 +2282,16 @@ create_node_in_panel() {
 create_node_host_in_panel() {
     echo -e "${CYAN}${INFO}${NC} Creating host in panel..."
 
+    echo -e "${GRAY}  ${ARROW}${NC} Checking for existing host"
+    local hosts_response
+    hosts_response=$(make_panel_api_request GET "/api/hosts")
+    local existing_uuid
+    existing_uuid=$(echo "$hosts_response" | jq -r --arg addr "$SELFSTEAL_DOMAIN" '(.response // [])[] | select(.address == $addr) | .uuid' | head -n 1)
+    if [ -n "$existing_uuid" ] && [ "$existing_uuid" != "null" ]; then
+        echo -e "${GREEN}${CHECK}${NC} Host created"
+        return 0
+    fi
+
     echo -e "${GRAY}  ${ARROW}${NC} Building host config"
     local host_data
     host_data=$(jq -n \
