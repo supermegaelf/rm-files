@@ -136,12 +136,12 @@ show_main_menu() {
 #===================
 
 input_sub_domain() {
-    echo -ne "${CYAN}Subscription domain (e.g., sub.example.com): ${NC}"
+    echo -ne "${CYAN}Sub domain (e.g., example.com): ${NC}"
     read SUB_DOMAIN
     while [[ -z "$SUB_DOMAIN" ]] || ! validate_domain "$SUB_DOMAIN"; do
-        echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain (e.g., sub.example.com)."
+        echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain (e.g., example.com)."
         echo
-        echo -ne "${CYAN}Subscription domain: ${NC}"
+        echo -ne "${CYAN}Sub domain: ${NC}"
         read SUB_DOMAIN
     done
 }
@@ -229,6 +229,11 @@ install_sub() {
     echo -e "${PURPLE}========================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Installation complete"
     echo -e "${PURPLE}========================${NC}"
+    echo
+    local server_ip
+    server_ip=$(curl -s https://api.ipify.org 2>/dev/null || echo "unknown")
+    echo -e "${CYAN}Next Steps:${NC}"
+    echo -e "${WHITE}• Update the A record of ${SUB_DOMAIN} to point to ${server_ip}${NC}"
     echo
     echo -e "${CYAN}Useful Commands:${NC}"
     echo -e "${WHITE}• Check status: systemctl status haproxy${NC}"
