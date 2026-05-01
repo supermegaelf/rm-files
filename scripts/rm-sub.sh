@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#========================
+#===========================
 # REMNAWAVE SUB PROXY SETUP
-#========================
+#===========================
 
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -131,9 +131,9 @@ show_main_menu() {
     echo -ne "${CYAN}Enter your choice: ${NC}"
 }
 
-#===================
+#=================
 # INPUT FUNCTIONS
-#===================
+#=================
 
 input_sub_domain() {
     echo -ne "${CYAN}Sub domain (e.g., example.com): ${NC}"
@@ -157,9 +157,9 @@ input_panel_ip() {
     done
 }
 
-#===================
+#=================
 # SETUP FUNCTIONS
-#===================
+#=================
 
 configure_haproxy() {
     echo -e "${CYAN}${INFO}${NC} Configuring HAProxy..."
