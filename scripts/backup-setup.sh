@@ -66,14 +66,12 @@ download_backup_script() {
     echo -e "${GRAY}  ${ARROW}${NC} Downloading backup.sh file"
     echo -e "${GRAY}  ${ARROW}${NC} Setting executable permissions"
 
-    wget -q -O "$SCRIPT_PATH" "$SCRIPT_URL" > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}${CROSS}${NC} Failed to download mb-backup.sh"
+    if ! curl -fsSL -o "$SCRIPT_PATH" "$SCRIPT_URL"; then
+        echo -e "${RED}${CROSS}${NC} Failed to download backup.sh"
         exit 1
     fi
 
-    chmod 700 "$SCRIPT_PATH" > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
+    if ! chmod 700 "$SCRIPT_PATH" > /dev/null 2>&1; then
         echo -e "${RED}${CROSS}${NC} Failed to set permissions on $SCRIPT_PATH"
         exit 1
     fi
@@ -82,8 +80,7 @@ download_backup_script() {
 }
 
 configure_backup_script() {
-    /bin/bash "$SCRIPT_PATH"
-    if [ $? -ne 0 ]; then
+    if ! /bin/bash "$SCRIPT_PATH"; then
         echo -e "${RED}${CROSS}${NC} backup.sh failed to execute"
         exit 1
     fi
