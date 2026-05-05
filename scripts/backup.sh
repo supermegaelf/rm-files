@@ -103,8 +103,8 @@ configure_backup() {
         sed -i "s|TG_BOT_TOKEN=\"[^\"]*\"|TG_BOT_TOKEN=\"$TG_BOT_TOKEN\"|" "$0"
         sed -i "s|TG_CHAT_ID=\"[^\"]*\"|TG_CHAT_ID=\"$TG_CHAT_ID\"|" "$0"
 
-        if ! grep -q "/root/scripts/rm-backup.sh" /etc/crontab; then
-            echo "0 */1 * * * root /bin/bash /root/scripts/rm-backup.sh >/dev/null 2>&1" | tee -a /etc/crontab > /dev/null 2>&1
+        if ! grep -q "/root/scripts/backup.sh" /etc/crontab; then
+            echo "0 */1 * * * root /bin/bash /root/scripts/backup.sh >/dev/null 2>&1" | tee -a /etc/crontab > /dev/null 2>&1
         fi
 
         echo -e "${GREEN}${CHECK}${NC} Configuration saved successfully!"

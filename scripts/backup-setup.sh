@@ -23,9 +23,9 @@ readonly INFO="*"
 readonly ARROW="→"
 
 # Global variables
-SCRIPT_URL="https://raw.githubusercontent.com/supermegaelf/rm-files/main/scripts/rm-backup.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/supermegaelf/rm-files/main/scripts/backup.sh"
 SCRIPT_DIR="/root/scripts"
-SCRIPT_PATH="$SCRIPT_DIR/rm-backup.sh"
+SCRIPT_PATH="$SCRIPT_DIR/backup.sh"
 
 #================
 # MAIN FUNCTIONS
@@ -63,7 +63,7 @@ download_backup_script() {
 
     echo -e "${CYAN}${INFO}${NC} Downloading backup script..."
     echo -e "${GRAY}  ${ARROW}${NC} Connecting to GitHub repository"
-    echo -e "${GRAY}  ${ARROW}${NC} Downloading rm-backup.sh file"
+    echo -e "${GRAY}  ${ARROW}${NC} Downloading backup.sh file"
     echo -e "${GRAY}  ${ARROW}${NC} Setting executable permissions"
 
     wget -q -O "$SCRIPT_PATH" "$SCRIPT_URL" > /dev/null 2>&1
@@ -84,7 +84,7 @@ download_backup_script() {
 configure_backup_script() {
     /bin/bash "$SCRIPT_PATH"
     if [ $? -ne 0 ]; then
-        echo -e "${RED}${CROSS}${NC} rm-backup.sh failed to execute"
+        echo -e "${RED}${CROSS}${NC} backup.sh failed to execute"
         exit 1
     fi
 }
