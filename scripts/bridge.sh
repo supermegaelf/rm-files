@@ -972,6 +972,8 @@ stream {
         proxy_pass \$backend;
         ssl_preread on;
         proxy_buffer_size 16k;
+        proxy_connect_timeout 5s;
+        proxy_timeout 300s;
     }
 }
 EOF
