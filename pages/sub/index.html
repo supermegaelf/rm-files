@@ -1237,9 +1237,6 @@
                 console.warn('Telegram error:', e);
             }
 
-            const storedLocale = localStorage.getItem('locale');
-            if (storedLocale && storedLocale in MESSAGES) return storedLocale;
-
             const browserLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
             const russianLanguageCodes = ['ru', 'ru-ru', 'ru_ru', 'by', 'kz', 'kg', 'uz'];
             return russianLanguageCodes.some(code => browserLang.includes(code)) ? 'ru' : 'en';
