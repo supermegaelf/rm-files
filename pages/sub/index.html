@@ -936,8 +936,10 @@
                 copyLink: 'Copy',
                 copied: 'Copied',
                 getLink: 'Share',
-                getLinkModalTitle: 'Scan the QR code:',
-                getLinkModalText: '1. Open the Happ app on your phone.<br>2. Tap <b>«+»</b> and <b>«QR code»</b>.',
+                getLinkPhoneTitle: 'Add on phone:',
+                getLinkPhoneText: '1. On another device, open the Happ app.<br>2. Tap <b>«+»</b>, <b>«QR code»</b> and scan the code on this page.',
+                getLinkPCTitle: 'Add on PC:',
+                getLinkPCText: '1. Take a screenshot of the QR code.<br>2. Send it to your PC in any convenient way.<br>3. Open Happ on PC, click <b>«QR code»</b> at the bottom of the screen and upload the screenshot.<br><br>⚠️ If the <b>«QR code»</b> button is missing, click <b>«▾»</b> to the left of <b>«Subscription»</b>.',
                 guide: 'Follow instructions:',
                 pc: 'Windows',
                 macos: 'MacOS',
@@ -1059,8 +1061,10 @@
                 copyLink: 'Скопировать',
                 copied: 'Скопировано',
                 getLink: 'Поделиться',
-                getLinkModalTitle: 'Отсканируйте QR-код:',
-                getLinkModalText: '1. Откройте приложение Happ на телефоне.<br>2. Нажмите <b>«+»</b> и <b>«QR-код»</b>.',
+                getLinkPhoneTitle: 'Добавить на телефоне:',
+                getLinkPhoneText: '1. На другом устройстве откройте приложение Happ.<br>2. Нажмите <b>«+»</b>, <b>«QR-код»</b> и отсканируйте код на этой странице.',
+                getLinkPCTitle: 'Добавить на ПК:',
+                getLinkPCText: '1. Сделайте скриншот QR-кода.<br>2. Отправьте его на ПК любым удобным способом.<br>3. Откройте Happ на ПК, нажмите <b>«QR-код»</b> в нижней части экрана и загрузите скриншот.<br><br>⚠️ Если кнопки <b>«QR-код»</b> нет, нажмите значок <b>«▾»</b> слева от <b>«Подписка»</b>.',
                 guide: 'Следуйте инструкции:',
                 pc: 'Windows',
                 macos: 'MacOS',
@@ -1339,8 +1343,10 @@ const btnGuide = document.getElementById('btn-guide');
             <div class="modal-content">
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 <div class="modal-body">
-                    <h5 class="my-text-heading fw-semibold" x-text="$t('getLinkModalTitle')"></h5>
-                    <p class="my-text-content" x-html="$t('getLinkModalText')"></p>
+                    <h5 class="my-text-heading fw-semibold" x-text="$t('getLinkPhoneTitle')"></h5>
+                    <p class="my-text-content" x-html="$t('getLinkPhoneText')"></p>
+                    <h5 class="my-text-heading fw-semibold mt-3" x-text="$t('getLinkPCTitle')"></h5>
+                    <p class="my-text-content mb-0" x-html="$t('getLinkPCText')"></p>
                     <div id="qr-code-container" class="text-center"></div>
                 </div>
             </div>
