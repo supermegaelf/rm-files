@@ -155,11 +155,6 @@
             }
         }
 
-.guide-heading {
-            margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
-            font-size: 1.75rem;
-        }
 
         .tab-content {
             margin-top: 1.5rem;
@@ -652,8 +647,7 @@
     </div>
 </header>
     <div class="container my-container px-3" x-data>
-        <h4 class="my-text-heading fw-bold guide-heading" x-text="$t('guide')">Следуйте инструкции:</h4>
-        <div class="tab-content" role="tablist">
+<div class="tab-content" role="tablist">
             <div id="tab-android" class="tab-pane my-tab-pane fade show active" aria-labelledby="btn-guide-android-tab" role="tabpanel" x-data="androidCopyLink">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col">
@@ -952,7 +946,6 @@
                 getLinkPhoneText: '1. On another device, open the Happ app.<br>2. Tap <b>«+»</b>, <b>«QR code»</b> and scan the code on this page.',
                 getLinkPCTitle: 'Add on PC:',
                 getLinkPCText: '1. Take a screenshot of the QR code.<br>2. Send it to your PC in any convenient way.<br>3. Open Happ on PC, click <b>«QR code»</b> at the bottom of the screen and upload the screenshot.<br><br>⚠️ If the <b>«QR code»</b> button is missing, click <b>«▾»</b> to the left of <b>«Subscription»</b>.',
-                guide: 'Follow instructions:',
                 pc: 'Windows',
                 macos: 'MacOS',
                 tv: 'Android TV',
@@ -1077,7 +1070,6 @@
                 getLinkPhoneText: '1. На другом устройстве откройте приложение Happ.<br>2. Нажмите <b>«+»</b>, <b>«QR-код»</b> и отсканируйте код на этой странице.',
                 getLinkPCTitle: 'Добавить на ПК:',
                 getLinkPCText: '1. Сделайте скриншот QR-кода.<br>2. Отправьте его на ПК любым удобным способом.<br>3. Откройте Happ на ПК, нажмите <b>«QR-код»</b> в нижней части экрана и загрузите скриншот.<br><br>⚠️ Если кнопки <b>«QR-код»</b> нет, нажмите значок <b>«▾»</b> слева от <b>«Подписка»</b>.',
-                guide: 'Следуйте инструкции:',
                 pc: 'Windows',
                 macos: 'MacOS',
                 tv: 'Android TV',
