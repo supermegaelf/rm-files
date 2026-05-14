@@ -542,8 +542,12 @@
             <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
             <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
         </symbol>
-        <symbol id="share" viewBox="0 0 16 16">
-            <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5"/>
+        <symbol id="qr-code" viewBox="0 0 16 16">
+            <path d="M2 2h2v2H2z"/>
+            <path d="M6 0v6H0V0zM5 1H1v4h4zM4 12H2v2h2z"/>
+            <path d="M6 10v6H0v-6zm-5 1v4h4v-4zm11-9h2v2h-2z"/>
+            <path d="M10 0v6h6V0zm5 1v4h-4V1zM8 1V0h1v2H8v2H7V1zm0 5V4h1v2zM6 8V7h1V6h1v2h1V7h5v1h-4v1H7V8zm0 0v1H2V8H1v1H0V7h3v1zm10 1h-1V7h1zm-1 0h-1v2h2v-1h-1zm-4 0h2v1h-1v1h-1zm2 3v-1h-1v1h-1v1H9v1h3v-2zm0 0h3v1h-2v1h-1zm-4-1v1h1v-2H7v1z"/>
+            <path d="M7 12h1v3h4v1H7zm9 2v2h-3v-1h2v-1z"/>
         </symbol>
     </svg>
 <header class="navbar my-navbar navbar-expand" x-data>
@@ -554,7 +558,7 @@
                     <button class="nav-link my-nav-outline my-nav-secondary" type="button"
                         data-bs-toggle="modal" data-bs-target="#get-link-modal">
                         <svg class="bi">
-                            <use href="#share"></use>
+                            <use href="#qr-code"></use>
                         </svg>
                         <span class="my-nav-link-text" x-text="$t('getLink')"></span>
                     </button>
@@ -935,7 +939,7 @@
                 support: 'Support',
                 copyLink: 'Copy',
                 copied: 'Copied',
-                getLink: 'Share',
+                getLink: 'QR code',
                 getLinkPhoneTitle: 'Add on phone:',
                 getLinkPhoneText: '1. On another device, open the Happ app.<br>2. Tap <b>«+»</b>, <b>«QR code»</b> and scan the code on this page.',
                 getLinkPCTitle: 'Add on PC:',
@@ -1060,7 +1064,7 @@
                 support: 'Поддержка',
                 copyLink: 'Скопировать',
                 copied: 'Скопировано',
-                getLink: 'Поделиться',
+                getLink: 'QR-код',
                 getLinkPhoneTitle: 'Добавить на телефоне:',
                 getLinkPhoneText: '1. На другом устройстве откройте приложение Happ.<br>2. Нажмите <b>«+»</b>, <b>«QR-код»</b> и отсканируйте код на этой странице.',
                 getLinkPCTitle: 'Добавить на ПК:',
