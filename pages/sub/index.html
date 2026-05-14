@@ -409,25 +409,25 @@
 
         .my-btn-outline {
             --bs-btn-color: var(--my-heading-color);
-            --bs-btn-bg: transparent;
+            --bs-btn-bg: var(--my-dropdown-bg);
             --bs-btn-border-color: var(--my-alpha-dark-gray-color);
             --bs-btn-hover-color: var(--my-heading-color);
-            --bs-btn-hover-bg: transparent;
+            --bs-btn-hover-bg: var(--my-dropdown-bg);
             --bs-btn-hover-border-color: var(--my-alpha-dark-gray-color);
             --bs-btn-focus-shadow-rgb: var(--my-emphasis-focus-shadow-rgb);
             --bs-btn-active-color: var(--my-heading-color);
-            --bs-btn-active-bg: transparent;
+            --bs-btn-active-bg: var(--my-dropdown-bg);
             --bs-btn-active-border-color: var(--my-alpha-dark-gray-color);
         }
 
         @media (hover: hover) and (pointer: fine) {
             .my-btn-outline {
-                --bs-btn-hover-color: #fff;
-                --bs-btn-hover-bg: rgb(28, 154, 160);
-                --bs-btn-hover-border-color: rgb(28, 154, 160);
-                --bs-btn-active-color: #fff;
-                --bs-btn-active-bg: rgb(18, 106, 110);
-                --bs-btn-active-border-color: rgb(18, 106, 110);
+                --bs-btn-hover-color: var(--my-heading-color);
+                --bs-btn-hover-bg: var(--my-gray-color);
+                --bs-btn-hover-border-color: var(--my-alpha-dark-gray-color);
+                --bs-btn-active-color: var(--my-heading-color);
+                --bs-btn-active-bg: var(--my-gray-color);
+                --bs-btn-active-border-color: var(--my-alpha-dark-gray-color);
             }
         }
 
