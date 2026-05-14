@@ -48,7 +48,7 @@
         const META_THEME_COLORS = { light: '#fff', dark: '#151515' };
 
         function getUserTheme() {
-            return localStorage.getItem('theme') || DEFAULT_THEME;
+            return DEFAULT_THEME;
         }
 
         function setTheme(theme) {
@@ -555,7 +555,7 @@
     </svg>
 <header class="navbar my-navbar navbar-expand" x-data>
     <div class="container my-container px-3">
-<div class="navbar-collapse collapse navbar-content" id="navbar-collapse-content">
+        <div class="navbar-collapse navbar-content">
             <ul class="navbar-nav w-100 gap-2">
                 <li class="nav-item">
                     <button class="nav-link my-nav-outline my-nav-secondary" type="button"
@@ -647,7 +647,7 @@
     </div>
 </header>
     <div class="container my-container px-3" x-data>
-<div class="tab-content" role="tablist">
+        <div class="tab-content" role="tablist">
             <div id="tab-android" class="tab-pane my-tab-pane fade show active" aria-labelledby="btn-guide-android-tab" role="tabpanel" x-data="androidCopyLink">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col">
