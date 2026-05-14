@@ -150,36 +150,12 @@
         }
 
         @media (max-width: 576px) {
-            .my-navbar .navbar-nav {
-                --bs-nav-link-padding-y: .75rem;
-                padding-top: 1rem;
-                padding-bottom: 0.5rem;
-            }
-            .my-navbar .navbar-nav .ms-auto {
-                margin-left: 0 !important;
-            }
-            .my-navbar .nav-item .nav-link,
-            .my-navbar .nav-item button.nav-link {
-                width: 100%;
-                border-top: 1px solid var(--my-alpha-dark-gray-color);
-            }
             .my-navbar .dropdown-menu {
                 margin-bottom: .5rem;
             }
         }
 
-        .my-navbar .navbar-toggler {
-            --bs-navbar-toggler-border-color: transparent;
-            --bs-navbar-toggler-padding-x: 0;
-            --bs-navbar-toggler-padding-y: 0;
-        }
-
-        .my-navbar .navbar-toggler:focus {
-            box-shadow: none;
-            outline: none;
-        }
-
-        .guide-heading {
+.guide-heading {
             margin-top: 1.5rem;
             margin-bottom: 0.5rem;
             font-size: 1.75rem;
@@ -574,14 +550,9 @@
             <path d="M7 12h1v3h4v1H7zm9 2v2h-3v-1h2v-1z"/>
         </symbol>
     </svg>
-<header class="navbar my-navbar navbar-expand-sm" x-data>
+<header class="navbar my-navbar navbar-expand" x-data>
     <div class="container my-container px-3">
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-            data-bs-target="#navbar-collapse-content" aria-controls="navbar-collapse-content" aria-expanded="false"
-            aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="navbar-collapse collapse navbar-content" id="navbar-collapse-content">
+<div class="navbar-collapse collapse navbar-content" id="navbar-collapse-content">
             <ul class="navbar-nav w-100 gap-2">
                 <li class="nav-item">
                     <button class="nav-link my-nav-outline my-nav-secondary" type="button"
@@ -1308,15 +1279,7 @@
                 qrCode.append(document.getElementById('qr-code-container'));
             }
 
-            document.getElementById('navbar-collapse-content').addEventListener('hide.bs.collapse', () => {
-                document.querySelectorAll('.my-navbar .dropdown.show').forEach(el => {
-                    el.classList.remove('show');
-                    el.querySelector('.dropdown-menu')?.classList.remove('show');
-                    el.querySelector('[data-bs-toggle="dropdown"]')?.setAttribute('aria-expanded', 'false');
-                });
-            });
-
-            const btnGuide = document.getElementById('btn-guide');
+const btnGuide = document.getElementById('btn-guide');
             document.querySelectorAll('.my-dropdown-item-guide').forEach(item => {
                 item.addEventListener('click', () => {
                     const tabPane = document.querySelector(item.dataset.bsTarget);
