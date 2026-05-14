@@ -491,7 +491,7 @@
         }
 
         #qr-code-container {
-            padding: 1rem 1rem 0;
+            padding: 0 1rem 1rem;
         }
 
         #qr-code-container canvas {
@@ -1347,11 +1347,11 @@ const btnGuide = document.getElementById('btn-guide');
             <div class="modal-content">
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 <div class="modal-body">
+                    <div id="qr-code-container" class="text-center"></div>
                     <h5 class="my-text-heading fw-semibold" x-text="$t('getLinkPhoneTitle')"></h5>
                     <p class="my-text-content" x-html="$t('getLinkPhoneText')"></p>
                     <h5 class="my-text-heading fw-semibold mt-3" x-text="$t('getLinkPCTitle')"></h5>
                     <p class="my-text-content mb-0" x-html="$t('getLinkPCText')"></p>
-                    <div id="qr-code-container" class="text-center"></div>
                 </div>
             </div>
         </div>
