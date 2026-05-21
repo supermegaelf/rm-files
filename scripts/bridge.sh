@@ -1206,6 +1206,11 @@ select_bridge_node_to_remove() {
         --arg profile_uuid "$BRIDGE_PROFILE_UUID" \
         '[.response[] | select(.configProfile.activeConfigProfileUuid == $profile_uuid) | .configProfile.activeInbounds[].uuid]')
 
+    if [ -z "$BRIDGE_NODE_UUID" ] || [ "$BRIDGE_NODE_UUID" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} Bridge node not found in panel"
+        exit 1
+    fi
+
     local nodes_json
     nodes_json=$(echo "$BRIDGE_CONFIG" | jq -c \
         '[.outbounds[] | select(.tag | startswith("VLESS_OUTBOUND_")) | {
@@ -1252,9 +1257,19 @@ select_bridge_node_to_remove() {
         --arg tag "$REMOVE_INBOUND_TAG" \
         '.response.configProfiles[] | select(.name == "Bridge") | .inbounds[] | select(.tag == $tag) | .uuid')
 
+    if [ -z "$REMOVE_INBOUND_UUID" ] || [ "$REMOVE_INBOUND_UUID" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} Could not resolve inbound UUID for selected node"
+        exit 1
+    fi
+
     REMOVE_REALITY_SNI=$(echo "$BRIDGE_CONFIG" | jq -r \
         --arg tag "$REMOVE_INBOUND_TAG" \
         '.inbounds[] | select(.tag == $tag) | .streamSettings.realitySettings.serverNames[0]')
+
+    if [ -z "$REMOVE_REALITY_SNI" ] || [ "$REMOVE_REALITY_SNI" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} Could not resolve Reality SNI for selected node"
+        exit 1
+    fi
 
     echo -e "${GREEN}${CHECK}${NC} Selected: $REMOVE_FOREIGN_DOMAIN (SNI: $REMOVE_REALITY_SNI)"
 }
@@ -1285,6 +1300,11 @@ restore_host_to_direct() {
 
     if [ -z "$stealconfig_uuid" ] || [ "$stealconfig_uuid" = "null" ]; then
         echo -e "${RED}${CROSS}${NC} StealConfig profile not found"
+        exit 1
+    fi
+
+    if [ -z "$stealconfig_inbound_uuid" ] || [ "$stealconfig_inbound_uuid" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} StealConfig inbound not found"
         exit 1
     fi
 
@@ -1478,10 +1498,14 @@ remove_nginx_stream_entry() {
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Removing SNI mapping"
-    sed -i "/^        ${REMOVE_REALITY_SNI} 127\.0\.0\.1:${REMOVE_LOCAL_PORT};$/d" "$nginx_conf"
+    local escaped_sni
+    escaped_sni=$(printf '%s' "$REMOVE_REALITY_SNI" | sed 's/\./\\./g')
+    sed -i "/^        ${escaped_sni} 127\.0\.0\.1:${REMOVE_LOCAL_PORT};$/d" "$nginx_conf"
 
     echo -e "${GRAY}  ${ARROW}${NC} Restarting nginx"
-    docker restart remnabridge-nginx > /dev/null 2>&1
+    if ! docker restart remnabridge-nginx > /dev/null 2>&1; then
+        echo -e "${YELLOW}  ${WARNING}${NC} Failed to restart nginx, restart manually: docker restart remnabridge-nginx"
+    fi
 
     echo -e "${GREEN}${CHECK}${NC} Nginx stream updated"
 }
