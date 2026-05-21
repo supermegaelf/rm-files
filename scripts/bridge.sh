@@ -1228,21 +1228,21 @@ select_bridge_node_to_remove() {
     fi
 
     echo
-    echo -e "${CYAN}Bridged nodes:${NC}"
+    echo -e "${CYAN}Available nodes:${NC}"
     echo
     local i
     for i in $(seq 0 $((count - 1))); do
-        local domain port
+        local domain
         domain=$(echo "$nodes_json" | jq -r ".[$i].domain")
-        port=$(echo "$nodes_json" | jq -r ".[$i].port")
-        echo -e "  ${GREEN}$((i + 1)).${NC} $domain ${GRAY}(port: $port)${NC}"
+        echo -e "${GREEN}$((i + 1)).${NC} $domain"
     done
     echo
     echo -ne "${CYAN}Select node to remove (1-${count}): ${NC}"
     read selection
 
     while ! [[ "$selection" =~ ^[0-9]+$ ]] || [ "$selection" -lt 1 ] || [ "$selection" -gt "$count" ]; do
-        echo -e "${RED}${CROSS}${NC} Invalid selection."
+        echo -e "${RED}${CROSS}${NC} Invalid selection. Enter a number between 1 and ${count}."
+        echo
         echo -ne "${CYAN}Select node to remove (1-${count}): ${NC}"
         read selection
     done
@@ -1521,10 +1521,13 @@ remove_node_from_bridge() {
     select_bridge_node_to_remove
 
     echo
-    echo -ne "${YELLOW}Remove $REMOVE_FOREIGN_DOMAIN from bridge? (y/n): ${NC}"
+    echo -e "${YELLOW}${WARNING}${NC} You are about to remove node: ${WHITE}$REMOVE_FOREIGN_DOMAIN${NC}"
+    echo -e "${RED}This will restore the node to direct connection.${NC}"
+    echo
+    echo -ne "${YELLOW}Are you sure? (y/n): ${NC}"
     read confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        echo -e "${YELLOW}${WARNING}${NC} Aborted"
+        echo -e "${YELLOW}${WARNING}${NC} Removal cancelled"
         exit 0
     fi
 
