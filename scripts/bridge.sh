@@ -170,9 +170,7 @@ show_main_menu() {
         echo -e "${YELLOW}4.${NC} Exit"
     else
         echo -e "${GREEN}1.${NC} Setup bridge"
-        echo -e "${GREEN}2.${NC} Add node to bridge"
-        echo -e "${RED}3.${NC} Remove bridge"
-        echo -e "${YELLOW}4.${NC} Exit"
+        echo -e "${YELLOW}2.${NC} Exit"
     fi
     echo
     echo -ne "${CYAN}Enter your choice: ${NC}"
@@ -1848,21 +1846,17 @@ main() {
                 remove_node_from_bridge
             else
                 echo
-                echo -e "${PURPLE}===================${NC}"
-                echo -e "${WHITE}Add Node to Bridge${NC}"
-                echo -e "${PURPLE}===================${NC}"
-                echo
-
-                input_panel_url
-                input_api_token
-                input_foreign_domain
-                input_reality_sni
-                input_host_remark
-
-                add_node_to_bridge
+                echo -e "${YELLOW}${WARNING}${NC} Exiting..."
+                exit 0
             fi
             ;;
         3)
+            if [ "$BRIDGE_INSTALLED" = false ]; then
+                echo
+                echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1-2."
+                exit 1
+            fi
+
             echo
             echo -e "${PURPLE}==============${NC}"
             echo -e "${WHITE}Remove Bridge${NC}"
@@ -1880,8 +1874,10 @@ main() {
             exit 0
             ;;
         *)
+            local max_option=4
+            [ "$BRIDGE_INSTALLED" = false ] && max_option=2
             echo
-            echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1-4."
+            echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1-${max_option}."
             exit 1
             ;;
     esac
