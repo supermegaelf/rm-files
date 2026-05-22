@@ -73,6 +73,9 @@ check_root() {
 #=====================
 
 show_main_menu() {
+    NODE_INSTALLED=false
+    [ -d /opt/remnanode ] && NODE_INSTALLED=true
+
     echo
     echo -e "${PURPLE}==================${NC}"
     echo -e "${WHITE}REMNAWAVE MANAGER${NC}"
@@ -85,12 +88,18 @@ show_main_menu() {
     echo
     echo -e "${CYAN}Please select installation type:${NC}"
     echo
-    echo -e "${GREEN}1.${NC} Install Panel"
-    echo -e "${GREEN}2.${NC} Add Node"
-    echo -e "${RED}3.${NC} Delete Node"
-    echo -e "${RED}4.${NC} Exit"
+    if [ "$NODE_INSTALLED" = true ]; then
+        echo -e "${GREEN}1.${NC} Install Panel"
+        echo -e "${GREEN}2.${NC} Add Node"
+        echo -e "${RED}3.${NC} Delete Node"
+        echo -e "${YELLOW}4.${NC} Exit"
+    else
+        echo -e "${GREEN}1.${NC} Install Panel"
+        echo -e "${GREEN}2.${NC} Add Node"
+        echo -e "${YELLOW}3.${NC} Exit"
+    fi
     echo
-    echo -ne "${CYAN}Enter your choice (1, 2, 3, or 4): ${NC}"
+    echo -ne "${CYAN}Enter your choice: ${NC}"
 }
 
 #===================
@@ -2936,6 +2945,12 @@ main() {
             save_node_variables_to_file
             ;;
         3)
+            if [ "$NODE_INSTALLED" = false ]; then
+                echo
+                echo -e "${YELLOW}${WARNING}${NC} Exiting installation..."
+                exit 0
+            fi
+
             echo
             echo -e "${PURPLE}==============${NC}"
             echo -e "${WHITE}Node Deletion${NC}"
@@ -2946,13 +2961,21 @@ main() {
             input_node_api_token
             ;;
         4)
+            if [ "$NODE_INSTALLED" = false ]; then
+                echo
+                echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1-3."
+                exit 1
+            fi
+
             echo
             echo -e "${YELLOW}${WARNING}${NC} Exiting installation..."
             exit 0
             ;;
         *)
+            local max_option=4
+            [ "$NODE_INSTALLED" = false ] && max_option=3
             echo
-            echo -e "${RED}${CROSS}${NC} Invalid choice. Please select 1, 2, 3, or 4."
+            echo -e "${RED}${CROSS}${NC} Invalid choice. Please select 1-${max_option}."
             exit 1
             ;;
     esac
