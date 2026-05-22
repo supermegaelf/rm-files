@@ -1227,12 +1227,12 @@ select_bridge_node_to_remove() {
         exit 1
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} Found $count node(s)"
-
     if [ "$count" -eq 1 ]; then
         echo -e "${RED}${CROSS}${NC} Only one node in bridge. Use 'Remove bridge' to remove the bridge completely."
         exit 1
     fi
+
+    echo -e "${GREEN}${CHECK}${NC} Found $count node(s)"
 
     echo
     echo -e "${CYAN}Available nodes:${NC}"
