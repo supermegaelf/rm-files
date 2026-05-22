@@ -1562,9 +1562,9 @@ remove_node_from_bridge() {
     restart_bridge_node
 
     echo
-    echo -e "${PURPLE}==============================${NC}"
+    echo -e "${PURPLE}===========================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Node removed from bridge"
-    echo -e "${PURPLE}==============================${NC}"
+    echo -e "${PURPLE}===========================${NC}"
     echo
 }
 
