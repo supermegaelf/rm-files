@@ -1869,6 +1869,12 @@ main() {
             remove_bridge
             ;;
         4)
+            if [ "$BRIDGE_INSTALLED" = false ]; then
+                echo
+                echo -e "${RED}${CROSS}${NC} Invalid option. Please enter 1-2."
+                exit 1
+            fi
+
             echo
             echo -e "${YELLOW}${WARNING}${NC} Exiting..."
             exit 0
