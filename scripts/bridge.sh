@@ -1181,8 +1181,9 @@ add_node_to_bridge() {
 }
 
 select_bridge_node_to_remove() {
-    echo -e "${CYAN}${INFO}${NC} Loading bridge configuration..."
+    echo -e "${CYAN}${INFO}${NC} Fetching bridge configuration..."
 
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching config profiles"
     local profiles_response
     profiles_response=$(make_api_request GET "/api/config-profiles")
 
@@ -1194,6 +1195,7 @@ select_bridge_node_to_remove() {
         exit 1
     fi
 
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching nodes"
     local nodes_response
     nodes_response=$(make_api_request GET "/api/nodes")
 
@@ -1224,6 +1226,8 @@ select_bridge_node_to_remove() {
         echo -e "${RED}${CROSS}${NC} No nodes found in bridge"
         exit 1
     fi
+
+    echo -e "${GREEN}${CHECK}${NC} Found $count node(s)"
 
     echo
     echo -e "${CYAN}Available nodes:${NC}"
@@ -1269,7 +1273,6 @@ select_bridge_node_to_remove() {
         exit 1
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} Selected: $REMOVE_FOREIGN_DOMAIN (SNI: $REMOVE_REALITY_SNI)"
 }
 
 restore_host_to_direct() {
