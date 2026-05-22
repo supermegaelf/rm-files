@@ -1835,9 +1835,9 @@ main() {
         2)
             if [ "$BRIDGE_INSTALLED" = true ]; then
                 echo
-                echo -e "${PURPLE}=====================${NC}"
+                echo -e "${PURPLE}============${NC}"
                 echo -e "${WHITE}Remove Node${NC}"
-                echo -e "${PURPLE}=====================${NC}"
+                echo -e "${PURPLE}============${NC}"
                 echo
 
                 input_panel_url
