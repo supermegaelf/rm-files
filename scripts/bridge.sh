@@ -165,7 +165,7 @@ show_main_menu() {
     echo
     if [ "$BRIDGE_INSTALLED" = true ]; then
         echo -e "${GREEN}1.${NC} Add node to bridge"
-        echo -e "${YELLOW}2.${NC} Remove node"
+        echo -e "${RED}2.${NC} Remove node"
         echo -e "${RED}3.${NC} Remove bridge"
         echo -e "${YELLOW}4.${NC} Exit"
     else
