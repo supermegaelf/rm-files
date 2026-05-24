@@ -127,6 +127,24 @@ install_system_packages() {
         fi
     fi
 
+    if ! docker compose version &>/dev/null 2>&1; then
+        echo -e "${GRAY}  ${ARROW}${NC} Installing Docker Compose plugin"
+        install -m 0755 -d /etc/apt/keyrings
+        if grep -q "Ubuntu" /etc/os-release; then
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null 2>&1
+            chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null 2>&1
+        elif grep -q "Debian" /etc/os-release; then
+            curl -fsSL https://download.docker.com/linux/debian/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null 2>&1
+            chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null 2>&1
+        fi
+        apt-get update > /dev/null 2>&1
+        if ! apt-get install -y docker-compose-plugin > /dev/null 2>&1; then
+            error "Failed to install Docker Compose plugin"
+        fi
+    fi
+
     echo -e "${GRAY}  ${ARROW}${NC} Starting Docker service"
     if ! systemctl is-active --quiet docker; then
         systemctl start docker > /dev/null 2>&1 || error "Failed to start Docker"
