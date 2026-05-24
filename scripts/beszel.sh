@@ -127,6 +127,24 @@ extract_base_domain() {
     echo -e "${GREEN}${CHECK}${NC} Base domain extracted: ${WHITE}$BASE_DOMAIN${NC}"
 }
 
+ensure_docker_compose() {
+    if ! docker compose version &>/dev/null 2>&1; then
+        echo -e "${GRAY}  ${ARROW}${NC} Installing Docker Compose plugin"
+        install -m 0755 -d /etc/apt/keyrings
+        if grep -q "Ubuntu" /etc/os-release; then
+            curl -fsSL https://download.docker.com/linux/ubuntu/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null 2>&1
+            chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null 2>&1
+        elif grep -q "Debian" /etc/os-release; then
+            curl -fsSL https://download.docker.com/linux/debian/gpg | tee /etc/apt/keyrings/docker.asc > /dev/null 2>&1
+            chmod a+r /etc/apt/keyrings/docker.asc
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null 2>&1
+        fi
+        apt-get update > /dev/null 2>&1
+        apt-get install -y docker-compose-plugin > /dev/null 2>&1
+    fi
+}
+
 #========================
 # PANEL SETUP FUNCTIONS
 #========================
@@ -551,6 +569,8 @@ install_panel_beszel() {
 
     echo -e "${GREEN}${CHECK}${NC} System requirements validated!"
 
+    ensure_docker_compose
+
     trap rollback_panel_installation ERR
     set -e
 
@@ -851,6 +871,8 @@ install_node_beszel() {
     fi
 
     echo -e "${GREEN}${CHECK}${NC} System requirements validated!"
+
+    ensure_docker_compose
 
     trap rollback_node_installation ERR
     set -e
