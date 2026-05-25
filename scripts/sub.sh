@@ -187,7 +187,7 @@ frontend main_front
     default_backend panel_backend
 
 backend panel_backend
-    server panel ${PANEL_IP}:443 check
+    server panel ${PANEL_IP}:443
 EOF
 
     echo -e "${GRAY}  ${ARROW}${NC} Validating configuration"
