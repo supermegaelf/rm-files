@@ -1917,6 +1917,7 @@ main() {
             read confirm
             if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
                 echo -e "${YELLOW}${WARNING}${NC} Removal cancelled"
+                echo
                 exit 0
             fi
 
