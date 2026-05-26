@@ -200,81 +200,81 @@ show_main_menu() {
 
 input_panel_url() {
     echo -ne "${CYAN}Panel domain (e.g., example.com): ${NC}"
-    read PANEL_DOMAIN
+    read -r PANEL_DOMAIN
     while [[ -z "$PANEL_DOMAIN" ]] || ! validate_domain "$PANEL_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain (e.g., example.com)."
         echo
         echo -ne "${CYAN}Panel domain: ${NC}"
-        read PANEL_DOMAIN
+        read -r PANEL_DOMAIN
     done
     PANEL_URL="https://${PANEL_DOMAIN}"
 }
 
 input_api_token() {
     echo -ne "${CYAN}API token (e.g., eyJhbGciOi...): ${NC}"
-    read API_TOKEN
+    read -r API_TOKEN
     while [[ -z "$API_TOKEN" ]]; do
         echo -e "${RED}${CROSS}${NC} API token cannot be empty!"
         echo
         echo -ne "${CYAN}API token (e.g., eyJhbGciOi...): ${NC}"
-        read API_TOKEN
+        read -r API_TOKEN
     done
 }
 
 
 input_bridge_domain() {
     echo -ne "${CYAN}Bridge domain (e.g., example.com): ${NC}"
-    read BRIDGE_DOMAIN
+    read -r BRIDGE_DOMAIN
     while [[ -z "$BRIDGE_DOMAIN" ]] || ! validate_domain "$BRIDGE_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
         echo -ne "${CYAN}Bridge domain: ${NC}"
-        read BRIDGE_DOMAIN
+        read -r BRIDGE_DOMAIN
     done
 }
 
 input_foreign_domain() {
     echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
-    read FOREIGN_DOMAIN
+    read -r FOREIGN_DOMAIN
     while [[ -z "$FOREIGN_DOMAIN" ]] || ! validate_domain "$FOREIGN_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
         echo -ne "${CYAN}Foreign node domain: ${NC}"
-        read FOREIGN_DOMAIN
+        read -r FOREIGN_DOMAIN
     done
 }
 
 input_reality_sni() {
     echo -ne "${CYAN}Reality SNI (e.g., max.ru, vk.com, 5ka.ru, rutube.ru, rbc.ru, t2.ru): ${NC}"
-    read REALITY_SNI
+    read -r REALITY_SNI
     while [[ -z "$REALITY_SNI" ]] || ! validate_domain "$REALITY_SNI"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
         echo -ne "${CYAN}Reality SNI: ${NC}"
-        read REALITY_SNI
+        read -r REALITY_SNI
     done
 }
 
 input_panel_ip() {
     echo -ne "${CYAN}Panel IP address: ${NC}"
-    read PANEL_IP
+    read -r PANEL_IP
     while [[ -z "$PANEL_IP" ]] || ! validate_ip "$PANEL_IP"; do
         echo -e "${RED}${CROSS}${NC} Invalid IP! Please enter a valid IPv4 address (e.g., 1.2.3.4)."
         echo
         echo -ne "${CYAN}Panel IP address: ${NC}"
-        read PANEL_IP
+        read -r PANEL_IP
     done
 }
 
 
 input_host_remark() {
     echo -ne "${CYAN}Host remark (e.g., 🇳🇱 Нидерланды, 🇩🇪 Германия, 🇫🇮 Финляндия, 🇵🇱 Польша): ${NC}"
-    read HOST_REMARK
+    read -r HOST_REMARK
     while [[ -z "$HOST_REMARK" ]]; do
         echo -e "${RED}${CROSS}${NC} Remark cannot be empty!"
         echo
         echo -ne "${CYAN}Host remark: ${NC}"
-        read HOST_REMARK
+        read -r HOST_REMARK
     done
 }
 
@@ -808,7 +808,7 @@ create_bridge_node() {
     done
 
     echo -ne "${YELLOW}Are you sure the Secret Key is correct? (y/n): ${NC}"
-    read confirm
+    read -r confirm
 
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo -e "${RED}${CROSS}${NC} Installation aborted by user"
@@ -1284,13 +1284,13 @@ select_bridge_node_to_remove() {
     done
     echo
     echo -ne "${CYAN}Select node to remove (1-${count}): ${NC}"
-    read selection
+    read -r selection
 
     while ! [[ "$selection" =~ ^[0-9]+$ ]] || [ "$selection" -lt 1 ] || [ "$selection" -gt "$count" ]; do
         echo -e "${RED}${CROSS}${NC} Invalid selection. Enter a number between 1 and ${count}."
         echo
         echo -ne "${CYAN}Select node to remove (1-${count}): ${NC}"
-        read selection
+        read -r selection
     done
 
     local idx=$((selection - 1))
@@ -1570,9 +1570,10 @@ remove_node_from_bridge() {
     echo -e "${RED}This will restore the node to direct connection.${NC}"
     echo
     echo -ne "${YELLOW}Are you sure? (y/n): ${NC}"
-    read confirm
+    read -r confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo -e "${YELLOW}${WARNING}${NC} Removal cancelled"
+        echo
         exit 0
     fi
 
@@ -1844,7 +1845,7 @@ main() {
     check_root
 
     show_main_menu
-    read SETUP_TYPE
+    read -r SETUP_TYPE
 
     case $SETUP_TYPE in
         1)
@@ -1914,7 +1915,7 @@ main() {
             echo -e "${RED}This will delete all bridge configuration from the panel and stop all services.${NC}"
             echo
             echo -ne "${YELLOW}Are you sure? (y/n): ${NC}"
-            read confirm
+            read -r confirm
             if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
                 echo -e "${YELLOW}${WARNING}${NC} Removal cancelled"
                 echo
