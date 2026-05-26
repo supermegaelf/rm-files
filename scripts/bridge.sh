@@ -289,7 +289,6 @@ save_credentials() {
 
 load_saved_credentials() {
     if [ -f "$CREDS_FILE" ]; then
-        # shellcheck source=/dev/null
         source "$CREDS_FILE"
         PANEL_URL="https://${PANEL_DOMAIN}"
         echo -e "${GREEN}${CHECK}${NC} Using saved credentials (panel: ${PANEL_DOMAIN})"
