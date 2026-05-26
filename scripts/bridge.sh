@@ -279,6 +279,27 @@ input_host_remark() {
 }
 
 
+CREDS_FILE="/opt/remnabridge/rm-bridge-config.env"
+
+save_credentials() {
+    mkdir -p /opt/remnabridge
+    printf 'PANEL_DOMAIN="%s"\nAPI_TOKEN="%s"\n' "$PANEL_DOMAIN" "$API_TOKEN" > "$CREDS_FILE"
+    chmod 600 "$CREDS_FILE"
+}
+
+load_saved_credentials() {
+    if [ -f "$CREDS_FILE" ]; then
+        # shellcheck source=/dev/null
+        source "$CREDS_FILE"
+        PANEL_URL="https://${PANEL_DOMAIN}"
+        echo -e "${GREEN}${CHECK}${NC} Using saved credentials (panel: ${PANEL_DOMAIN})"
+    else
+        input_panel_url
+        input_api_token
+        save_credentials
+    fi
+}
+
 #=================
 # API FUNCTIONS
 #=================
@@ -1127,6 +1148,7 @@ setup_bridge() {
     echo
 
     deploy_bridge_services
+    save_credentials
 
     echo
     echo -e "${PURPLE}========================${NC}"
@@ -1835,8 +1857,7 @@ main() {
                 echo -e "${PURPLE}===================${NC}"
                 echo
 
-                input_panel_url
-                input_api_token
+                load_saved_credentials
                 input_foreign_domain
                 input_reality_sni
                 input_host_remark
@@ -1867,8 +1888,7 @@ main() {
                 echo -e "${PURPLE}============${NC}"
                 echo
 
-                input_panel_url
-                input_api_token
+                load_saved_credentials
 
                 remove_node_from_bridge
             else
@@ -1890,8 +1910,7 @@ main() {
             echo -e "${PURPLE}==============${NC}"
             echo
 
-            input_panel_url
-            input_api_token
+            load_saved_credentials
 
             remove_bridge
             ;;
