@@ -291,7 +291,6 @@ load_saved_credentials() {
     if [ -f "$CREDS_FILE" ]; then
         source "$CREDS_FILE"
         PANEL_URL="https://${PANEL_DOMAIN}"
-        echo -e "${GREEN}${CHECK}${NC} Using saved credentials (panel: ${PANEL_DOMAIN})"
     else
         input_panel_url
         input_api_token
@@ -1910,6 +1909,16 @@ main() {
             echo
 
             load_saved_credentials
+
+            echo -e "${YELLOW}${WARNING}${NC} You are about to remove the bridge completely."
+            echo -e "${RED}This will delete all bridge configuration from the panel and stop all services.${NC}"
+            echo
+            echo -ne "${YELLOW}Are you sure? (y/n): ${NC}"
+            read confirm
+            if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+                echo -e "${YELLOW}${WARNING}${NC} Removal cancelled"
+                exit 0
+            fi
 
             remove_bridge
             ;;
