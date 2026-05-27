@@ -56,6 +56,7 @@ log_entry() {
     mkdir -p ${DIR_BRIDGE}
     LOGFILE="${DIR_BRIDGE}rm-bridge-setup.log"
     exec > >(tee -a "$LOGFILE") 2>&1
+    trap 'exec 1>&- 2>&-; wait' EXIT
 }
 
 check_root() {
