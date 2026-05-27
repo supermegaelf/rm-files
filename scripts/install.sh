@@ -286,6 +286,28 @@ input_node_host_remark() {
     done
 }
 
+
+NODE_CREDS_FILE="/opt/remnanode/rm-node-config.env"
+
+save_node_credentials() {
+    mkdir -p /opt/remnanode
+    printf 'PANEL_NODE_DOMAIN="%s"\nPANEL_NODE_TOKEN="%s"\nPANEL_IP="%s"\n' \
+        "$PANEL_NODE_DOMAIN" "$PANEL_NODE_TOKEN" "$PANEL_IP" > "$NODE_CREDS_FILE"
+    chmod 600 "$NODE_CREDS_FILE"
+}
+
+load_saved_node_credentials() {
+    if [ -f "$NODE_CREDS_FILE" ]; then
+        source "$NODE_CREDS_FILE"
+        PANEL_NODE_URL="https://${PANEL_NODE_DOMAIN}"
+    else
+        input_panel_ip
+        input_node_panel_domain
+        input_node_api_token
+        save_node_credentials
+    fi
+}
+
 #====================================
 # CONFIGURATION GENERATION FUNCTIONS
 #====================================
@@ -2738,10 +2760,10 @@ delete_node() {
     echo -e "${RED}This will remove the node from the panel and clean up this server.${NC}"
     echo
     echo -ne "${YELLOW}Are you sure? (y/n): ${NC}"
-    read confirm
-
+    read -r confirm
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo -e "${YELLOW}${WARNING}${NC} Deletion cancelled"
+        echo
         exit 0
     fi
 
@@ -2877,6 +2899,7 @@ install_node() {
     echo
 
     start_node_services
+    save_node_credentials
 
     echo
     echo -e "${PURPLE}========================${NC}"
@@ -2957,9 +2980,7 @@ main() {
             echo -e "${WHITE}Node Deletion${NC}"
             echo -e "${PURPLE}==============${NC}"
             echo
-            input_panel_ip
-            input_node_panel_domain
-            input_node_api_token
+            load_saved_node_credentials
             ;;
         4)
             if [ "$NODE_INSTALLED" = false ]; then
