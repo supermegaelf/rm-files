@@ -1283,6 +1283,13 @@
                 qrCode.append(document.getElementById('qr-code-container'));
             }
 
+            document.querySelector('[data-bs-target="#get-link-modal"]')
+                ?.addEventListener('click', () => {
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('get-link-modal')
+                    ).show();
+                });
+
 const btnGuide = document.getElementById('btn-guide');
             document.querySelectorAll('.my-dropdown-item-guide').forEach(item => {
                 item.addEventListener('click', () => {
