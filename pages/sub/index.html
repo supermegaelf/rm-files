@@ -559,7 +559,7 @@
             <ul class="navbar-nav w-100 gap-2">
                 <li class="nav-item">
                     <button class="nav-link my-nav-outline my-nav-secondary" type="button"
-                        data-bs-toggle="modal" data-bs-target="#get-link-modal">
+                        data-bs-target="#get-link-modal">
                         <svg class="bi">
                             <use href="#qr-code"></use>
                         </svg>
@@ -1283,7 +1283,14 @@
                 qrCode.append(document.getElementById('qr-code-container'));
             }
 
-const btnGuide = document.getElementById('btn-guide');
+            document.querySelector('[data-bs-target="#get-link-modal"]')
+                ?.addEventListener('click', () => {
+                    bootstrap.Modal.getOrCreateInstance(
+                        document.getElementById('get-link-modal')
+                    ).show();
+                });
+
+            const btnGuide = document.getElementById('btn-guide');
             document.querySelectorAll('.my-dropdown-item-guide').forEach(item => {
                 item.addEventListener('click', () => {
                     const tabPane = document.querySelector(item.dataset.bsTarget);
@@ -1299,28 +1306,40 @@ const btnGuide = document.getElementById('btn-guide');
 
             const itemInitialGuideTab =
                 `.my-dropdown-item-guide[data-bs-target="${getTabIdByDevice()}"]`;
-            const selectedItem = document.querySelector(itemInitialGuideTab);
-            
-            // Show initial tab without triggering dropdown
-            const tabPane = document.querySelector(selectedItem.dataset.bsTarget);
-            if (tabPane) {
-                document.querySelectorAll('.tab-pane').forEach(pane => {
-                    pane.classList.remove('show', 'active');
-                });
-                tabPane.classList.add('show', 'active');
+            const selectedItem = document.querySelector(itemInitialGuideTab)
+                || document.querySelector('.my-dropdown-item-guide.active');
+
+            if (selectedItem) {
+                const tabPane = document.querySelector(selectedItem.dataset.bsTarget);
+                if (tabPane) {
+                    document.querySelectorAll('.tab-pane').forEach(pane => {
+                        pane.classList.remove('show', 'active');
+                    });
+                    tabPane.classList.add('show', 'active');
+                }
             }
-            
-            showActiveDropdownItem(
-                btnGuide,
-                selectedItem,
-                document.querySelector('.my-dropdown-item-guide.active'),
-            );
 
             for (const [os, url] of Object.entries(SUB_URL_SCHEMES)) {
                 const element = document.getElementById(`sub-url-${os}`);
                 if (element) {
                     element.href = url;
                 }
+            }
+        });
+
+        document.addEventListener('alpine:initialized', () => {
+            const btnGuide = document.getElementById('btn-guide');
+            const itemInitialGuideTab =
+                `.my-dropdown-item-guide[data-bs-target="${getTabIdByDevice()}"]`;
+            const selectedItem = document.querySelector(itemInitialGuideTab)
+                || document.querySelector('.my-dropdown-item-guide.active');
+
+            if (selectedItem) {
+                showActiveDropdownItem(
+                    btnGuide,
+                    selectedItem,
+                    document.querySelector('.my-dropdown-item-guide.active'),
+                );
             }
         });
 
