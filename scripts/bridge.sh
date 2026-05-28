@@ -1089,6 +1089,10 @@ update_nginx_stream() {
 
     local nginx_conf="/opt/remnabridge/nginx.conf"
 
+    if [ ! -f "$nginx_conf" ]; then
+        error "nginx.conf not found at $nginx_conf"
+    fi
+
     echo -e "${GRAY}  ${ARROW}${NC} Adding SNI mapping"
     local escaped_sni
     escaped_sni=$(printf '%s' "$REALITY_SNI" | sed 's/\./\\./g')
