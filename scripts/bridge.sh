@@ -1077,7 +1077,9 @@ restart_bridge_node() {
         echo -e "${GREEN}${CHECK}${NC} Bridge node restarted"
     else
         echo -e "${YELLOW}${WARNING}${NC} API restart failed, restarting via Docker"
-        (cd /opt/remnabridge && docker compose restart remnanode > /dev/null 2>&1)
+        if ! (cd /opt/remnabridge && docker compose restart remnanode > /dev/null 2>&1); then
+            error "Failed to restart bridge node via Docker"
+        fi
         echo -e "${GREEN}${CHECK}${NC} Bridge node restarted via Docker"
     fi
 }
@@ -1087,11 +1089,22 @@ update_nginx_stream() {
 
     local nginx_conf="/opt/remnabridge/nginx.conf"
 
+    if [ ! -f "$nginx_conf" ]; then
+        error "nginx.conf not found at $nginx_conf"
+    fi
+
     echo -e "${GRAY}  ${ARROW}${NC} Adding SNI mapping"
+    local escaped_sni
+    escaped_sni=$(printf '%s' "$REALITY_SNI" | sed 's/\./\\./g')
+    sed -i "/^        ${escaped_sni} /d" "$nginx_conf"
     sed -i "/^        default /i\\        ${REALITY_SNI} 127.0.0.1:${NEW_LOCAL_PORT};" "$nginx_conf"
 
     echo -e "${GRAY}  ${ARROW}${NC} Restarting nginx"
     docker restart remnabridge-nginx > /dev/null 2>&1
+    sleep 1
+    if ! docker inspect --format '{{.State.Running}}' remnabridge-nginx 2>/dev/null | grep -q true; then
+        error "Nginx failed to start after update, check: docker logs remnabridge-nginx"
+    fi
 
     echo -e "${GREEN}${CHECK}${NC} Nginx stream updated"
 }
@@ -1546,7 +1559,7 @@ remove_nginx_stream_entry() {
     echo -e "${GRAY}  ${ARROW}${NC} Removing SNI mapping"
     local escaped_sni
     escaped_sni=$(printf '%s' "$REMOVE_REALITY_SNI" | sed 's/\./\\./g')
-    sed -i "/^        ${escaped_sni} 127\.0\.0\.1:${REMOVE_LOCAL_PORT};$/d" "$nginx_conf"
+    sed -i "/^        ${escaped_sni} /d" "$nginx_conf"
 
     echo -e "${GRAY}  ${ARROW}${NC} Restarting nginx"
     if ! docker restart remnabridge-nginx > /dev/null 2>&1; then
