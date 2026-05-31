@@ -1273,12 +1273,8 @@ create_config_profile() {
     local token=$2
     local name=$3
     local domain=$4
-    local private_key=$5
-    local inbound_tag="${6:-VLESS_TCP_REALITY}"
 
-    local short_id=$(openssl rand -hex 8)
-
-    local request_body=$(jq -n --arg name "$name" --arg domain "$domain" --arg private_key "$private_key" --arg short_id "$short_id" --arg inbound_tag "$inbound_tag" '{
+    local request_body=$(jq -n --arg name "$name" --arg domain "$domain" '{
         name: $name,
         config: {
             log: { loglevel: "warning" },
@@ -1287,23 +1283,23 @@ create_config_profile() {
                 servers: [{ address: "https://dns.google/dns-query", skipFallback: false }]
             },
             inbounds: [{
-                tag: $inbound_tag,
-                port: 443,
+                tag: "VLESS_WS",
+                listen: "127.0.0.1",
+                port: 10000,
                 protocol: "vless",
                 settings: { clients: [], decryption: "none" },
                 streamSettings: {
-                    network: "tcp",
-                    security: "reality",
-                    realitySettings: {
-                        target: "/dev/shm/nginx.sock",
-                        show: false,
-                        xver: 1,
-                        shortIds: [$short_id],
-                        privateKey: $private_key,
-                        serverNames: [$domain]
+                    network: "ws",
+                    wsSettings: {
+                        path: "/socket/shared?ed=2560"
+                    },
+                    sockopt: {
+                        tcpFastOpen: true,
+                        tcpMptcp: true,
+                        tcpNoDelay: true
                     }
                 },
-                sniffing: { enabled: true, destOverride: ["http", "tls", "quic"] }
+                sniffing: { enabled: true, destOverride: ["http", "tls"] }
             }],
             outbounds: [
                 { tag: "DIRECT", protocol: "freedom" },
@@ -1354,14 +1350,14 @@ create_host() {
         remark: $remark,
         address: $address,
         port: 443,
-        path: "",
+        path: "/socket/shared?ed=2560",
         sni: $address,
-        host: "",
-        alpn: null,
+        host: $address,
+        alpn: "http/1.1",
         fingerprint: "firefox",
         allowInsecure: false,
         isDisabled: false,
-        securityLayer: "DEFAULT"
+        securityLayer: "TLS"
     }')
 
     local response=$(make_api_request "POST" "http://$domain_url/api/hosts" "$token" "$request_body")
@@ -2140,13 +2136,10 @@ EOL
     echo -e "${GRAY}  ${ARROW}${NC} Registering admin user"
     local token=$(register_remnawave "$domain_url" "$SUPERADMIN_USERNAME" "$SUPERADMIN_PASSWORD")
 
-    echo -e "${GRAY}  ${ARROW}${NC} Generating x25519 keys"
-    local private_key=$(generate_xray_keys "$domain_url" "$token")
-
     delete_config_profile "$domain_url" "$token"
 
     echo -e "${GRAY}  ${ARROW}${NC} Creating config profile"
-    read config_profile_uuid inbound_uuid <<< $(create_config_profile "$domain_url" "$token" "StealConfig" "$SELFSTEAL_DOMAIN" "$private_key")
+    read config_profile_uuid inbound_uuid <<< $(create_config_profile "$domain_url" "$token" "StealConfig" "$SELFSTEAL_DOMAIN")
 
     echo -e "${GRAY}  ${ARROW}${NC} Creating node configuration"
     create_node_api "$domain_url" "$token" "$config_profile_uuid" "$inbound_uuid" "$SELFSTEAL_DOMAIN" "$NODE_NAME"
@@ -2334,10 +2327,14 @@ create_node_host_in_panel() {
             remark: $remark,
             address: $address,
             port: 443,
+            path: "/socket/shared?ed=2560",
             sni: $address,
+            host: $address,
+            alpn: "http/1.1",
             fingerprint: "firefox",
             allowInsecure: false,
             isDisabled: false,
+            securityLayer: "TLS",
             inbound: {
                 configProfileUuid: $profile_uuid,
                 configProfileInboundUuid: $inbound_uuid
@@ -2358,6 +2355,12 @@ create_node_host_in_panel() {
 
 update_stealconfig_servernames_for_node() {
     echo -e "${CYAN}${INFO}${NC} Updating StealConfig server names..."
+
+    if ! echo "$STEALCONFIG_CONFIG" | jq -e '.inbounds[0].streamSettings.realitySettings' > /dev/null 2>&1; then
+        echo -e "${GRAY}  ${ARROW}${NC} Config uses WS transport, skipping Reality serverNames update"
+        echo -e "${GREEN}${CHECK}${NC} StealConfig unchanged"
+        return 0
+    fi
 
     if echo "$STEALCONFIG_CONFIG" | jq -e \
         --arg domain "$SELFSTEAL_DOMAIN" \
@@ -2432,11 +2435,8 @@ services:
     restart: always
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - /dev/shm:/dev/shm:rw
-      - /var/www/html:/var/www/html:ro
       - /etc/letsencrypt/live/${NODE_CERT_DOMAIN}/fullchain.pem:/etc/nginx/ssl/${NODE_CERT_DOMAIN}/fullchain.pem:ro
       - /etc/letsencrypt/live/${NODE_CERT_DOMAIN}/privkey.pem:/etc/nginx/ssl/${NODE_CERT_DOMAIN}/privkey.pem:ro
-    command: sh -c 'rm -f /dev/shm/nginx.sock && nginx -g "daemon off;"'
     network_mode: host
     depends_on:
       - remnanode
@@ -2457,8 +2457,21 @@ services:
     env_file:
       - path: /opt/remnanode/.env-node
         required: false
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '30m'
+        max-file: '5'
+
+  remnanode-owncloud:
+    image: owncloud:10
+    container_name: remnanode-owncloud
+    hostname: remnanode-owncloud
+    restart: always
+    ports:
+      - "127.0.0.1:8800:80"
     volumes:
-      - /dev/shm:/dev/shm:rw
+      - /var/www/owncloud:/var/www/html
     logging:
       driver: 'json-file'
       options:
@@ -2474,7 +2487,7 @@ start_node_services() {
 
     echo -e "${CYAN}${INFO}${NC} Configuring Docker Compose..."
 
-    echo -e "${GRAY}  ${ARROW}${NC} Configuring SSL and Unix socket"
+    echo -e "${GRAY}  ${ARROW}${NC} Configuring SSL and WebSocket proxy"
     cat > /opt/remnanode/nginx.conf <<EOL
 map \$http_upgrade \$connection_upgrade {
     default upgrade;
@@ -2491,19 +2504,33 @@ ssl_session_tickets off;
 
 server {
     server_name $SELFSTEAL_DOMAIN;
-    listen unix:/dev/shm/nginx.sock ssl proxy_protocol;
+    listen 443 ssl;
     http2 on;
 
     ssl_certificate "/etc/nginx/ssl/$NODE_CERT_DOMAIN/fullchain.pem";
     ssl_certificate_key "/etc/nginx/ssl/$NODE_CERT_DOMAIN/privkey.pem";
     ssl_trusted_certificate "/etc/nginx/ssl/$NODE_CERT_DOMAIN/fullchain.pem";
 
-    root /var/www/html;
-    index index.html;
+    location /socket/shared {
+        proxy_pass http://127.0.0.1:10000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \$connection_upgrade;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:8800;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    }
 }
 
 server {
-    listen unix:/dev/shm/nginx.sock ssl proxy_protocol default_server;
+    listen 443 ssl default_server;
     server_name _;
     ssl_reject_handshake on;
     return 444;
@@ -2524,10 +2551,9 @@ EOL
     fi
     echo -e "${GREEN}${CHECK}${NC} Docker containers started successfully"
     echo
-    echo -e "${CYAN}${INFO}${NC} Installing camouflage template..."
-    echo -e "${GRAY}  ${ARROW}${NC} Selecting random template"
-    randomhtml
-    echo -e "${GREEN}${CHECK}${NC} Camouflage template installed successfully"
+    echo -e "${CYAN}${INFO}${NC} Preparing owncloud data directory..."
+    mkdir -p /var/www/owncloud
+    echo -e "${GREEN}${CHECK}${NC} Owncloud data directory created"
     echo
     if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^remnabridge-nginx$"; then
         echo -e "${CYAN}${INFO}${NC} Bridge server detected, skipping connection check"
@@ -2675,6 +2701,12 @@ remove_domain_from_stealconfig() {
     if [ -z "$sc_uuid" ] || [ "$sc_uuid" = "null" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} StealConfig profile not found, skipping"
         echo -e "${GREEN}${CHECK}${NC} StealConfig step skipped"
+        return 0
+    fi
+
+    if ! echo "$sc_config" | jq -e '.inbounds[0].streamSettings.realitySettings' > /dev/null 2>&1; then
+        echo -e "${GRAY}  ${ARROW}${NC} Config uses WS transport, skipping Reality serverNames update"
+        echo -e "${GREEN}${CHECK}${NC} StealConfig unchanged"
         return 0
     fi
 
