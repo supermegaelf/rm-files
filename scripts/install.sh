@@ -617,8 +617,10 @@ check_domain() {
             echo -e "${YELLOW}WARNING:${NC}"
             echo -e "${RED}Failed to determine the domain or server IP address.${NC}"
             printf "${YELLOW}Ensure that the domain %s is correctly configured and points to this server (%s).${NC}\n" "$domain" "$server_ip"
+            echo
             echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
             read confirm
+            echo
             if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
                 return 0
             else
@@ -672,8 +674,10 @@ check_domain() {
                 echo -e "${YELLOW}WARNING:${NC}"
                 printf "${RED}The domain %s points to a Cloudflare IP (%s).${NC}\n" "$domain" "$domain_ip"
                 echo -e "${YELLOW}Cloudflare proxying is not allowed for the selfsteal domain. Disable proxying (switch to 'DNS Only').${NC}"
+                echo
                 echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
                 read confirm
+                echo
                 if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
                     return 0
                 else
