@@ -614,8 +614,7 @@ check_domain() {
 
     if [ -z "$domain_ip" ] || [ -z "$server_ip" ]; then
         if [ "$show_warning" = true ]; then
-            echo -e "${YELLOW}WARNING:${NC}"
-            echo -e "${RED}Failed to determine the domain or server IP address.${NC}"
+            echo -e "${YELLOW}${WARNING}${NC} ${RED}Failed to determine the domain or server IP address.${NC}"
             printf "${YELLOW}Ensure that the domain %s is correctly configured and points to this server (%s).${NC}\n" "$domain" "$server_ip"
             echo
             echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
@@ -671,8 +670,7 @@ check_domain() {
             return 0
         else
             if [ "$show_warning" = true ]; then
-                echo -e "${YELLOW}WARNING:${NC}"
-                printf "${RED}The domain %s points to a Cloudflare IP (%s).${NC}\n" "$domain" "$domain_ip"
+                echo -e "${YELLOW}${WARNING}${NC} ${RED}The domain $domain points to a Cloudflare IP ($domain_ip).${NC}"
                 echo -e "${YELLOW}Cloudflare proxying is not allowed for the selfsteal domain. Disable proxying (switch to 'DNS Only').${NC}"
                 echo
                 echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
@@ -688,8 +686,7 @@ check_domain() {
         fi
     else
         if [ "$show_warning" = true ]; then
-            echo -e "${YELLOW}WARNING:${NC}"
-            printf "${RED}The domain %s points to IP address %s, which differs from this server's IP (%s).${NC}\n" "$domain" "$domain_ip" "$server_ip"
+            echo -e "${YELLOW}${WARNING}${NC} ${RED}The domain $domain points to IP address $domain_ip, which differs from this server's IP ($server_ip).${NC}"
             echo -e "${YELLOW}For proper operation, the domain must point to the current server.${NC}"
             echo
             echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
@@ -805,7 +802,7 @@ get_certificates() {
     fi
 
     if [[ -z "$CLOUDFLARE_EMAIL" || -z "$CLOUDFLARE_API_KEY" ]]; then
-        echo -e "${YELLOW}WARNING: Cloudflare credentials not provided. Skipping SSL certificate generation.${NC}"
+        echo -e "${YELLOW}${WARNING}${NC} Cloudflare credentials not provided. Skipping SSL certificate generation."
         echo -e "${YELLOW}You can manually obtain certificates later or use existing ones.${NC}"
         return 1
     fi
@@ -1122,12 +1119,12 @@ get_panel_token() {
     
     if [ -z "$token" ]; then
         if [ "$oauth_enabled" = true ]; then
-            echo -e "${YELLOW}=================================================${NC}"
-            echo -e "${RED}WARNING:${NC}"
-            echo -e "${YELLOW}OAuth is enabled. Manual token creation required.${NC}"
+            echo -e "${YELLOW}${WARNING}${NC} ${RED}OAuth is enabled. Manual token creation required.${NC}"
             printf "${YELLOW}Create API token in panel settings at https://%s and paste it below.${NC}\n" "$PANEL_DOMAIN"
+            echo
             echo -ne "${CYAN}Enter API token: ${NC}"
             read token
+            echo
             if [ -z "$token" ]; then
                 echo -e "${RED}API token cannot be empty${NC}"
                 return 1
