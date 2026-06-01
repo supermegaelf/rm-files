@@ -457,7 +457,6 @@ fetch_panel_data() {
     fi
 
     STEALCONFIG_UUID=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "StealConfig") | .uuid')
-    STEALCONFIG_CONFIG=$(echo "$profiles_response" | jq -c '.response.configProfiles[] | select(.name == "StealConfig") | .config')
 
     if [ -z "$STEALCONFIG_UUID" ] || [ "$STEALCONFIG_UUID" = "null" ]; then
         echo -e "${RED}${CROSS}${NC} StealConfig profile not found"
@@ -706,58 +705,6 @@ update_bridge_node_inbounds() {
     echo -e "${GREEN}${CHECK}${NC} Bridge node updated"
 }
 
-fetch_stealconfig() {
-    echo -e "${CYAN}${INFO}${NC} Fetching StealConfig profile..."
-
-    echo -e "${GRAY}  ${ARROW}${NC} Fetching config profiles"
-    local profiles_response
-    profiles_response=$(make_api_request GET "/api/config-profiles")
-
-    STEALCONFIG_UUID=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "StealConfig") | .uuid')
-    STEALCONFIG_CONFIG=$(echo "$profiles_response" | jq -c '.response.configProfiles[] | select(.name == "StealConfig") | .config')
-
-    if [ -z "$STEALCONFIG_UUID" ] || [ "$STEALCONFIG_UUID" = "null" ]; then
-        echo -e "${RED}${CROSS}${NC} StealConfig profile not found"
-        exit 1
-    fi
-
-    echo -e "${GREEN}${CHECK}${NC} StealConfig fetched"
-}
-
-update_stealconfig_servernames() {
-    echo -e "${CYAN}${INFO}${NC} Updating StealConfig server names..."
-
-    if echo "$STEALCONFIG_CONFIG" | jq -e \
-        --arg domain "$REALITY_SNI" \
-        '.inbounds[0].streamSettings.realitySettings.serverNames | contains([$domain])' > /dev/null 2>&1; then
-        echo -e "${GRAY}  ${ARROW}${NC} Domain already present"
-        echo -e "${GREEN}${CHECK}${NC} StealConfig unchanged"
-        return 0
-    fi
-
-    local updated_config
-    updated_config=$(echo "$STEALCONFIG_CONFIG" | jq -c \
-        --arg domain "$REALITY_SNI" \
-        '.inbounds[0].streamSettings.realitySettings.serverNames += [$domain]')
-
-    local patch_data
-    patch_data=$(jq -n \
-        --arg uuid "$STEALCONFIG_UUID" \
-        --argjson config "$updated_config" \
-        '{ uuid: $uuid, config: $config }')
-
-    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
-    local patch_response
-    patch_response=$(make_api_request PATCH "/api/config-profiles" "$patch_data")
-
-    if ! echo "$patch_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
-        echo -e "${RED}${CROSS}${NC} Failed to update StealConfig: $patch_response"
-        exit 1
-    fi
-
-    echo -e "${GREEN}${CHECK}${NC} StealConfig updated"
-}
-
 create_bridge_node() {
     echo -e "${CYAN}${INFO}${NC} Creating Bridge node in panel..."
 
@@ -847,7 +794,7 @@ update_bridge_host() {
             address: $bridge_domain,
             port: 443,
             sni: $reality_sni,
-            fingerprint: "firefox",
+            fingerprint: "random",
             overrideSniFromAddress: false,
             keepSniBlank: false,
             inbound: {
@@ -891,7 +838,7 @@ create_bridge_host() {
             address: $address,
             port: 443,
             sni: $reality_sni,
-            fingerprint: "firefox",
+            fingerprint: "random",
             overrideSniFromAddress: false,
             keepSniBlank: false,
             inbound: {
@@ -1148,10 +1095,6 @@ setup_bridge() {
     echo
     update_bridge_host
     echo
-    fetch_stealconfig
-    echo
-    update_stealconfig_servernames
-    echo
     update_bridge_squad
 
     echo
@@ -1204,8 +1147,6 @@ add_node_to_bridge() {
     update_bridge_config_profile
     echo
     update_bridge_node_inbounds
-    echo
-    update_stealconfig_servernames
     echo
     create_bridge_host
     echo
