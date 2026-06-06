@@ -149,6 +149,12 @@ fetch_hub_public_key() {
 
     if [ -z "$key" ]; then
         echo -e "${RED}${CROSS}${NC} Failed to fetch hub public key from $host:45876"
+        echo -e "${GRAY}  ${ARROW}${NC} Container status:"
+        docker ps -a --filter "name=beszel" --format "    {{.Names}}: {{.Status}}" 2>/dev/null || true
+        echo -e "${GRAY}  ${ARROW}${NC} Port 45876 listeners:"
+        ss -tlnp | grep ':45876' || echo "    Not listening"
+        echo -e "${GRAY}  ${ARROW}${NC} ssh-keyscan output:"
+        ssh-keyscan -p 45876 -t ed25519 -T 5 "$host" 2>&1 | head -10 || true
         return 1
     fi
 
