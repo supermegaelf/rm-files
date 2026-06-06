@@ -131,6 +131,7 @@ extract_base_domain() {
 fetch_hub_public_key() {
     local host="$1"
 
+    echo
     echo -e "${CYAN}${INFO}${NC} Fetching hub public key..."
     echo -e "${GRAY}  ${ARROW}${NC} Scanning hub SSH key on $host:45876"
 
@@ -140,10 +141,10 @@ fetch_hub_public_key() {
     fi
 
     local key attempt
-    for attempt in 1 2 3; do
+    for attempt in 1 2 3 4 5 6 7 8 9 10; do
         key=$(ssh-keyscan -p 45876 -t ed25519 -T 5 "$host" 2>/dev/null | grep -v '^#' | awk 'NF >= 3 {print $2, $3}')
         [ -n "$key" ] && break
-        [ "$attempt" -lt 3 ] && sleep 3
+        [ "$attempt" -lt 10 ] && sleep 3
     done
 
     if [ -z "$key" ]; then
@@ -532,6 +533,8 @@ rollback_panel_installation() {
     echo -e "${YELLOW}${WARNING}${NC} Starting rollback..."
     echo
 
+    echo -e "${CYAN}${INFO}${NC} Cleaning up..."
+
     if [ "$NGINX_MODIFIED" = "true" ] || [ "$NGINX_BACKUPED" = "true" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Restoring nginx configuration"
         if [ -f "/opt/remnawave/nginx.conf.backup" ]; then
@@ -857,6 +860,8 @@ rollback_node_installation() {
     echo -e "${RED}${CROSS}${NC} Installation failed at step: $INSTALL_STEP"
     echo -e "${YELLOW}${WARNING}${NC} Starting rollback..."
     echo
+
+    echo -e "${CYAN}${INFO}${NC} Cleaning up..."
 
     if [ "$FIREWALL_CONFIGURED" = "true" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Removing firewall rules"
