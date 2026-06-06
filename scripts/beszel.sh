@@ -24,6 +24,7 @@ PANEL_IP=""
 MONITOR_DOMAIN=""
 BASE_DOMAIN=""
 HUB_DOMAIN=""
+HUB_PUBLIC_KEY=""
 INSTALL_STEP=""
 HUB_STARTED=false
 AGENT_STARTED=false
@@ -125,6 +126,33 @@ extract_base_domain() {
     echo -e "${GRAY}  ${ARROW}${NC} Processing monitoring domain"
     BASE_DOMAIN=$(echo "$MONITOR_DOMAIN" | awk -F'.' '{if (NF > 2) {print $(NF-1)"."$NF} else {print $0}}')
     echo -e "${GREEN}${CHECK}${NC} Base domain extracted: ${WHITE}$BASE_DOMAIN${NC}"
+}
+
+fetch_hub_public_key() {
+    local host="$1"
+
+    echo -e "${CYAN}${INFO}${NC} Fetching hub public key..."
+    echo -e "${GRAY}  ${ARROW}${NC} Scanning hub SSH key on $host:45876"
+
+    if ! command -v ssh-keyscan &>/dev/null; then
+        echo -e "${GRAY}  ${ARROW}${NC} Installing openssh-client"
+        apt-get install -y -qq openssh-client > /dev/null 2>&1
+    fi
+
+    local key attempt
+    for attempt in 1 2 3; do
+        key=$(ssh-keyscan -p 45876 -t ed25519 -T 5 "$host" 2>/dev/null | grep -v '^#' | awk 'NF >= 3 {print $2, $3}')
+        [ -n "$key" ] && break
+        [ "$attempt" -lt 3 ] && sleep 3
+    done
+
+    if [ -z "$key" ]; then
+        echo -e "${RED}${CROSS}${NC} Failed to fetch hub public key from $host:45876"
+        return 1
+    fi
+
+    HUB_PUBLIC_KEY="$key"
+    echo -e "${GREEN}${CHECK}${NC} Hub public key fetched"
 }
 
 ensure_docker_compose() {
@@ -236,7 +264,7 @@ services:
       - ./beszel_agent_data:/var/lib/beszel-agent
     environment:
       LISTEN: 45877
-      KEY: 'PUBLIC_KEY'
+      KEY: '$HUB_PUBLIC_KEY'
       TOKEN: 'TOKEN'
       HUB_URL: https://$MONITOR_DOMAIN
 EOF
@@ -490,8 +518,9 @@ display_panel_completion() {
     echo -e "${WHITE}Name: Panel${NC}"
     echo -e "${WHITE}Host/IP: 127.0.0.1${NC}"
     echo
-    echo -e "${WHITE}3. Click \"Copy docker compose\", open \"docker-compose\" using the command below, and replace the content:${NC}"
+    echo -e "${WHITE}3. Click \"Copy docker compose\", copy the TOKEN value, then update it in:${NC}"
     echo -e "${WHITE}nano /opt/beszel-agent/docker-compose.yml${NC}"
+    echo -e "${GRAY}  Replace TOKEN placeholder with the token from the panel${NC}"
     echo
     echo -e "${WHITE}4. Run:${NC}"
     echo -e "${WHITE}cd /opt/beszel-agent && docker compose down && docker compose up -d${NC}"
@@ -583,6 +612,9 @@ install_panel_beszel() {
     INSTALL_STEP="Starting Hub container"
     start_hub_container
     HUB_STARTED=true
+
+    INSTALL_STEP="Fetching hub public key"
+    fetch_hub_public_key "127.0.0.1"
 
     INSTALL_STEP="Creating Agent structure"
     create_panel_agent_structure
@@ -734,7 +766,7 @@ services:
       - ./beszel_agent_data:/var/lib/beszel-agent
     environment:
       LISTEN: 45876
-      KEY: 'PUBLIC_KEY'
+      KEY: '$HUB_PUBLIC_KEY'
       TOKEN: 'TOKEN'
       HUB_URL: https://$HUB_DOMAIN
 EOF
@@ -812,8 +844,9 @@ display_node_completion() {
     echo -e "${WHITE}Name: Node${NC}"
     echo -e "${WHITE}Host/IP: $(hostname -I | awk '{print $1}')${NC}"
     echo
-    echo -e "${WHITE}3. Click \"Copy docker compose\", open \"docker-compose\" using the command below, and replace the content:${NC}"
+    echo -e "${WHITE}3. Click \"Copy docker compose\", copy the TOKEN value, then update it in:${NC}"
     echo -e "${WHITE}nano /opt/beszel-agent/docker-compose.yml${NC}"
+    echo -e "${GRAY}  Replace TOKEN placeholder with the token from the panel${NC}"
     echo
     echo -e "${WHITE}4. Run:${NC}"
     echo -e "${WHITE}cd /opt/beszel-agent && docker compose down && docker compose up -d${NC}"
@@ -876,6 +909,9 @@ install_node_beszel() {
 
     trap rollback_node_installation ERR
     set -e
+
+    INSTALL_STEP="Fetching hub public key"
+    fetch_hub_public_key "$PANEL_IP"
 
     INSTALL_STEP="Creating Agent structure"
     create_node_agent_structure
