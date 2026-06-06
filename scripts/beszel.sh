@@ -535,7 +535,7 @@ display_panel_completion() {
 
     echo
     echo -e "${WHITE}4. Run:${NC}"
-    echo -e "${WHITE}cd /opt/beszel-agent && docker compose down && docker compose up -d${NC}"
+    echo -e "${WHITE}cd /opt/beszel-agent && docker compose up -d${NC}"
 }
 
 rollback_panel_installation() {
@@ -863,7 +863,7 @@ display_node_completion() {
 
     echo
     echo -e "${WHITE}4. Run:${NC}"
-    echo -e "${WHITE}cd /opt/beszel-agent && docker compose down && docker compose up -d${NC}"
+    echo -e "${WHITE}cd /opt/beszel-agent && docker compose up -d${NC}"
 }
 
 rollback_node_installation() {
