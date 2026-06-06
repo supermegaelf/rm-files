@@ -24,6 +24,7 @@ PANEL_IP=""
 MONITOR_DOMAIN=""
 BASE_DOMAIN=""
 HUB_DOMAIN=""
+HUB_PUBLIC_KEY=""
 INSTALL_STEP=""
 HUB_STARTED=false
 AGENT_STARTED=false
@@ -125,6 +126,45 @@ extract_base_domain() {
     echo -e "${GRAY}  ${ARROW}${NC} Processing monitoring domain"
     BASE_DOMAIN=$(echo "$MONITOR_DOMAIN" | awk -F'.' '{if (NF > 2) {print $(NF-1)"."$NF} else {print $0}}')
     echo -e "${GREEN}${CHECK}${NC} Base domain extracted: ${WHITE}$BASE_DOMAIN${NC}"
+}
+
+fetch_hub_public_key() {
+    echo
+    echo -e "${CYAN}${INFO}${NC} Fetching hub public key..."
+    echo -e "${GRAY}  ${ARROW}${NC} Reading key from /opt/beszel/data/id_ed25519"
+
+    local key attempt
+    for attempt in 1 2 3 4 5 6 7 8 9 10; do
+        if [ -f "/opt/beszel/data/id_ed25519" ]; then
+            key=$(ssh-keygen -y -f /opt/beszel/data/id_ed25519 2>/dev/null)
+            [ -n "$key" ] && break
+        fi
+        [ "$attempt" -lt 10 ] && sleep 3
+    done
+
+    if [ -z "$key" ]; then
+        echo -e "${RED}${CROSS}${NC} Failed to read hub public key from /opt/beszel/data/id_ed25519"
+        return 1
+    fi
+
+    HUB_PUBLIC_KEY="$key"
+    echo -e "${GREEN}${CHECK}${NC} Hub public key fetched"
+}
+
+input_hub_public_key() {
+    echo
+    echo -e "${CYAN}Hub public key is required.${NC}"
+    echo -e "${WHITE}Run this command on your panel server and paste the output:${NC}"
+    echo -e "${WHITE}ssh-keygen -y -f /opt/beszel/data/id_ed25519${NC}"
+    echo
+    echo -ne "${CYAN}Hub public key (ssh-ed25519 AAAA...): ${NC}"
+    read -r HUB_PUBLIC_KEY
+    while [[ -z "$HUB_PUBLIC_KEY" ]] || [[ "$HUB_PUBLIC_KEY" != ssh-* ]]; do
+        echo -e "${RED}${CROSS}${NC} Invalid key! Key must start with 'ssh-ed25519 AAAA...'."
+        echo
+        echo -ne "${CYAN}Hub public key: ${NC}"
+        read -r HUB_PUBLIC_KEY
+    done
 }
 
 ensure_docker_compose() {
@@ -236,7 +276,7 @@ services:
       - ./beszel_agent_data:/var/lib/beszel-agent
     environment:
       LISTEN: 45877
-      KEY: 'PUBLIC_KEY'
+      KEY: '$HUB_PUBLIC_KEY'
       TOKEN: 'TOKEN'
       HUB_URL: https://$MONITOR_DOMAIN
 EOF
@@ -490,11 +530,12 @@ display_panel_completion() {
     echo -e "${WHITE}Name: Panel${NC}"
     echo -e "${WHITE}Host/IP: 127.0.0.1${NC}"
     echo
-    echo -e "${WHITE}3. Click \"Copy docker compose\", open \"docker-compose\" using the command below, and replace the content:${NC}"
+    echo -e "${WHITE}3. Click \"Copy docker compose\", copy the TOKEN value, then update it in:${NC}"
     echo -e "${WHITE}nano /opt/beszel-agent/docker-compose.yml${NC}"
+
     echo
     echo -e "${WHITE}4. Run:${NC}"
-    echo -e "${WHITE}cd /opt/beszel-agent && docker compose down && docker compose up -d${NC}"
+    echo -e "${WHITE}cd /opt/beszel-agent && docker compose up -d${NC}"
 }
 
 rollback_panel_installation() {
@@ -502,6 +543,8 @@ rollback_panel_installation() {
     echo -e "${RED}${CROSS}${NC} Installation failed at step: $INSTALL_STEP"
     echo -e "${YELLOW}${WARNING}${NC} Starting rollback..."
     echo
+
+    echo -e "${CYAN}${INFO}${NC} Cleaning up..."
 
     if [ "$NGINX_MODIFIED" = "true" ] || [ "$NGINX_BACKUPED" = "true" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Restoring nginx configuration"
@@ -583,6 +626,9 @@ install_panel_beszel() {
     INSTALL_STEP="Starting Hub container"
     start_hub_container
     HUB_STARTED=true
+
+    INSTALL_STEP="Fetching hub public key"
+    fetch_hub_public_key
 
     INSTALL_STEP="Creating Agent structure"
     create_panel_agent_structure
@@ -734,7 +780,7 @@ services:
       - ./beszel_agent_data:/var/lib/beszel-agent
     environment:
       LISTEN: 45876
-      KEY: 'PUBLIC_KEY'
+      KEY: '$HUB_PUBLIC_KEY'
       TOKEN: 'TOKEN'
       HUB_URL: https://$HUB_DOMAIN
 EOF
@@ -812,11 +858,12 @@ display_node_completion() {
     echo -e "${WHITE}Name: Node${NC}"
     echo -e "${WHITE}Host/IP: $(hostname -I | awk '{print $1}')${NC}"
     echo
-    echo -e "${WHITE}3. Click \"Copy docker compose\", open \"docker-compose\" using the command below, and replace the content:${NC}"
+    echo -e "${WHITE}3. Click \"Copy docker compose\", copy the TOKEN value, then update it in:${NC}"
     echo -e "${WHITE}nano /opt/beszel-agent/docker-compose.yml${NC}"
+
     echo
     echo -e "${WHITE}4. Run:${NC}"
-    echo -e "${WHITE}cd /opt/beszel-agent && docker compose down && docker compose up -d${NC}"
+    echo -e "${WHITE}cd /opt/beszel-agent && docker compose up -d${NC}"
 }
 
 rollback_node_installation() {
@@ -824,6 +871,8 @@ rollback_node_installation() {
     echo -e "${RED}${CROSS}${NC} Installation failed at step: $INSTALL_STEP"
     echo -e "${YELLOW}${WARNING}${NC} Starting rollback..."
     echo
+
+    echo -e "${CYAN}${INFO}${NC} Cleaning up..."
 
     if [ "$FIREWALL_CONFIGURED" = "true" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Removing firewall rules"
@@ -853,6 +902,7 @@ install_node_beszel() {
 
     input_panel_ip
     input_hub_domain
+    input_hub_public_key
 
     echo
     echo -e "${GREEN}Configuration Summary${NC}"
