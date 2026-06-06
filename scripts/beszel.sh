@@ -129,37 +129,42 @@ extract_base_domain() {
 }
 
 fetch_hub_public_key() {
-    local host="$1"
-
     echo
     echo -e "${CYAN}${INFO}${NC} Fetching hub public key..."
-    echo -e "${GRAY}  ${ARROW}${NC} Scanning hub SSH key on $host:45876"
-
-    if ! command -v ssh-keyscan &>/dev/null; then
-        echo -e "${GRAY}  ${ARROW}${NC} Installing openssh-client"
-        apt-get install -y -qq openssh-client > /dev/null 2>&1
-    fi
+    echo -e "${GRAY}  ${ARROW}${NC} Reading key from /opt/beszel/data/id_ed25519"
 
     local key attempt
     for attempt in 1 2 3 4 5 6 7 8 9 10; do
-        key=$(ssh-keyscan -p 45876 -t ed25519 -T 5 "$host" 2>/dev/null | grep -v '^#' | awk 'NF >= 3 {print $2, $3}')
-        [ -n "$key" ] && break
+        if [ -f "/opt/beszel/data/id_ed25519" ]; then
+            key=$(ssh-keygen -y -f /opt/beszel/data/id_ed25519 2>/dev/null)
+            [ -n "$key" ] && break
+        fi
         [ "$attempt" -lt 10 ] && sleep 3
     done
 
     if [ -z "$key" ]; then
-        echo -e "${RED}${CROSS}${NC} Failed to fetch hub public key from $host:45876"
-        echo -e "${GRAY}  ${ARROW}${NC} Container status:"
-        docker ps -a --filter "name=beszel" --format "    {{.Names}}: {{.Status}}" 2>/dev/null || true
-        echo -e "${GRAY}  ${ARROW}${NC} Port 45876 listeners:"
-        ss -tlnp | grep ':45876' || echo "    Not listening"
-        echo -e "${GRAY}  ${ARROW}${NC} ssh-keyscan output:"
-        ssh-keyscan -p 45876 -t ed25519 -T 5 "$host" 2>&1 | head -10 || true
+        echo -e "${RED}${CROSS}${NC} Failed to read hub public key from /opt/beszel/data/id_ed25519"
         return 1
     fi
 
     HUB_PUBLIC_KEY="$key"
     echo -e "${GREEN}${CHECK}${NC} Hub public key fetched"
+}
+
+input_hub_public_key() {
+    echo
+    echo -e "${CYAN}Hub public key is required.${NC}"
+    echo -e "${WHITE}Run this command on your panel server and paste the output:${NC}"
+    echo -e "${WHITE}ssh-keygen -y -f /opt/beszel/data/id_ed25519${NC}"
+    echo
+    echo -ne "${CYAN}Hub public key (ssh-ed25519 AAAA...): ${NC}"
+    read -r HUB_PUBLIC_KEY
+    while [[ -z "$HUB_PUBLIC_KEY" ]] || [[ "$HUB_PUBLIC_KEY" != ssh-* ]]; do
+        echo -e "${RED}${CROSS}${NC} Invalid key! Key must start with 'ssh-ed25519 AAAA...'."
+        echo
+        echo -ne "${CYAN}Hub public key: ${NC}"
+        read -r HUB_PUBLIC_KEY
+    done
 }
 
 ensure_docker_compose() {
@@ -623,7 +628,7 @@ install_panel_beszel() {
     HUB_STARTED=true
 
     INSTALL_STEP="Fetching hub public key"
-    fetch_hub_public_key "127.0.0.1"
+    fetch_hub_public_key
 
     INSTALL_STEP="Creating Agent structure"
     create_panel_agent_structure
@@ -897,6 +902,7 @@ install_node_beszel() {
 
     input_panel_ip
     input_hub_domain
+    input_hub_public_key
 
     echo
     echo -e "${GREEN}Configuration Summary${NC}"
@@ -920,9 +926,6 @@ install_node_beszel() {
 
     trap rollback_node_installation ERR
     set -e
-
-    INSTALL_STEP="Fetching hub public key"
-    fetch_hub_public_key "$PANEL_IP"
 
     INSTALL_STEP="Creating Agent structure"
     create_node_agent_structure
