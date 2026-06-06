@@ -532,7 +532,7 @@ display_panel_completion() {
     echo
     echo -e "${WHITE}3. Click \"Copy docker compose\", copy the TOKEN value, then update it in:${NC}"
     echo -e "${WHITE}nano /opt/beszel-agent/docker-compose.yml${NC}"
-    echo -e "${GRAY}  Replace TOKEN placeholder with the token from the panel${NC}"
+
     echo
     echo -e "${WHITE}4. Run:${NC}"
     echo -e "${WHITE}cd /opt/beszel-agent && docker compose down && docker compose up -d${NC}"
@@ -860,7 +860,7 @@ display_node_completion() {
     echo
     echo -e "${WHITE}3. Click \"Copy docker compose\", copy the TOKEN value, then update it in:${NC}"
     echo -e "${WHITE}nano /opt/beszel-agent/docker-compose.yml${NC}"
-    echo -e "${GRAY}  Replace TOKEN placeholder with the token from the panel${NC}"
+
     echo
     echo -e "${WHITE}4. Run:${NC}"
     echo -e "${WHITE}cd /opt/beszel-agent && docker compose down && docker compose up -d${NC}"
