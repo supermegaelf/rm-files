@@ -794,7 +794,7 @@ update_bridge_host() {
             address: $bridge_domain,
             port: 443,
             sni: $reality_sni,
-            fingerprint: "random",
+            fingerprint: "firefox",
             overrideSniFromAddress: false,
             keepSniBlank: false,
             inbound: {
@@ -838,7 +838,7 @@ create_bridge_host() {
             address: $address,
             port: 443,
             sni: $reality_sni,
-            fingerprint: "random",
+            fingerprint: "firefox",
             overrideSniFromAddress: false,
             keepSniBlank: false,
             inbound: {
