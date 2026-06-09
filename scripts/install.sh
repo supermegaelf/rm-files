@@ -1359,7 +1359,7 @@ create_host() {
         sni: $address,
         host: "",
         alpn: null,
-        fingerprint: "random",
+        fingerprint: "firefox",
         allowInsecure: false,
         isDisabled: false,
         securityLayer: "DEFAULT"
@@ -2336,7 +2336,7 @@ create_node_host_in_panel() {
             address: $address,
             port: 443,
             sni: $address,
-            fingerprint: "random",
+            fingerprint: "firefox",
             allowInsecure: false,
             isDisabled: false,
             inbound: {
