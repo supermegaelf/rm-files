@@ -238,10 +238,18 @@ make_api_request() {
     fi
 }
 
+ensure_jq() {
+    if ! command -v jq > /dev/null 2>&1; then
+        echo -e "${GRAY}  ${ARROW}${NC} Installing jq"
+        apt-get install -y jq > /dev/null 2>&1 || error "Failed to install jq"
+    fi
+}
+
 update_panel_host() {
     local node_domain=$1
     local bridge_domain=$2
 
+    ensure_jq
     echo -e "${CYAN}${INFO}${NC} Updating host in panel..."
 
     echo -e "${GRAY}  ${ARROW}${NC} Fetching hosts"
@@ -278,6 +286,7 @@ update_panel_host() {
 restore_panel_host() {
     local node_domain=$1
 
+    ensure_jq
     echo -e "${CYAN}${INFO}${NC} Restoring host in panel..."
 
     echo -e "${GRAY}  ${ARROW}${NC} Fetching hosts"
