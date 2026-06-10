@@ -491,14 +491,13 @@ remove_node() {
     fi
 
     echo
-    echo -e "${PURPLE}================${NC}"
+    echo -e "${PURPLE}============${NC}"
     echo -e "${WHITE}Remove Node${NC}"
-    echo -e "${PURPLE}================${NC}"
+    echo -e "${PURPLE}============${NC}"
     echo
 
     load_credentials
 
-    echo
     echo -e "${CYAN}Configured nodes:${NC}"
     echo
     local i=1
