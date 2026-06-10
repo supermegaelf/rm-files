@@ -31,6 +31,9 @@ AGENT_STARTED=false
 FIREWALL_CONFIGURED=false
 NGINX_BACKUPED=false
 NGINX_MODIFIED=false
+BINARY_INSTALLED=false
+BRIDGE_AGENT_CONFIGURED=false
+BRIDGE_FIREWALL_CONFIGURED=false
 
 #======================
 # VALIDATION FUNCTIONS
@@ -80,6 +83,14 @@ check_node_installed() {
             echo "true"
             return
         fi
+    fi
+    echo "false"
+}
+
+check_bridge_installed() {
+    if [ -f "/etc/systemd/system/beszel-agent.service" ]; then
+        echo "true"
+        return
     fi
     echo "false"
 }
@@ -1018,6 +1029,314 @@ uninstall_node_beszel() {
     echo -e "${CYAN}All Beszel components have been successfully removed.${NC}"
 }
 
+#==========================
+# BRIDGE SETUP FUNCTIONS
+#==========================
+
+download_bridge_agent() {
+    echo -e "${CYAN}${INFO}${NC} Downloading Beszel Agent binary..."
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching latest release info"
+
+    local arch
+    arch=$(uname -m)
+    case "$arch" in
+        x86_64)  arch="amd64" ;;
+        aarch64) arch="arm64" ;;
+        *)
+            echo -e "${RED}${CROSS}${NC} Unsupported architecture: $arch"
+            return 1
+            ;;
+    esac
+
+    local version
+    version=$(curl -fsSL "https://api.github.com/repos/henrygd/beszel/releases/latest" \
+        | grep '"tag_name"' | cut -d'"' -f4)
+
+    if [ -z "$version" ]; then
+        echo -e "${RED}${CROSS}${NC} Failed to fetch latest version"
+        return 1
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Downloading beszel-agent ${version} (${arch})"
+    if ! curl -fsSL "https://github.com/henrygd/beszel/releases/download/${version}/beszel-agent_linux_${arch}.tar.gz" \
+        | tar -xz -C /usr/local/bin beszel-agent; then
+        echo -e "${RED}${CROSS}${NC} Failed to download or extract binary"
+        return 1
+    fi
+
+    chmod +x /usr/local/bin/beszel-agent
+    echo -e "${GREEN}${CHECK}${NC} Beszel Agent binary installed"
+}
+
+create_bridge_agent_dir() {
+    echo -e "${CYAN}${INFO}${NC} Creating Beszel Agent directory..."
+    echo -e "${GRAY}  ${ARROW}${NC} Creating /opt/beszel-agent directory"
+    mkdir -p /opt/beszel-agent
+    echo -e "${GREEN}${CHECK}${NC} Directory created"
+}
+
+create_bridge_agent_service() {
+    echo -e "${CYAN}${INFO}${NC} Creating systemd service..."
+    echo -e "${GRAY}  ${ARROW}${NC} Writing environment file"
+
+    cat > /opt/beszel-agent/agent.env << EOF
+LISTEN=45876
+KEY=${HUB_PUBLIC_KEY}
+TOKEN=TOKEN
+HUB_URL=https://${HUB_DOMAIN}
+EOF
+    chmod 600 /opt/beszel-agent/agent.env
+
+    echo -e "${GRAY}  ${ARROW}${NC} Writing service file"
+    cat > /etc/systemd/system/beszel-agent.service << 'EOF'
+[Unit]
+Description=Beszel Agent
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/beszel-agent
+EnvironmentFile=/opt/beszel-agent/agent.env
+ExecStart=/usr/local/bin/beszel-agent
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    systemctl daemon-reload
+    echo -e "${GREEN}${CHECK}${NC} Systemd service created"
+}
+
+start_bridge_agent_service() {
+    echo -e "${CYAN}${INFO}${NC} Starting Beszel Agent service..."
+    echo -e "${GRAY}  ${ARROW}${NC} Enabling service"
+    systemctl enable beszel-agent > /dev/null 2>&1
+    echo -e "${GRAY}  ${ARROW}${NC} Starting service"
+
+    if ! systemctl start beszel-agent > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to start Beszel Agent service"
+        return 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Beszel Agent service started"
+}
+
+configure_bridge_firewall() {
+    echo -e "${CYAN}${INFO}${NC} Configuring UFW firewall rules..."
+    echo -e "${GRAY}  ${ARROW}${NC} Adding rule for Beszel Agent (45876)"
+    ufw allow from "$PANEL_IP" to any port 45876 proto tcp comment 'Beszel Agent' > /dev/null 2>&1
+    echo -e "${GREEN}${CHECK}${NC} Firewall rules configured"
+}
+
+verify_bridge_installation() {
+    echo -e "${CYAN}${INFO}${NC} Verifying Beszel installation..."
+    echo -e "${GRAY}  ${ARROW}${NC} Waiting for service to initialize"
+    sleep 5
+
+    echo -e "${GRAY}  ${ARROW}${NC} Checking Beszel Agent service"
+    if systemctl is-active --quiet beszel-agent; then
+        echo -e "${GRAY}  ${ARROW}${NC} Beszel Agent: ${GREEN}Running${NC}"
+    else
+        echo -e "${GRAY}  ${ARROW}${NC} Beszel Agent: ${RED}Not running${NC}"
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Installation verification completed"
+}
+
+display_bridge_completion() {
+    echo
+
+    echo -e "${PURPLE}=========================${NC}"
+    echo -e "${GREEN}${CHECK}${NC} Installation complete!"
+    echo -e "${PURPLE}=========================${NC}"
+    echo
+
+    echo -e "${CYAN}Next Steps:${NC}"
+    echo -e "${WHITE}1. Follow the link and login your panel account:${NC}"
+    echo -e "${WHITE}https://$HUB_DOMAIN${NC}"
+    echo
+    echo -e "${WHITE}2. Click \"Add System\" and fill in the fields:${NC}"
+    echo -e "${WHITE}Name: Bridge${NC}"
+    echo -e "${WHITE}Host/IP: $(hostname -I | awk '{print $1}')${NC}"
+    echo
+    echo -e "${WHITE}3. Click \"Copy docker compose\", copy the TOKEN value, then update it in:${NC}"
+    echo -e "${WHITE}nano /opt/beszel-agent/agent.env${NC}"
+    echo
+    echo -e "${WHITE}4. Run:${NC}"
+    echo -e "${WHITE}systemctl restart beszel-agent${NC}"
+}
+
+rollback_bridge_installation() {
+    echo
+    echo -e "${RED}${CROSS}${NC} Installation failed at step: $INSTALL_STEP"
+    echo -e "${YELLOW}${WARNING}${NC} Starting rollback..."
+    echo
+
+    echo -e "${CYAN}${INFO}${NC} Cleaning up..."
+
+    if [ "$BRIDGE_FIREWALL_CONFIGURED" = "true" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Removing firewall rules"
+        ufw status numbered | grep "Beszel Agent" | awk '{print $1}' | sed 's/\[//' | sed 's/\]//' | tac | while read num; do
+            yes | ufw delete $num > /dev/null 2>&1 || true
+        done
+    fi
+
+    if [ "$BRIDGE_AGENT_CONFIGURED" = "true" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Stopping and removing service"
+        systemctl stop beszel-agent > /dev/null 2>&1 || true
+        systemctl disable beszel-agent > /dev/null 2>&1 || true
+        rm -f /etc/systemd/system/beszel-agent.service
+        systemctl daemon-reload > /dev/null 2>&1
+    fi
+
+    if [ "$BINARY_INSTALLED" = "true" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Removing binary"
+        rm -f /usr/local/bin/beszel-agent
+    fi
+
+    rm -rf /opt/beszel-agent 2>/dev/null || true
+
+    echo -e "${GREEN}${CHECK}${NC} Rollback completed"
+    echo
+}
+
+install_bridge_beszel() {
+    echo
+    echo -e "${PURPLE}==========================${NC}"
+    echo -e "${WHITE}Beszel Agent Installation${NC}"
+    echo -e "${PURPLE}==========================${NC}"
+    echo
+
+    input_panel_ip
+    input_hub_domain
+    input_hub_public_key
+
+    echo
+    echo -e "${GREEN}Configuration Summary${NC}"
+    echo -e "${GREEN}=====================${NC}"
+    echo
+
+    echo -e "${CYAN}${INFO}${NC} Checking installation requirements..."
+    echo -e "${GRAY}  ${ARROW}${NC} Verifying existing Beszel installation"
+
+    local bridge_installed
+    bridge_installed=$(check_bridge_installed)
+
+    if [ "$bridge_installed" = "true" ]; then
+        echo -e "${RED}${CROSS}${NC} Beszel Agent is already installed!"
+        echo -e "${RED}Please uninstall it first if you want to reinstall.${NC}"
+        return 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} System requirements validated!"
+
+    trap rollback_bridge_installation ERR
+    set -e
+
+    INSTALL_STEP="Downloading binary"
+    download_bridge_agent
+    BINARY_INSTALLED=true
+
+    INSTALL_STEP="Creating directory"
+    create_bridge_agent_dir
+
+    INSTALL_STEP="Creating systemd service"
+    create_bridge_agent_service
+    BRIDGE_AGENT_CONFIGURED=true
+
+    INSTALL_STEP="Starting service"
+    start_bridge_agent_service
+
+    INSTALL_STEP="Configuring firewall"
+    configure_bridge_firewall
+    BRIDGE_FIREWALL_CONFIGURED=true
+
+    INSTALL_STEP="Verification"
+    verify_bridge_installation
+
+    trap - ERR
+    set +e
+
+    display_bridge_completion
+}
+
+uninstall_bridge_beszel() {
+    echo
+    echo -ne "${YELLOW}Are you sure you want to uninstall Beszel Agent? (y/N): ${NC}"
+    read -r CONFIRM
+
+    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+        echo
+        echo -e "${CYAN}Uninstallation cancelled.${NC}"
+        return 0
+    fi
+
+    echo
+    echo -e "${PURPLE}============================${NC}"
+    echo -e "${WHITE}Beszel Agent Uninstallation${NC}"
+    echo -e "${PURPLE}============================${NC}"
+    echo
+
+    echo -e "${GREEN}Service Removal${NC}"
+    echo -e "${GREEN}===============${NC}"
+    echo
+
+    echo -e "${CYAN}${INFO}${NC} Removing Beszel Agent service..."
+
+    if systemctl is-active --quiet beszel-agent 2>/dev/null; then
+        echo -e "${GRAY}  ${ARROW}${NC} Stopping service"
+        systemctl stop beszel-agent > /dev/null 2>&1 || true
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Disabling service"
+    systemctl disable beszel-agent > /dev/null 2>&1 || true
+
+    echo -e "${GRAY}  ${ARROW}${NC} Removing service file"
+    rm -f /etc/systemd/system/beszel-agent.service
+    systemctl daemon-reload > /dev/null 2>&1
+
+    echo -e "${GREEN}${CHECK}${NC} Service removal completed!"
+    echo
+
+    echo -e "${GREEN}File System Cleanup${NC}"
+    echo -e "${GREEN}===================${NC}"
+    echo
+
+    echo -e "${CYAN}${INFO}${NC} Removing Beszel files..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Removing binary"
+    rm -f /usr/local/bin/beszel-agent
+
+    if [ -d "/opt/beszel-agent" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Removing /opt/beszel-agent"
+        rm -rf /opt/beszel-agent
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} File system cleanup completed!"
+    echo
+
+    echo -e "${GREEN}Firewall Configuration${NC}"
+    echo -e "${GREEN}======================${NC}"
+    echo
+
+    echo -e "${CYAN}${INFO}${NC} Removing firewall rules..."
+    echo -e "${GRAY}  ${ARROW}${NC} Removing UFW rules"
+    ufw status numbered | grep "Beszel Agent" | awk '{print $1}' | sed 's/\[//' | sed 's/\]//' | tac | while read num; do
+        yes | ufw delete $num > /dev/null 2>&1
+    done
+
+    echo -e "${GREEN}${CHECK}${NC} Firewall configuration cleanup completed!"
+    echo
+
+    echo -e "${PURPLE}===========================${NC}"
+    echo -e "${GREEN}${CHECK}${NC} Uninstallation complete!"
+    echo -e "${PURPLE}===========================${NC}"
+    echo
+    echo -e "${CYAN}All Beszel components have been successfully removed.${NC}"
+}
+
 #================
 # MENU FUNCTIONS
 #================
@@ -1025,6 +1344,7 @@ uninstall_node_beszel() {
 show_main_menu() {
     local panel_installed=$(check_panel_installed)
     local node_installed=$(check_node_installed)
+    local bridge_installed=$(check_bridge_installed)
 
     echo -e "${CYAN}Please select an action:${NC}"
     echo
@@ -1041,16 +1361,23 @@ show_main_menu() {
         echo -e "${GREEN}2.${NC} Install on Node"
     fi
 
-    echo -e "${RED}3.${NC} Exit"
+    if [ "$bridge_installed" = "true" ]; then
+        echo -e "${RED}3.${NC} Uninstall from Bridge"
+    else
+        echo -e "${GREEN}3.${NC} Install on Bridge"
+    fi
+
+    echo -e "${RED}4.${NC} Exit"
     echo
 }
 
 handle_user_choice() {
     local panel_installed=$(check_panel_installed)
     local node_installed=$(check_node_installed)
+    local bridge_installed=$(check_bridge_installed)
 
     while true; do
-        echo -ne "${CYAN}Enter your choice (1-3): ${NC}"
+        echo -ne "${CYAN}Enter your choice (1-4): ${NC}"
         read CHOICE
 
         case $CHOICE in
@@ -1071,11 +1398,19 @@ handle_user_choice() {
                 break
                 ;;
             3)
+                if [ "$bridge_installed" = "true" ]; then
+                    uninstall_bridge_beszel
+                else
+                    install_bridge_beszel
+                fi
+                break
+                ;;
+            4)
                 echo -e "${CYAN}Goodbye!${NC}"
                 exit 0
                 ;;
             *)
-                echo -e "${RED}${CROSS}${NC} Invalid choice. Please enter 1, 2, or 3."
+                echo -e "${RED}${CROSS}${NC} Invalid choice. Please enter 1, 2, 3, or 4."
                 ;;
         esac
     done
