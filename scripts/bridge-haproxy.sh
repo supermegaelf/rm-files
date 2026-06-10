@@ -458,6 +458,7 @@ add_node() {
         error "Node domain ${NODE_DOMAIN} is already configured"
     fi
 
+    echo
     echo -e "${CYAN}${INFO}${NC} Adding node..."
 
     echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_DOMAIN}" >> "$NODES_FILE"
