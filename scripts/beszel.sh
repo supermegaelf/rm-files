@@ -1236,24 +1236,30 @@ install_bridge_beszel() {
     set -e
 
     INSTALL_STEP="Downloading binary"
+    echo
     download_bridge_agent
     BINARY_INSTALLED=true
 
     INSTALL_STEP="Creating directory"
+    echo
     create_bridge_agent_dir
 
     INSTALL_STEP="Creating systemd service"
+    echo
     create_bridge_agent_service
     BRIDGE_AGENT_CONFIGURED=true
 
     INSTALL_STEP="Starting service"
+    echo
     start_bridge_agent_service
 
     INSTALL_STEP="Configuring firewall"
+    echo
     configure_bridge_firewall
     BRIDGE_FIREWALL_CONFIGURED=true
 
     INSTALL_STEP="Verification"
+    echo
     verify_bridge_installation
 
     trap - ERR
