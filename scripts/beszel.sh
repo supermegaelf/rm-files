@@ -1166,6 +1166,7 @@ display_bridge_completion() {
     echo
     echo -e "${WHITE}4. Open the agent config and replace TOKEN=TOKEN with that UUID:${NC}"
     echo -e "${WHITE}nano /opt/beszel-agent/agent.env${NC}"
+    echo
     echo -e "${WHITE}Change: TOKEN=TOKEN${NC}"
     echo -e "${WHITE}    To: TOKEN=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx${NC}"
     echo
