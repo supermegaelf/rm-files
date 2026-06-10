@@ -202,7 +202,6 @@ confirm_dns_setup() {
     echo
     echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
     read -r confirm
-    echo
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo -e "${YELLOW}${WARNING}${NC} Setup cancelled"
         exit 0
