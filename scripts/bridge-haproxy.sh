@@ -448,7 +448,6 @@ add_node() {
 
     load_credentials
 
-    echo
     input_node_domain
     input_bridge_domain
     input_node_ip
