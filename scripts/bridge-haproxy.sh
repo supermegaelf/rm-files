@@ -162,7 +162,7 @@ input_api_token() {
 }
 
 input_node_domain() {
-    echo -ne "${CYAN}Node selfsteal domain (nginx server_name, e.g., node.example.com): ${NC}"
+    echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
     read -r NODE_DOMAIN
     while [[ -z "$NODE_DOMAIN" ]] || ! validate_domain "$NODE_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
@@ -173,7 +173,7 @@ input_node_domain() {
 }
 
 input_bridge_domain() {
-    echo -ne "${CYAN}Bridge domain (public address for DNS, e.g., bridge.example.com): ${NC}"
+    echo -ne "${CYAN}Bridge domain (e.g., example.com): ${NC}"
     read -r BRIDGE_DOMAIN
     while [[ -z "$BRIDGE_DOMAIN" ]] || ! validate_domain "$BRIDGE_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
