@@ -451,7 +451,6 @@ add_node() {
     input_node_domain
     input_bridge_domain
     input_node_ip
-    confirm_dns_setup
 
     local escaped_domain
     escaped_domain=$(printf '%s' "$NODE_DOMAIN" | sed 's/[.[\*^$]/\\&/g')
