@@ -441,9 +441,9 @@ install_bridge() {
 
 add_node() {
     echo
-    echo -e "${PURPLE}=============${NC}"
+    echo -e "${PURPLE}=========${NC}"
     echo -e "${WHITE}Add Node${NC}"
-    echo -e "${PURPLE}=============${NC}"
+    echo -e "${PURPLE}=========${NC}"
     echo
 
     load_credentials
@@ -479,9 +479,9 @@ add_node() {
     update_panel_host "$NODE_DOMAIN" "$BRIDGE_DOMAIN"
 
     echo
-    echo -e "${PURPLE}===================${NC}"
+    echo -e "${PURPLE}=============${NC}"
     echo -e "${GREEN}${CHECK}${NC} Node added"
-    echo -e "${PURPLE}===================${NC}"
+    echo -e "${PURPLE}=============${NC}"
     echo
 }
 
