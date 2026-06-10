@@ -198,7 +198,7 @@ confirm_dns_setup() {
     local server_ip
     server_ip=$(curl -s https://api.ipify.org 2>/dev/null || echo "unknown")
     echo
-    echo -e "${YELLOW}${WARNING}${NC} ${RED}The A record of ${BRIDGE_DOMAIN} must point to this server (${server_ip}, DNS only).${NC}"
+    echo -e "${YELLOW}${WARNING}${NC} ${RED}Create an A record: ${BRIDGE_DOMAIN} ${ARROW} ${server_ip} (DNS only).${NC}"
     echo
     echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
     read -r confirm
