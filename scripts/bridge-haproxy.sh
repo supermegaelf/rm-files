@@ -7,7 +7,6 @@
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
 readonly PURPLE='\033[0;35m'
 readonly CYAN='\033[0;36m'
 readonly WHITE='\033[1;37m'
@@ -22,6 +21,7 @@ readonly ARROW="→"
 
 DIR_BRIDGE="/usr/local/remnawave_bridge/"
 NODES_FILE="${DIR_BRIDGE}nodes.conf"
+CREDS_FILE="${DIR_BRIDGE}rm-bridge-config.env"
 
 #======================
 # VALIDATION FUNCTIONS
@@ -73,7 +73,7 @@ install_system_packages() {
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Installing essential packages"
-    if ! apt-get install -y ca-certificates curl ufw haproxy unattended-upgrades > /dev/null 2>&1; then
+    if ! apt-get install -y ca-certificates curl jq ufw haproxy unattended-upgrades > /dev/null 2>&1; then
         error "Failed to install required packages"
     fi
 
@@ -138,26 +138,175 @@ show_main_menu() {
 # INPUT FUNCTIONS
 #=================
 
+input_panel_url() {
+    echo -ne "${CYAN}Panel domain (e.g., panel.example.com): ${NC}"
+    read -r PANEL_DOMAIN
+    while [[ -z "$PANEL_DOMAIN" ]] || ! validate_domain "$PANEL_DOMAIN"; do
+        echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
+        echo
+        echo -ne "${CYAN}Panel domain: ${NC}"
+        read -r PANEL_DOMAIN
+    done
+    PANEL_URL="https://${PANEL_DOMAIN}"
+}
+
+input_api_token() {
+    echo -ne "${CYAN}API token: ${NC}"
+    read -r API_TOKEN
+    while [[ -z "$API_TOKEN" ]]; do
+        echo -e "${RED}${CROSS}${NC} API token cannot be empty!"
+        echo
+        echo -ne "${CYAN}API token: ${NC}"
+        read -r API_TOKEN
+    done
+}
+
+input_node_domain() {
+    echo -ne "${CYAN}Node selfsteal domain (nginx server_name, e.g., node.example.com): ${NC}"
+    read -r NODE_DOMAIN
+    while [[ -z "$NODE_DOMAIN" ]] || ! validate_domain "$NODE_DOMAIN"; do
+        echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
+        echo
+        echo -ne "${CYAN}Node selfsteal domain: ${NC}"
+        read -r NODE_DOMAIN
+    done
+}
+
 input_bridge_domain() {
-    echo -ne "${CYAN}Bridge domain (e.g., bridge.example.com): ${NC}"
-    read BRIDGE_DOMAIN
+    echo -ne "${CYAN}Bridge domain (public address for DNS, e.g., bridge.example.com): ${NC}"
+    read -r BRIDGE_DOMAIN
     while [[ -z "$BRIDGE_DOMAIN" ]] || ! validate_domain "$BRIDGE_DOMAIN"; do
-        echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain (e.g., bridge.example.com)."
+        echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
         echo -ne "${CYAN}Bridge domain: ${NC}"
-        read BRIDGE_DOMAIN
+        read -r BRIDGE_DOMAIN
     done
 }
 
 input_node_ip() {
     echo -ne "${CYAN}Node IP address: ${NC}"
-    read NODE_IP
+    read -r NODE_IP
     while [[ -z "$NODE_IP" ]] || ! validate_ip "$NODE_IP"; do
         echo -e "${RED}${CROSS}${NC} Invalid IP! Please enter a valid IPv4 address (e.g., 1.2.3.4)."
         echo
         echo -ne "${CYAN}Node IP address: ${NC}"
-        read NODE_IP
+        read -r NODE_IP
     done
+}
+
+#=====================
+# CREDENTIALS
+#=====================
+
+save_credentials() {
+    printf 'PANEL_DOMAIN="%s"\nAPI_TOKEN="%s"\n' "$PANEL_DOMAIN" "$API_TOKEN" > "$CREDS_FILE"
+    chmod 600 "$CREDS_FILE"
+}
+
+load_credentials() {
+    if [ -f "$CREDS_FILE" ]; then
+        # shellcheck source=/dev/null
+        source "$CREDS_FILE"
+        PANEL_URL="https://${PANEL_DOMAIN}"
+    else
+        input_panel_url
+        input_api_token
+        save_credentials
+    fi
+}
+
+#=================
+# API FUNCTIONS
+#=================
+
+make_api_request() {
+    local method=$1
+    local path=$2
+    local data=${3:-}
+
+    if [ -n "$data" ]; then
+        curl -s -X "$method" "${PANEL_URL}${path}" \
+            -H "Authorization: Bearer $API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "X-Remnawave-Client-Type: browser" \
+            -d "$data"
+    else
+        curl -s -X "$method" "${PANEL_URL}${path}" \
+            -H "Authorization: Bearer $API_TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "X-Remnawave-Client-Type: browser"
+    fi
+}
+
+update_panel_host() {
+    local node_domain=$1
+    local bridge_domain=$2
+
+    echo -e "${CYAN}${INFO}${NC} Updating host in panel..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching hosts"
+    local hosts_response
+    hosts_response=$(make_api_request GET "/api/hosts")
+
+    local host_uuid
+    host_uuid=$(echo "$hosts_response" | jq -r \
+        --arg domain "$node_domain" \
+        '[.response[] | select(.address == $domain or .sni == $domain)] | first | .uuid // empty')
+
+    if [ -z "$host_uuid" ]; then
+        echo -e "${RED}${CROSS}${NC} Host for ${node_domain} not found in panel"
+        exit 1
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Setting address=${bridge_domain}, sni=${node_domain}"
+    local patch_response
+    patch_response=$(make_api_request PATCH "/api/hosts" "$(jq -n \
+        --arg uuid "$host_uuid" \
+        --arg address "$bridge_domain" \
+        --arg sni "$node_domain" \
+        --arg host "$node_domain" \
+        '{ uuid: $uuid, address: $address, sni: $sni, host: $host }')")
+
+    if ! echo "$patch_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to update host: $patch_response"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Host updated"
+}
+
+restore_panel_host() {
+    local node_domain=$1
+
+    echo -e "${CYAN}${INFO}${NC} Restoring host in panel..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Fetching hosts"
+    local hosts_response
+    hosts_response=$(make_api_request GET "/api/hosts")
+
+    local host_uuid
+    host_uuid=$(echo "$hosts_response" | jq -r \
+        --arg domain "$node_domain" \
+        '[.response[] | select(.sni == $domain)] | first | .uuid // empty')
+
+    if [ -z "$host_uuid" ]; then
+        echo -e "${YELLOW}  ${WARNING}${NC} Host for ${node_domain} not found, skipping"
+        return 0
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Restoring address=${node_domain}, sni=${node_domain}"
+    local patch_response
+    patch_response=$(make_api_request PATCH "/api/hosts" "$(jq -n \
+        --arg uuid "$host_uuid" \
+        --arg domain "$node_domain" \
+        '{ uuid: $uuid, address: $domain, sni: $domain, host: $domain }')")
+
+    if ! echo "$patch_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+        echo -e "${YELLOW}  ${WARNING}${NC} Failed to restore host: $patch_response"
+        return 0
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Host restored"
 }
 
 #==================
@@ -185,16 +334,16 @@ frontend main_front
     tcp-request content accept if { req_ssl_hello_type 1 }
 EOF
 
-        while IFS=: read -r domain ip; do
+        while IFS=: read -r node_domain node_ip bridge_domain; do
             local backend_name
-            backend_name=$(echo "$domain" | sed 's/[.-]/_/g')
-            echo "    use_backend ${backend_name}_backend if { req.ssl_sni -i ${domain} }"
+            backend_name=$(echo "$node_domain" | sed 's/[.-]/_/g')
+            echo "    use_backend ${backend_name}_backend if { req.ssl_sni -i ${node_domain} }"
         done < "$NODES_FILE"
 
-        while IFS=: read -r domain ip; do
+        while IFS=: read -r node_domain node_ip bridge_domain; do
             local backend_name
-            backend_name=$(echo "$domain" | sed 's/[.-]/_/g')
-            printf '\nbackend %s_backend\n    server node %s:443\n' "$backend_name" "$ip"
+            backend_name=$(echo "$node_domain" | sed 's/[.-]/_/g')
+            printf '\nbackend %s_backend\n    server node %s:443\n' "$backend_name" "$node_ip"
         done < "$NODES_FILE"
     } > /etc/haproxy/haproxy.cfg
 }
@@ -229,7 +378,7 @@ install_bridge() {
 
     echo -e "${CYAN}${INFO}${NC} Configuring HAProxy..."
 
-    echo "${BRIDGE_DOMAIN}:${NODE_IP}" > "$NODES_FILE"
+    echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_DOMAIN}" > "$NODES_FILE"
 
     echo -e "${GRAY}  ${ARROW}${NC} Writing configuration"
     generate_haproxy_config
@@ -248,6 +397,14 @@ install_bridge() {
     echo -e "${GREEN}${CHECK}${NC} HAProxy configured"
 
     echo
+    echo -e "${GREEN}Updating panel${NC}"
+    echo -e "${GREEN}==============${NC}"
+    echo
+
+    update_panel_host "$NODE_DOMAIN" "$BRIDGE_DOMAIN"
+    save_credentials
+
+    echo
     echo -e "${PURPLE}========================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Installation complete"
     echo -e "${PURPLE}========================${NC}"
@@ -255,8 +412,7 @@ install_bridge() {
     local server_ip
     server_ip=$(curl -s https://api.ipify.org 2>/dev/null || echo "unknown")
     echo -e "${CYAN}Next Steps:${NC}"
-    echo -e "${WHITE}• Update the A record of ${BRIDGE_DOMAIN} to point to ${server_ip}${NC}"
-    echo -e "${WHITE}• In Remnawave, update the node host to use ${BRIDGE_DOMAIN}${NC}"
+    echo -e "${WHITE}• Update the A record of ${BRIDGE_DOMAIN} to point to ${server_ip} (DNS only)${NC}"
     echo
     echo -e "${CYAN}Useful Commands:${NC}"
     echo -e "${WHITE}• Check status: systemctl status haproxy${NC}"
@@ -272,18 +428,22 @@ add_node() {
     echo -e "${PURPLE}=============${NC}"
     echo
 
+    load_credentials
+
+    echo
+    input_node_domain
     input_bridge_domain
     input_node_ip
 
     local escaped_domain
-    escaped_domain=$(printf '%s' "$BRIDGE_DOMAIN" | sed 's/[.[\*^$]/\\&/g')
+    escaped_domain=$(printf '%s' "$NODE_DOMAIN" | sed 's/[.[\*^$]/\\&/g')
     if grep -q "^${escaped_domain}:" "$NODES_FILE" 2>/dev/null; then
-        error "Domain ${BRIDGE_DOMAIN} is already configured"
+        error "Node domain ${NODE_DOMAIN} is already configured"
     fi
 
     echo -e "${CYAN}${INFO}${NC} Adding node..."
 
-    echo "${BRIDGE_DOMAIN}:${NODE_IP}" >> "$NODES_FILE"
+    echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_DOMAIN}" >> "$NODES_FILE"
 
     echo -e "${GRAY}  ${ARROW}${NC} Updating configuration"
     generate_haproxy_config
@@ -294,11 +454,17 @@ add_node() {
     echo -e "${GREEN}${CHECK}${NC} Node added"
 
     echo
+    echo -e "${GREEN}Updating panel${NC}"
+    echo -e "${GREEN}==============${NC}"
+    echo
+
+    update_panel_host "$NODE_DOMAIN" "$BRIDGE_DOMAIN"
+
+    echo
     local server_ip
     server_ip=$(curl -s https://api.ipify.org 2>/dev/null || echo "unknown")
     echo -e "${CYAN}Next Steps:${NC}"
-    echo -e "${WHITE}• Update the A record of ${BRIDGE_DOMAIN} to point to ${server_ip}${NC}"
-    echo -e "${WHITE}• In Remnawave, update the node host to use ${BRIDGE_DOMAIN}${NC}"
+    echo -e "${WHITE}• Update the A record of ${BRIDGE_DOMAIN} to point to ${server_ip} (DNS only)${NC}"
     echo
 }
 
@@ -313,34 +479,39 @@ remove_node() {
     echo -e "${PURPLE}================${NC}"
     echo
 
+    load_credentials
+
+    echo
     echo -e "${CYAN}Configured nodes:${NC}"
     echo
     local i=1
-    local domains=()
-    while IFS=: read -r domain ip; do
-        echo -e "${WHITE}${i}.${NC} ${domain} → ${ip}"
-        domains+=("$domain")
+    local node_domains=()
+    while IFS=: read -r node_domain node_ip bridge_domain; do
+        echo -e "${WHITE}${i}.${NC} ${node_domain} → ${node_ip} (bridge: ${bridge_domain})"
+        node_domains+=("$node_domain")
         i=$((i + 1))
     done < "$NODES_FILE"
     echo
-    echo -ne "${CYAN}Select node to remove (1-${#domains[@]}): ${NC}"
-    read selection
+    echo -ne "${CYAN}Select node to remove (1-${#node_domains[@]}): ${NC}"
+    read -r selection
 
-    if ! [[ "$selection" =~ ^[0-9]+$ ]] || [ "$selection" -lt 1 ] || [ "$selection" -gt "${#domains[@]}" ]; then
+    if ! [[ "$selection" =~ ^[0-9]+$ ]] || [ "$selection" -lt 1 ] || [ "$selection" -gt "${#node_domains[@]}" ]; then
         error "Invalid selection"
     fi
 
-    local selected_domain="${domains[$((selection - 1))]}"
+    local selected_node="${node_domains[$((selection - 1))]}"
 
-    echo -e "${CYAN}${INFO}${NC} Removing node ${selected_domain}..."
+    echo -e "${CYAN}${INFO}${NC} Removing node ${selected_node}..."
 
     local escaped_domain
-    escaped_domain=$(printf '%s' "$selected_domain" | sed 's/[.[\*^$]/\\&/g')
+    escaped_domain=$(printf '%s' "$selected_node" | sed 's/[.[\*^$]/\\&/g')
     sed -i "/^${escaped_domain}:/d" "$NODES_FILE"
 
     if [ ! -s "$NODES_FILE" ]; then
         echo -e "${YELLOW}${WARNING}${NC} No nodes remaining, removing bridge"
-        remove_bridge
+        echo
+        restore_panel_host "$selected_node"
+        _remove_bridge_services
         return
     fi
 
@@ -351,15 +522,13 @@ remove_node() {
     reload_haproxy
 
     echo -e "${GREEN}${CHECK}${NC} Node removed"
+
+    echo
+    restore_panel_host "$selected_node"
     echo
 }
 
-remove_bridge() {
-    echo
-    echo -e "${GREEN}Removing bridge${NC}"
-    echo -e "${GREEN}===============${NC}"
-    echo
-
+_remove_bridge_services() {
     echo -e "${CYAN}${INFO}${NC} Stopping HAProxy..."
     echo -e "${GRAY}  ${ARROW}${NC} Stopping service"
     systemctl stop haproxy > /dev/null 2>&1 || true
@@ -385,6 +554,22 @@ remove_bridge() {
     echo
 }
 
+remove_bridge() {
+    echo
+    echo -e "${GREEN}Restoring hosts${NC}"
+    echo -e "${GREEN}===============${NC}"
+    echo
+
+    if [ -f "$NODES_FILE" ] && [ -s "$NODES_FILE" ]; then
+        while IFS=: read -r node_domain node_ip bridge_domain; do
+            restore_panel_host "$node_domain"
+            echo
+        done < "$NODES_FILE"
+    fi
+
+    _remove_bridge_services
+}
+
 #==================
 # MAIN ENTRY POINT
 #==================
@@ -394,13 +579,24 @@ main() {
     check_root
 
     show_main_menu
-    read SETUP_TYPE
+    read -r SETUP_TYPE
 
     if [ "$HAPROXY_INSTALLED" = true ]; then
         case $SETUP_TYPE in
             1) add_node ;;
             2) remove_node ;;
-            3) remove_bridge ;;
+            3)
+                load_credentials
+                echo
+                echo -e "${YELLOW}${WARNING}${NC} This will restore all node hosts in the panel and remove HAProxy."
+                echo -ne "${YELLOW}Are you sure? (y/n): ${NC}"
+                read -r confirm
+                if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+                    echo -e "${YELLOW}${WARNING}${NC} Cancelled"
+                    exit 0
+                fi
+                remove_bridge
+                ;;
             4)
                 echo
                 echo -e "${YELLOW}${WARNING}${NC} Exiting..."
@@ -421,6 +617,9 @@ main() {
                 echo -e "${PURPLE}================${NC}"
                 echo
 
+                input_panel_url
+                input_api_token
+                input_node_domain
                 input_bridge_domain
                 input_node_ip
 
