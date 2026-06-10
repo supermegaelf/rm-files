@@ -541,6 +541,7 @@ remove_node() {
         echo -e "${YELLOW}${WARNING}${NC} No nodes remaining, removing bridge"
         echo
         restore_panel_host "$selected_node" "$original_host"
+        echo
         _remove_bridge_services
         return
     fi
