@@ -1161,10 +1161,15 @@ display_bridge_completion() {
     echo -e "${WHITE}Name: Bridge${NC}"
     echo -e "${WHITE}Host/IP: $(hostname -I | awk '{print $1}')${NC}"
     echo
-    echo -e "${WHITE}3. Click \"Copy docker compose\", copy the TOKEN value, then update it in:${NC}"
-    echo -e "${WHITE}nano /opt/beszel-agent/agent.env${NC}"
+    echo -e "${WHITE}3. Click \"Copy docker compose\". In the snippet, find the TOKEN line:${NC}"
+    echo -e "${WHITE}TOKEN: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'${NC}"
     echo
-    echo -e "${WHITE}4. Run:${NC}"
+    echo -e "${WHITE}4. Open the agent config and replace TOKEN=TOKEN with that UUID:${NC}"
+    echo -e "${WHITE}nano /opt/beszel-agent/agent.env${NC}"
+    echo -e "${WHITE}Change: TOKEN=TOKEN${NC}"
+    echo -e "${WHITE}    To: TOKEN=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx${NC}"
+    echo
+    echo -e "${WHITE}5. Restart the agent:${NC}"
     echo -e "${WHITE}systemctl restart beszel-agent${NC}"
 }
 
