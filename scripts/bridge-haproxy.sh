@@ -115,9 +115,9 @@ show_main_menu() {
     command -v haproxy > /dev/null 2>&1 && HAPROXY_INSTALLED=true
 
     echo
-    echo -e "${PURPLE}======================${NC}"
+    echo -e "${PURPLE}=================${NC}"
     echo -e "${WHITE}REMNAWAVE BRIDGE${NC}"
-    echo -e "${PURPLE}======================${NC}"
+    echo -e "${PURPLE}=================${NC}"
     echo
     echo -e "${CYAN}Please select an option:${NC}"
     echo
@@ -192,6 +192,21 @@ input_node_ip() {
         echo -ne "${CYAN}Node IP address: ${NC}"
         read -r NODE_IP
     done
+}
+
+confirm_dns_setup() {
+    local server_ip
+    server_ip=$(curl -s https://api.ipify.org 2>/dev/null || echo "unknown")
+    echo
+    echo -e "${YELLOW}${WARNING}${NC} ${RED}The A record of ${BRIDGE_DOMAIN} must point to this server (${server_ip}, DNS only).${NC}"
+    echo
+    echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
+    read -r confirm
+    echo
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo -e "${YELLOW}${WARNING}${NC} Setup cancelled"
+        exit 0
+    fi
 }
 
 #=====================
@@ -418,11 +433,6 @@ install_bridge() {
     echo -e "${GREEN}${CHECK}${NC} Installation complete"
     echo -e "${PURPLE}========================${NC}"
     echo
-    local server_ip
-    server_ip=$(curl -s https://api.ipify.org 2>/dev/null || echo "unknown")
-    echo -e "${CYAN}Next Steps:${NC}"
-    echo -e "${WHITE}• Update the A record of ${BRIDGE_DOMAIN} to point to ${server_ip} (DNS only)${NC}"
-    echo
     echo -e "${CYAN}Useful Commands:${NC}"
     echo -e "${WHITE}• Check status: systemctl status haproxy${NC}"
     echo -e "${WHITE}• Check logs: journalctl -u haproxy -f${NC}"
@@ -443,6 +453,7 @@ add_node() {
     input_node_domain
     input_bridge_domain
     input_node_ip
+    confirm_dns_setup
 
     local escaped_domain
     escaped_domain=$(printf '%s' "$NODE_DOMAIN" | sed 's/[.[\*^$]/\\&/g')
@@ -470,10 +481,9 @@ add_node() {
     update_panel_host "$NODE_DOMAIN" "$BRIDGE_DOMAIN"
 
     echo
-    local server_ip
-    server_ip=$(curl -s https://api.ipify.org 2>/dev/null || echo "unknown")
-    echo -e "${CYAN}Next Steps:${NC}"
-    echo -e "${WHITE}• Update the A record of ${BRIDGE_DOMAIN} to point to ${server_ip} (DNS only)${NC}"
+    echo -e "${PURPLE}===================${NC}"
+    echo -e "${GREEN}${CHECK}${NC} Node added"
+    echo -e "${PURPLE}===================${NC}"
     echo
 }
 
@@ -621,9 +631,9 @@ main() {
         case $SETUP_TYPE in
             1)
                 echo
-                echo -e "${PURPLE}================${NC}"
+                echo -e "${PURPLE}=============${NC}"
                 echo -e "${WHITE}Bridge Setup${NC}"
-                echo -e "${PURPLE}================${NC}"
+                echo -e "${PURPLE}=============${NC}"
                 echo
 
                 input_panel_url
@@ -631,6 +641,7 @@ main() {
                 input_node_domain
                 input_bridge_domain
                 input_node_ip
+                confirm_dns_setup
 
                 install_bridge
                 ;;
