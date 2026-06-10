@@ -139,7 +139,7 @@ show_main_menu() {
 #=================
 
 input_panel_url() {
-    echo -ne "${CYAN}Panel domain (e.g., panel.example.com): ${NC}"
+    echo -ne "${CYAN}Panel domain (e.g., example.com): ${NC}"
     read -r PANEL_DOMAIN
     while [[ -z "$PANEL_DOMAIN" ]] || ! validate_domain "$PANEL_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
@@ -151,12 +151,12 @@ input_panel_url() {
 }
 
 input_api_token() {
-    echo -ne "${CYAN}API token: ${NC}"
+    echo -ne "${CYAN}API token (e.g., eyJhbGciOi...): ${NC}"
     read -r API_TOKEN
     while [[ -z "$API_TOKEN" ]]; do
         echo -e "${RED}${CROSS}${NC} API token cannot be empty!"
         echo
-        echo -ne "${CYAN}API token: ${NC}"
+        echo -ne "${CYAN}API token (e.g., eyJhbGciOi...): ${NC}"
         read -r API_TOKEN
     done
 }
