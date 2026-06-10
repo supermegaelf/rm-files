@@ -275,6 +275,10 @@ update_panel_host() {
         --arg domain "$node_domain" \
         '[.response[] | select(.address == $domain or .sni == $domain)] | first | .uuid // empty')
 
+    ORIGINAL_HOST=$(echo "$hosts_response" | jq -r \
+        --arg domain "$node_domain" \
+        '[.response[] | select(.address == $domain or .sni == $domain)] | first | .host // ""')
+
     if [ -z "$host_uuid" ]; then
         echo -e "${RED}${CROSS}${NC} Host for ${node_domain} not found in panel"
         exit 1
@@ -286,7 +290,7 @@ update_panel_host() {
         --arg uuid "$host_uuid" \
         --arg address "$bridge_domain" \
         --arg sni "$node_domain" \
-        --arg host "$node_domain" \
+        --arg host "$ORIGINAL_HOST" \
         '{ uuid: $uuid, address: $address, sni: $sni, host: $host }')")
 
     if ! echo "$patch_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
@@ -299,6 +303,7 @@ update_panel_host() {
 
 restore_panel_host() {
     local node_domain=$1
+    local original_host=${2:-}
 
     ensure_jq
     echo -e "${CYAN}${INFO}${NC} Restoring host in panel..."
@@ -322,7 +327,8 @@ restore_panel_host() {
     patch_response=$(make_api_request PATCH "/api/hosts" "$(jq -n \
         --arg uuid "$host_uuid" \
         --arg domain "$node_domain" \
-        '{ uuid: $uuid, address: $domain, sni: $domain, host: $domain }')")
+        --arg host "$original_host" \
+        '{ uuid: $uuid, address: $domain, sni: $domain, host: $host }')")
 
     if ! echo "$patch_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
         echo -e "${YELLOW}  ${WARNING}${NC} Failed to restore host: $patch_response"
@@ -357,13 +363,13 @@ frontend main_front
     tcp-request content accept if { req_ssl_hello_type 1 }
 EOF
 
-        while IFS=: read -r node_domain node_ip bridge_domain; do
+        while IFS=: read -r node_domain node_ip bridge_domain original_host; do
             local backend_name
             backend_name=$(echo "$node_domain" | sed 's/[.-]/_/g')
             echo "    use_backend ${backend_name}_backend if { req.ssl_sni -i ${node_domain} }"
         done < "$NODES_FILE"
 
-        while IFS=: read -r node_domain node_ip bridge_domain; do
+        while IFS=: read -r node_domain node_ip bridge_domain original_host; do
             local backend_name
             backend_name=$(echo "$node_domain" | sed 's/[.-]/_/g')
             printf '\nbackend %s_backend\n    server node %s:443\n' "$backend_name" "$node_ip"
@@ -426,6 +432,7 @@ install_bridge() {
 
     update_panel_host "$NODE_DOMAIN" "$BRIDGE_DOMAIN"
     save_credentials
+    echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_DOMAIN}:${ORIGINAL_HOST}" > "$NODES_FILE"
 
     echo
     echo -e "${PURPLE}========================${NC}"
@@ -477,6 +484,8 @@ add_node() {
     echo
 
     update_panel_host "$NODE_DOMAIN" "$BRIDGE_DOMAIN"
+    sed -i '$d' "$NODES_FILE"
+    echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_DOMAIN}:${ORIGINAL_HOST}" >> "$NODES_FILE"
 
     echo
     echo -e "${PURPLE}=============${NC}"
@@ -502,7 +511,7 @@ remove_node() {
     echo
     local i=1
     local node_domains=()
-    while IFS=: read -r node_domain node_ip bridge_domain; do
+    while IFS=: read -r node_domain node_ip bridge_domain original_host; do
         echo -e "${WHITE}${i}.${NC} ${node_domain} → ${node_ip} (bridge: ${bridge_domain})"
         node_domains+=("$node_domain")
         i=$((i + 1))
@@ -522,12 +531,16 @@ remove_node() {
 
     local escaped_domain
     escaped_domain=$(printf '%s' "$selected_node" | sed 's/[.[\*^$]/\\&/g')
+
+    local original_host
+    original_host=$(grep "^${escaped_domain}:" "$NODES_FILE" | cut -d: -f4)
+
     sed -i "/^${escaped_domain}:/d" "$NODES_FILE"
 
     if [ ! -s "$NODES_FILE" ]; then
         echo -e "${YELLOW}${WARNING}${NC} No nodes remaining, removing bridge"
         echo
-        restore_panel_host "$selected_node"
+        restore_panel_host "$selected_node" "$original_host"
         _remove_bridge_services
         return
     fi
@@ -539,7 +552,7 @@ remove_node() {
     reload_haproxy
 
     echo
-    restore_panel_host "$selected_node"
+    restore_panel_host "$selected_node" "$original_host"
     echo
     echo -e "${PURPLE}===============${NC}"
     echo -e "${GREEN}${CHECK}${NC} Node removed"
@@ -580,8 +593,8 @@ remove_bridge() {
     echo
 
     if [ -f "$NODES_FILE" ] && [ -s "$NODES_FILE" ]; then
-        while IFS=: read -r node_domain node_ip bridge_domain; do
-            restore_panel_host "$node_domain"
+        while IFS=: read -r node_domain node_ip bridge_domain original_host; do
+            restore_panel_host "$node_domain" "$original_host"
             echo
         done < "$NODES_FILE"
     fi
