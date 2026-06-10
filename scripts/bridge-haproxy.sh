@@ -540,9 +540,9 @@ remove_node() {
 
     echo
     restore_panel_host "$selected_node"
-    echo -e "${PURPLE}=============${NC}"
+    echo -e "${PURPLE}===============${NC}"
     echo -e "${GREEN}${CHECK}${NC} Node removed"
-    echo -e "${PURPLE}=============${NC}"
+    echo -e "${PURPLE}===============${NC}"
     echo
 }
 
