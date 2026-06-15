@@ -358,6 +358,11 @@ add_beszel_to_nginx() {
     echo -e "${CYAN}${INFO}${NC} Adding Beszel configuration to Nginx..."
     echo -e "${GRAY}  ${ARROW}${NC} Preparing configuration"
 
+    if grep -q "proxy_pass.*127.0.0.1:8090" /opt/remnawave/nginx.conf; then
+        echo -e "${RED}${CROSS}${NC} Beszel block already exists in nginx.conf"
+        return 1
+    fi
+
     local total_lines=$(wc -l < /opt/remnawave/nginx.conf)
     if [ "$total_lines" -lt 6 ]; then
         echo -e "${RED}${CROSS}${NC} Nginx config file is too small ($total_lines lines), cannot safely remove last 5 lines"
