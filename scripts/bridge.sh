@@ -172,15 +172,11 @@ input_node_domain() {
     done
 }
 
-input_bridge_domain() {
-    echo -ne "${CYAN}Bridge domain (e.g., example.com): ${NC}"
-    read -r BRIDGE_DOMAIN
-    while [[ -z "$BRIDGE_DOMAIN" ]] || ! validate_domain "$BRIDGE_DOMAIN"; do
-        echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
-        echo
-        echo -ne "${CYAN}Bridge domain: ${NC}"
-        read -r BRIDGE_DOMAIN
-    done
+get_bridge_ip() {
+    BRIDGE_IP=$(curl -s https://api.ipify.org 2>/dev/null)
+    if ! validate_ip "$BRIDGE_IP"; then
+        error "Failed to detect bridge server IP"
+    fi
 }
 
 input_node_ip() {
@@ -194,11 +190,11 @@ input_node_ip() {
     done
 }
 
-confirm_dns_setup() {
-    local server_ip
-    server_ip=$(curl -s https://api.ipify.org 2>/dev/null || echo "unknown")
+confirm_setup() {
     echo
-    echo -e "${YELLOW}${WARNING}${NC} ${RED}Create an A record: ${BRIDGE_DOMAIN} ${ARROW} ${server_ip} (DNS only).${NC}"
+    echo -e "${CYAN}${INFO}${NC} Bridge IP: ${WHITE}${BRIDGE_IP}${NC}"
+    echo
+    echo -e "${YELLOW}${WARNING}${NC} ${RED}Do NOT create any DNS A-record pointing to this IP.${NC}"
     echo
     echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
     read -r confirm
@@ -261,7 +257,7 @@ ensure_jq() {
 
 update_panel_host() {
     local node_domain=$1
-    local bridge_domain=$2
+    local bridge_ip=$2
 
     ensure_jq
     echo -e "${CYAN}${INFO}${NC} Updating host in panel..."
@@ -284,11 +280,11 @@ update_panel_host() {
         exit 1
     fi
 
-    echo -e "${GRAY}  ${ARROW}${NC} Setting address=${bridge_domain}, sni=${node_domain}"
+    echo -e "${GRAY}  ${ARROW}${NC} Setting address=${bridge_ip}, sni=${node_domain}"
     local patch_response
     patch_response=$(make_api_request PATCH "/api/hosts" "$(jq -n \
         --arg uuid "$host_uuid" \
-        --arg address "$bridge_domain" \
+        --arg address "$bridge_ip" \
         --arg sni "$node_domain" \
         --arg host "$ORIGINAL_HOST" \
         '{ uuid: $uuid, address: $address, sni: $sni, host: $host }')")
@@ -407,7 +403,7 @@ install_bridge() {
 
     echo -e "${CYAN}${INFO}${NC} Configuring HAProxy..."
 
-    echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_DOMAIN}" > "$NODES_FILE"
+    echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_IP}" > "$NODES_FILE"
 
     echo -e "${GRAY}  ${ARROW}${NC} Writing configuration"
     generate_haproxy_config
@@ -430,9 +426,9 @@ install_bridge() {
     echo -e "${GREEN}==============${NC}"
     echo
 
-    update_panel_host "$NODE_DOMAIN" "$BRIDGE_DOMAIN"
+    update_panel_host "$NODE_DOMAIN" "$BRIDGE_IP"
     save_credentials
-    echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_DOMAIN}:${ORIGINAL_HOST}" > "$NODES_FILE"
+    echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_IP}:${ORIGINAL_HOST}" > "$NODES_FILE"
 
     echo
     echo -e "${PURPLE}========================${NC}"
@@ -456,8 +452,8 @@ add_node() {
     load_credentials
 
     input_node_domain
-    input_bridge_domain
     input_node_ip
+    get_bridge_ip
 
     local escaped_domain
     escaped_domain=$(printf '%s' "$NODE_DOMAIN" | sed 's/[.[\*^$]/\\&/g')
@@ -468,7 +464,7 @@ add_node() {
     echo
     echo -e "${CYAN}${INFO}${NC} Adding node..."
 
-    echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_DOMAIN}" >> "$NODES_FILE"
+    echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_IP}" >> "$NODES_FILE"
 
     echo -e "${GRAY}  ${ARROW}${NC} Updating configuration"
     generate_haproxy_config
@@ -483,9 +479,9 @@ add_node() {
     echo -e "${GREEN}==============${NC}"
     echo
 
-    update_panel_host "$NODE_DOMAIN" "$BRIDGE_DOMAIN"
+    update_panel_host "$NODE_DOMAIN" "$BRIDGE_IP"
     sed -i '$d' "$NODES_FILE"
-    echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_DOMAIN}:${ORIGINAL_HOST}" >> "$NODES_FILE"
+    echo "${NODE_DOMAIN}:${NODE_IP}:${BRIDGE_IP}:${ORIGINAL_HOST}" >> "$NODES_FILE"
 
     echo
     echo -e "${PURPLE}=============${NC}"
@@ -511,8 +507,8 @@ remove_node() {
     echo
     local i=1
     local node_domains=()
-    while IFS=: read -r node_domain node_ip bridge_domain original_host; do
-        echo -e "${WHITE}${i}.${NC} ${node_domain} → ${node_ip} (bridge: ${bridge_domain})"
+    while IFS=: read -r node_domain node_ip bridge_ip original_host; do
+        echo -e "${WHITE}${i}.${NC} ${node_domain} → ${node_ip} (bridge IP: ${bridge_ip})"
         node_domains+=("$node_domain")
         i=$((i + 1))
     done < "$NODES_FILE"
@@ -653,9 +649,9 @@ main() {
                 input_panel_url
                 input_api_token
                 input_node_domain
-                input_bridge_domain
                 input_node_ip
-                confirm_dns_setup
+                get_bridge_ip
+                confirm_setup
 
                 install_bridge
                 ;;
