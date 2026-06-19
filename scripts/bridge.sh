@@ -450,9 +450,9 @@ add_node() {
 
     load_credentials
 
-    get_bridge_ip
     input_node_domain
     input_node_ip
+    get_bridge_ip
 
     local escaped_domain
     escaped_domain=$(printf '%s' "$NODE_DOMAIN" | sed 's/[.[\*^$]/\\&/g')
@@ -647,9 +647,9 @@ main() {
 
                 input_panel_url
                 input_api_token
-                get_bridge_ip
                 input_node_domain
                 input_node_ip
+                get_bridge_ip
                 confirm_setup
 
                 install_bridge
