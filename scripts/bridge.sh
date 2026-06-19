@@ -359,13 +359,13 @@ frontend main_front
     tcp-request content accept if { req_ssl_hello_type 1 }
 EOF
 
-        while IFS=: read -r node_domain node_ip bridge_domain original_host; do
+        while IFS=: read -r node_domain node_ip bridge_ip original_host; do
             local backend_name
             backend_name=$(echo "$node_domain" | sed 's/[.-]/_/g')
             echo "    use_backend ${backend_name}_backend if { req.ssl_sni -i ${node_domain} }"
         done < "$NODES_FILE"
 
-        while IFS=: read -r node_domain node_ip bridge_domain original_host; do
+        while IFS=: read -r node_domain node_ip bridge_ip original_host; do
             local backend_name
             backend_name=$(echo "$node_domain" | sed 's/[.-]/_/g')
             printf '\nbackend %s_backend\n    server node %s:443\n' "$backend_name" "$node_ip"
@@ -590,7 +590,7 @@ remove_bridge() {
     echo
 
     if [ -f "$NODES_FILE" ] && [ -s "$NODES_FILE" ]; then
-        while IFS=: read -r node_domain node_ip bridge_domain original_host; do
+        while IFS=: read -r node_domain node_ip bridge_ip original_host; do
             restore_panel_host "$node_domain" "$original_host"
             echo
         done < "$NODES_FILE"
