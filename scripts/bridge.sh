@@ -177,6 +177,7 @@ get_bridge_ip() {
     if ! validate_ip "$BRIDGE_IP"; then
         error "Failed to detect bridge server IP"
     fi
+    echo -e "${CYAN}Bridge IP: ${WHITE}${BRIDGE_IP}${NC}"
 }
 
 input_node_ip() {
@@ -191,8 +192,6 @@ input_node_ip() {
 }
 
 confirm_setup() {
-    echo
-    echo -e "${CYAN}${INFO}${NC} Bridge IP: ${WHITE}${BRIDGE_IP}${NC}"
     echo
     echo -e "${YELLOW}${WARNING}${NC} ${RED}Do NOT create any DNS A-record pointing to this IP.${NC}"
     echo
@@ -451,9 +450,9 @@ add_node() {
 
     load_credentials
 
+    get_bridge_ip
     input_node_domain
     input_node_ip
-    get_bridge_ip
 
     local escaped_domain
     escaped_domain=$(printf '%s' "$NODE_DOMAIN" | sed 's/[.[\*^$]/\\&/g')
@@ -648,9 +647,9 @@ main() {
 
                 input_panel_url
                 input_api_token
+                get_bridge_ip
                 input_node_domain
                 input_node_ip
-                get_bridge_ip
                 confirm_setup
 
                 install_bridge
