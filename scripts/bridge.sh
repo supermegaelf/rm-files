@@ -193,7 +193,7 @@ input_node_ip() {
 
 confirm_setup() {
     echo
-    echo -e "${YELLOW}${WARNING}${NC} ${RED}Do NOT create any DNS A-record pointing to this IP.${NC}"
+    echo -e "${YELLOW}${WARNING}${NC} ${RED}Do not point any domain to the BRIDGE server.${NC}"
     echo
     echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
     read -r confirm
