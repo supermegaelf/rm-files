@@ -525,53 +525,36 @@ install_system_packages() {
         return 1
     fi
 
-    echo -e "${GRAY}  ${ARROW}${NC} Configuring TCP optimizations (BBR)"
-    if ! grep -qE '^\s*net\.core\.default_qdisc\s*=\s*fq' /etc/sysctl.conf; then
-        echo "net.core.default_qdisc = fq" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.ipv4\.tcp_congestion_control\s*=\s*bbr' /etc/sysctl.conf; then
-        echo "net.ipv4.tcp_congestion_control = bbr" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.core\.somaxconn\s*=' /etc/sysctl.conf; then
-        echo "net.core.somaxconn = 65535" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.ipv4\.tcp_max_syn_backlog\s*=' /etc/sysctl.conf; then
-        echo "net.ipv4.tcp_max_syn_backlog = 8192" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.ipv4\.ip_local_port_range\s*=' /etc/sysctl.conf; then
-        echo "net.ipv4.ip_local_port_range = 10240 65535" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.ipv4\.tcp_fin_timeout\s*=' /etc/sysctl.conf; then
-        echo "net.ipv4.tcp_fin_timeout = 15" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.ipv4\.tcp_tw_reuse\s*=' /etc/sysctl.conf; then
-        echo "net.ipv4.tcp_tw_reuse = 1" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.core\.rmem_max\s*=' /etc/sysctl.conf; then
-        echo "net.core.rmem_max = 67108864" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.core\.wmem_max\s*=' /etc/sysctl.conf; then
-        echo "net.core.wmem_max = 67108864" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.ipv4\.tcp_rmem\s*=' /etc/sysctl.conf; then
-        echo "net.ipv4.tcp_rmem = 4096 87380 67108864" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.ipv4\.tcp_wmem\s*=' /etc/sysctl.conf; then
-        echo "net.ipv4.tcp_wmem = 4096 65536 67108864" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.ipv4\.tcp_mtu_probing\s*=' /etc/sysctl.conf; then
-        echo "net.ipv4.tcp_mtu_probing = 1" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.ipv4\.tcp_fastopen\s*=' /etc/sysctl.conf; then
-        echo "net.ipv4.tcp_fastopen = 3" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*net\.ipv4\.tcp_syncookies\s*=' /etc/sysctl.conf; then
-        echo "net.ipv4.tcp_syncookies = 1" >> /etc/sysctl.conf
-    fi
-    if ! grep -qE '^\s*fs\.file-max\s*=' /etc/sysctl.conf; then
-        echo "fs.file-max = 1000000" >> /etc/sysctl.conf
-    fi
-    sysctl -p >/dev/null
+    echo -e "${GRAY}  ${ARROW}${NC} Configuring TCP optimizations"
+    cat > /etc/sysctl.d/99-xray.conf << 'EOF'
+# Connection queues
+net.core.somaxconn = 65535
+net.ipv4.tcp_max_syn_backlog = 8192
+
+# Ephemeral ports
+net.ipv4.ip_local_port_range = 10240 65535
+
+# Fast connection release
+net.ipv4.tcp_fin_timeout = 15
+net.ipv4.tcp_tw_reuse = 1
+
+# Socket buffers (TLS / gRPC / WS)
+net.core.rmem_max = 67108864
+net.core.wmem_max = 67108864
+net.ipv4.tcp_rmem = 4096 87380 67108864
+net.ipv4.tcp_wmem = 4096 65536 67108864
+
+# TCP behavior
+net.core.default_qdisc = fq
+net.ipv4.tcp_congestion_control = bbr
+net.ipv4.tcp_mtu_probing = 1
+net.ipv4.tcp_fastopen = 3
+
+# Protection
+net.ipv4.tcp_syncookies = 1
+fs.file-max = 1000000
+EOF
+    sysctl -p /etc/sysctl.d/99-xray.conf >/dev/null
 
     echo -e "${GRAY}  ${ARROW}${NC} Configuring file descriptor limits"
     if ! grep -q '^\* hard nofile' /etc/security/limits.conf; then
