@@ -547,6 +547,7 @@ remove_node() {
     echo -e "${GRAY}  ${ARROW}${NC} Reloading HAProxy"
     reload_haproxy
 
+    echo -e "${GREEN}${CHECK}${NC} HAProxy updated"
     echo
     restore_panel_host "$selected_node" "$original_host"
     echo
