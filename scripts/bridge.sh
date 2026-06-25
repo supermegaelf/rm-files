@@ -604,6 +604,7 @@ remove_bridge() {
 #==================
 
 main() {
+    exec < /dev/tty
     log_entry
     check_root
 
