@@ -2482,6 +2482,9 @@ server {
     ssl_certificate_key "/etc/nginx/ssl/$NODE_CERT_DOMAIN/privkey.pem";
     ssl_trusted_certificate "/etc/nginx/ssl/$NODE_CERT_DOMAIN/fullchain.pem";
 
+    access_log /dev/null;
+    error_log /dev/null;
+
     root /var/www/html;
     index index.html;
 }
