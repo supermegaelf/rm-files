@@ -2492,6 +2492,10 @@ server {
 server {
     listen unix:/dev/shm/nginx.sock ssl proxy_protocol default_server;
     server_name _;
+
+    access_log /dev/null;
+    error_log /dev/null;
+
     ssl_reject_handshake on;
     return 444;
 }
