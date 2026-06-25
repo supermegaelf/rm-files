@@ -514,7 +514,6 @@ remove_node() {
     echo
     echo -ne "${CYAN}Select node to remove (1-${#node_domains[@]}): ${NC}"
     read -r selection
-    echo
 
     if ! [[ "$selection" =~ ^[0-9]+$ ]] || [ "$selection" -lt 1 ] || [ "$selection" -gt "${#node_domains[@]}" ]; then
         error "Invalid selection"
@@ -546,6 +545,8 @@ remove_node() {
 
     echo -e "${GRAY}  ${ARROW}${NC} Reloading HAProxy"
     reload_haproxy
+
+    echo -e "${GREEN}${CHECK}${NC} HAProxy updated"
 
     restore_panel_host "$selected_node" "$original_host"
     echo
