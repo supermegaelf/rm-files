@@ -761,8 +761,7 @@
                             <p class="my-text-content" x-html="$t('guideContent.ios.second.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
                                 <a class="btn my-btn-primary fw-semibold" id="sub-url-ios" role="button"
-                                    rel="noopener noreferrer" target="_blank"
-                                    @click="nextStep()">
+                                    rel="noopener noreferrer" target="_blank">
                                     <svg class="bi"><use href="#link"></use></svg>
                                     <span x-text="$t('addSubscription')">Добавить</span>
                                 </a>
@@ -1349,7 +1348,6 @@
                         document.body.removeChild(tempInput);
                     }
                     this.isLinkCopied = true;
-                    this.nextStep();
                     setTimeout(() => { this.isLinkCopied = false; }, 3000);
                 }
             }));
