@@ -122,6 +122,12 @@
         }
 
         /* ========== LAYOUT & SPACING ========== */
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+        }
+
         .my-container {
             max-width: 1024px;
             padding-left: 1rem;
@@ -145,6 +151,10 @@
             padding-bottom: 2rem;
         }
 
+        body > .my-container {
+            flex: 1;
+        }
+
         .navbar-content {
             margin-top: 0;
         }
@@ -164,6 +174,13 @@
         .bottom-controls {
             margin-top: 1.5rem;
             margin-bottom: 0;
+        }
+
+        .my-footer {
+            border-top: 1px solid var(--my-alpha-dark-gray-color);
+            padding: 1rem;
+            display: flex;
+            justify-content: center;
         }
 
         /* ========== COMPONENTS ========== */
@@ -187,15 +204,6 @@
             font-weight: 500;
             font-size: 2.5rem;
             user-select: none;
-        }
-
-        .my-step-counter::after {
-            content: counter(step-counter);
-            counter-increment: step-counter;
-        }
-
-        .my-tab-pane {
-            counter-reset: step-counter 0;
         }
 
         /* ========== CONTENT BLOCKS ========== */
@@ -389,18 +397,26 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .bottom-controls .my-btn-outline {
+        .bottom-controls .my-btn-outline,
+        .bottom-controls .my-btn-primary {
             --bs-btn-padding-x: 1rem;
             --bs-btn-padding-y: .5rem;
         }
 
         .my-btn-primary {
             --bs-btn-bg: rgb(28, 154, 160);
-            --bs-btn-hover-bg: rgb(23, 130, 135);
+            --bs-btn-hover-bg: rgb(28, 154, 160);
+            --bs-btn-active-bg: rgb(28, 154, 160);
             --bs-btn-focus-shadow-rgb: 25, 125, 225;
-            --bs-btn-active-bg: rgb(18, 106, 110);
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .my-btn-primary {
+                --bs-btn-hover-bg: rgb(23, 130, 135);
+            }
         }
 
         .my-btn-primary .bi,
@@ -552,6 +568,12 @@
             <path d="M10 0v6h6V0zm5 1v4h-4V1zM8 1V0h1v2H8v2H7V1zm0 5V4h1v2zM6 8V7h1V6h1v2h1V7h5v1h-4v1H7V8zm0 0v1H2V8H1v1H0V7h3v1zm10 1h-1V7h1zm-1 0h-1v2h2v-1h-1zm-4 0h2v1h-1v1h-1zm2 3v-1h-1v1h-1v1H9v1h3v-2zm0 0h3v1h-2v1h-1zm-4-1v1h1v-2H7v1z"/>
             <path d="M7 12h1v3h4v1H7zm9 2v2h-3v-1h2v-1z"/>
         </symbol>
+        <symbol id="arrow-left" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
+        </symbol>
+        <symbol id="arrow-right" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"/>
+        </symbol>
     </svg>
 <header class="navbar my-navbar navbar-expand" x-data>
     <div class="container my-container px-3">
@@ -648,11 +670,11 @@
 </header>
     <div class="container my-container px-3" x-data>
         <div class="tab-content" role="tablist">
-            <div id="tab-android" class="tab-pane my-tab-pane fade show active" aria-labelledby="btn-guide-android-tab" role="tabpanel" x-data="androidCopyLink">
+            <div id="tab-android" class="tab-pane fade show active" aria-labelledby="btn-guide-android-tab" role="tabpanel" x-data="stepGuide(5)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.first.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.android.first.text')"></p>
@@ -666,9 +688,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 1">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.second.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.android.second.text')"></p>
@@ -682,92 +704,122 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 2">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.android.third.text')"></p>
-                            <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied">
-                                <svg class="bi" x-show="!isLinkCopied"><use href="#clipboard"></use></svg>
-                                <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
-                                <span x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></span>
-                            </button>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied">
+                                    <svg class="bi" x-show="!isLinkCopied"><use href="#clipboard"></use></svg>
+                                    <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
+                                    <span x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></span>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 3">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.fourth.title')">
                             </h5>
-                            <p class="my-text-content mb-0" x-html="$t('guideContent.android.fourth.text')"></p>
+                            <p class="my-text-content" x-html="$t('guideContent.android.fourth.text')"></p>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 4">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.fifth.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.android.fifth.text')"></p>
-                            <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
-                                role="button" rel="noopener noreferrer" target="_blank">
-                                <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
-                                <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
-                            </a>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
+                                    role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
+                                    <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
+                <div class="d-flex gap-2 justify-content-center bottom-controls">
+                    <button class="btn my-btn-outline" type="button" @click="prevStep()" x-show="currentStep > 0">
+                        <svg class="bi"><use href="#arrow-left"></use></svg>
+                        <span x-text="$t('back')">Назад</span>
+                    </button>
+                    <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()" x-show="currentStep < totalSteps - 1">
+                        <span x-text="$t('next')">Далее</span>
+                        <svg class="bi ms-1 me-0"><use href="#arrow-right"></use></svg>
+                    </button>
+                </div>
             </div>
-            <div id="tab-ios" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-ios-tab" role="tabpanel">
+            <div id="tab-ios" class="tab-pane fade" aria-labelledby="btn-guide-ios-tab" role="tabpanel" x-data="stepGuide(4)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.first.text')"></p>
-                            <a class="btn my-btn-primary" href="https://apps.apple.com/ru/app/happ-proxy-utility-plus/id6746188973"
-                                role="button" rel="noopener noreferrer" target="_blank">
-                                <svg class="bi"><use href="#download"></use></svg>
-                                <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
-                            </a>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn my-btn-primary" href="https://apps.apple.com/ru/app/happ-proxy-utility-plus/id6746188973"
+                                    role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#download"></use></svg>
+                                    <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 1">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.second.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.second.text')"></p>
-                            <a class="btn my-btn-primary fw-semibold" id="sub-url-ios" role="button"
-                                rel="noopener noreferrer" target="_blank">
-                                <svg class="bi"><use href="#link"></use></svg>
-                                <span x-text="$t('addSubscription')">Добавить</span>
-                            </a>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn my-btn-primary fw-semibold" id="sub-url-ios" role="button"
+                                    rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#link"></use></svg>
+                                    <span x-text="$t('addSubscription')">Добавить</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 2">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.third.title')"></h5>
-                            <p class="my-text-content mb-0" x-html="$t('guideContent.ios.third.text')"></p>
+                            <p class="my-text-content" x-html="$t('guideContent.ios.third.text')"></p>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 3">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.fourth.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.fourth.text')"></p>
-                            <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
-                                role="button" rel="noopener noreferrer" target="_blank">
-                                <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
-                                <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
-                            </a>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
+                                    role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
+                                    <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
+                <div class="d-flex gap-2 justify-content-center bottom-controls">
+                    <button class="btn my-btn-outline" type="button" @click="prevStep()" x-show="currentStep > 0">
+                        <svg class="bi"><use href="#arrow-left"></use></svg>
+                        <span x-text="$t('back')">Назад</span>
+                    </button>
+                    <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()" x-show="currentStep < totalSteps - 1">
+                        <span x-text="$t('next')">Далее</span>
+                        <svg class="bi ms-1 me-0"><use href="#arrow-right"></use></svg>
+                    </button>
+                </div>
             </div>
-            <div id="tab-pc" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-pc-tab" role="tabpanel" x-data="androidCopyLink">
+            <div id="tab-pc" class="tab-pane fade" aria-labelledby="btn-guide-pc-tab" role="tabpanel" x-data="stepGuide(5)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.pc.first.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -780,146 +832,200 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 1">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.second.title')"></h5>
-                            <p class="my-text-content mb-0" x-html="$t('guideContent.pc.second.text')"></p>
+                            <p class="my-text-content" x-html="$t('guideContent.pc.second.text')"></p>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 2">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.pc.third.text')"></p>
-                            <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied">
-                                <svg class="bi" x-show="!isLinkCopied"><use href="#clipboard"></use></svg>
-                                <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
-                                <span x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></span>
-                            </button>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied">
+                                    <svg class="bi" x-show="!isLinkCopied"><use href="#clipboard"></use></svg>
+                                    <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
+                                    <span x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></span>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 3">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.fourth.title')"></h5>
-                            <p class="my-text-content mb-0" x-html="$t('guideContent.pc.fourth.text')"></p>
+                            <p class="my-text-content" x-html="$t('guideContent.pc.fourth.text')"></p>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 4">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.fifth.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.pc.fifth.text')"></p>
-                            <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
-                                role="button" rel="noopener noreferrer" target="_blank">
-                                <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
-                                <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
-                            </a>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
+                                    role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
+                                    <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
+                                </a>
+                            </div>
                         </div>
-                    </div> 
+                    </div>
+                </div>
+                <div class="d-flex gap-2 justify-content-center bottom-controls">
+                    <button class="btn my-btn-outline" type="button" @click="prevStep()" x-show="currentStep > 0">
+                        <svg class="bi"><use href="#arrow-left"></use></svg>
+                        <span x-text="$t('back')">Назад</span>
+                    </button>
+                    <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()" x-show="currentStep < totalSteps - 1">
+                        <span x-text="$t('next')">Далее</span>
+                        <svg class="bi ms-1 me-0"><use href="#arrow-right"></use></svg>
+                    </button>
                 </div>
             </div>
-            <div id="tab-tv" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-tv-tab" role="tabpanel">
+            <div id="tab-tv" class="tab-pane fade" aria-labelledby="btn-guide-tv-tab" role="tabpanel" x-data="stepGuide(6)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.first.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.first.text')"></p>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 1">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.second.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.second.text')"></p>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 2">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.third.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.third.text')"></p>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 3">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.fourth.title')">
                             </h5>
-                            <p class="my-text-content mb-0" x-html="$t('guideContent.tv.fourth.text')"></p>
+                            <p class="my-text-content" x-html="$t('guideContent.tv.fourth.text')"></p>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 4">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.fifth.title')">
                             </h5>
-                            <p class="my-text-content mb-0" x-html="$t('guideContent.tv.fifth.text')"></p>
+                            <p class="my-text-content" x-html="$t('guideContent.tv.fifth.text')"></p>
+                        </div>
+                    </div>
+                    <div class="col" x-show="currentStep === 5">
+                        <div class="my-block-big h-100">
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
+                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.sixth.title')">
+                            </h5>
+                            <p class="my-text-content" x-html="$t('guideContent.tv.sixth.text')"></p>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
+                                    role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
+                                    <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
+                <div class="d-flex gap-2 justify-content-center bottom-controls">
+                    <button class="btn my-btn-outline" type="button" @click="prevStep()" x-show="currentStep > 0">
+                        <svg class="bi"><use href="#arrow-left"></use></svg>
+                        <span x-text="$t('back')">Назад</span>
+                    </button>
+                    <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()" x-show="currentStep < totalSteps - 1">
+                        <span x-text="$t('next')">Далее</span>
+                        <svg class="bi ms-1 me-0"><use href="#arrow-right"></use></svg>
+                    </button>
+                </div>
             </div>
-            <div id="tab-macos" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-macos-tab" role="tabpanel" x-data="androidCopyLink">
+            <div id="tab-macos" class="tab-pane fade" aria-labelledby="btn-guide-macos-tab" role="tabpanel" x-data="stepGuide(4)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.first.text')"></p>
-                            <a class="btn my-btn-primary" href="https://apps.apple.com/ru/app/happ-proxy-utility-plus/id6746188973"
-                                role="button" rel="noopener noreferrer" target="_blank">
-                                <svg class="bi"><use href="#download"></use></svg>
-                                <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
-                            </a>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn my-btn-primary" href="https://apps.apple.com/ru/app/happ-proxy-utility-plus/id6746188973"
+                                    role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#download"></use></svg>
+                                    <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 1">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.second.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.second.text')"></p>
-                            <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied">
-                                <svg class="bi" x-show="!isLinkCopied"><use href="#clipboard"></use></svg>
-                                <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
-                                <span x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></span>
-                            </button>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied">
+                                    <svg class="bi" x-show="!isLinkCopied"><use href="#clipboard"></use></svg>
+                                    <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
+                                    <span x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></span>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 2">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.third.title')"></h5>
-                            <p class="my-text-content mb-0" x-html="$t('guideContent.macos.third.text')"></p>
+                            <p class="my-text-content" x-html="$t('guideContent.macos.third.text')"></p>
                         </div>
                     </div>
-                    <div class="col">
+                    <div class="col" x-show="currentStep === 3">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.fourth.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.fourth.text')"></p>
-                            <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
-                                role="button" rel="noopener noreferrer" target="_blank">
-                                <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
-                                <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
-                            </a>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
+                                    role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
+                                    <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
+                <div class="d-flex gap-2 justify-content-center bottom-controls">
+                    <button class="btn my-btn-outline" type="button" @click="prevStep()" x-show="currentStep > 0">
+                        <svg class="bi"><use href="#arrow-left"></use></svg>
+                        <span x-text="$t('back')">Назад</span>
+                    </button>
+                    <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()" x-show="currentStep < totalSteps - 1">
+                        <span x-text="$t('next')">Далее</span>
+                        <svg class="bi ms-1 me-0"><use href="#arrow-right"></use></svg>
+                    </button>
+                </div>
             </div>
         </div>
-        <div class="d-flex flex-wrap align-items-center justify-content-center gap-2 bottom-controls">
-            <a class="btn my-btn-outline" href="https://t.me/surf_vpn_1" rel="noopener noreferrer"
-                target="_blank">
-                <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
-                <span x-text="$t('support')">Поддержка</span>
-            </a>
-        </div>
     </div>
+    <footer class="my-footer">
+        <a class="nav-link my-nav-outline my-nav-secondary" href="https://t.me/surf_vpn_1" rel="noopener noreferrer" target="_blank">
+            <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
+            <span class="my-nav-link-text" x-text="$t('support')">Поддержка</span>
+        </a>
+    </footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"></script>
     <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.9.1/lib/qr-code-styling.js"
@@ -952,6 +1058,8 @@
                 downloadApp: 'Download',
                 addSubscription: 'Add subscription',
                 fixInstr: 'Open',
+                back: 'Back',
+                next: 'Next',
                 guideContent: {
                     ios: {
                         first: {
@@ -1076,6 +1184,8 @@
                 downloadApp: 'Скачать',
                 addSubscription: 'Добавить',
                 fixInstr: 'Открыть',
+                back: 'Назад',
+                next: 'Далее',
                 guideContent: {
                     ios: {
                         first: {
@@ -1242,17 +1352,20 @@
         });
 
         document.addEventListener('alpine:init', () => {
-            Alpine.data('androidCopyLink', () => ({
+            Alpine.data('stepGuide', (totalSteps) => ({
+                currentStep: 0,
+                totalSteps,
                 isLinkCopied: false,
+                nextStep() {
+                    if (this.currentStep < this.totalSteps - 1) this.currentStep++;
+                },
+                prevStep() {
+                    if (this.currentStep > 0) this.currentStep--;
+                },
                 async copySubscriptionLink() {
                     const subscriptionUrl = cleanUrl;
-                    
                     try {
                         await navigator.clipboard.writeText(subscriptionUrl);
-                        this.isLinkCopied = true;
-                        setTimeout(() => {
-                            this.isLinkCopied = false;
-                        }, 3000);
                     } catch (err) {
                         console.error('Failed to copy:', err);
                         const tempInput = document.createElement('input');
@@ -1261,11 +1374,9 @@
                         tempInput.select();
                         document.execCommand('copy');
                         document.body.removeChild(tempInput);
-                        this.isLinkCopied = true;
-                        setTimeout(() => {
-                            this.isLinkCopied = false;
-                        }, 3000);
                     }
+                    this.isLinkCopied = true;
+                    setTimeout(() => { this.isLinkCopied = false; }, 3000);
                 }
             }));
         });
@@ -1301,6 +1412,7 @@
                         tabPane.classList.add('show', 'active');
                     }
                     showActiveDropdownItem(btnGuide, item);
+                    window.dispatchEvent(new CustomEvent('tab-changed'));
                 });
             });
 
@@ -1359,6 +1471,7 @@
                 if (val) el.innerHTML = val;
             });
         }, 4000);
+
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <div class="modal my-modal fade" id="get-link-modal" tabindex="-1">
