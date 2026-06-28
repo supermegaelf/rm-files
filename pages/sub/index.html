@@ -654,9 +654,6 @@
                                     <svg class="bi"><use href="#download"></use></svg>
                                     <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
                                 </a>
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -673,12 +670,6 @@
                                     <svg class="bi"><use href="#download"></use></svg>
                                     <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
                                 </a>
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -693,9 +684,6 @@
                                     <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
                                     <span x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></span>
                                 </button>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -705,14 +693,6 @@
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.fourth.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.android.fourth.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <div class="col" x-show="currentStep === 4">
@@ -726,12 +706,17 @@
                                     <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
                                     <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
                                 </a>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn my-btn-outline" type="button" @click="prevStep()" x-show="currentStep > 0">
+                        <span x-text="$t('back')">Назад</span>
+                    </button>
+                    <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()" x-show="currentStep < totalSteps - 1">
+                        <span x-text="$t('next')">Далее</span>
+                    </button>
                 </div>
             </div>
             <div id="tab-ios" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-ios-tab" role="tabpanel" x-data="stepGuide(4)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
@@ -747,9 +732,6 @@
                                     <svg class="bi"><use href="#download"></use></svg>
                                     <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
                                 </a>
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -765,9 +747,6 @@
                                     <svg class="bi"><use href="#link"></use></svg>
                                     <span x-text="$t('addSubscription')">Добавить</span>
                                 </a>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -776,14 +755,6 @@
                             <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.third.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <div class="col" x-show="currentStep === 3">
@@ -797,12 +768,17 @@
                                     <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
                                     <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
                                 </a>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn my-btn-outline" type="button" @click="prevStep()" x-show="currentStep > 0">
+                        <span x-text="$t('back')">Назад</span>
+                    </button>
+                    <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()" x-show="currentStep < totalSteps - 1">
+                        <span x-text="$t('next')">Далее</span>
+                    </button>
                 </div>
             </div>
             <div id="tab-pc" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-pc-tab" role="tabpanel" x-data="stepGuide(5)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
@@ -819,9 +795,6 @@
                                     <svg class="bi"><use href="#download"></use></svg>
                                     <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
                                 </a>
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -830,14 +803,6 @@
                             <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.second.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.pc.second.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <div class="col" x-show="currentStep === 2">
@@ -851,9 +816,6 @@
                                     <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
                                     <span x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></span>
                                 </button>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -862,14 +824,6 @@
                             <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.fourth.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.pc.fourth.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <div class="col" x-show="currentStep === 4">
@@ -883,12 +837,17 @@
                                     <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
                                     <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
                                 </a>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn my-btn-outline" type="button" @click="prevStep()" x-show="currentStep > 0">
+                        <span x-text="$t('back')">Назад</span>
+                    </button>
+                    <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()" x-show="currentStep < totalSteps - 1">
+                        <span x-text="$t('next')">Далее</span>
+                    </button>
                 </div>
             </div>
             <div id="tab-tv" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-tv-tab" role="tabpanel" x-data="stepGuide(5)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
@@ -899,11 +858,6 @@
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.first.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.first.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <div class="col" x-show="currentStep === 1">
@@ -912,14 +866,6 @@
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.second.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.second.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <div class="col" x-show="currentStep === 2">
@@ -928,14 +874,6 @@
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.third.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.third.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <div class="col" x-show="currentStep === 3">
@@ -944,14 +882,6 @@
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.fourth.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.fourth.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <div class="col" x-show="currentStep === 4">
@@ -960,13 +890,16 @@
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.fifth.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.fifth.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn my-btn-outline" type="button" @click="prevStep()" x-show="currentStep > 0">
+                        <span x-text="$t('back')">Назад</span>
+                    </button>
+                    <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()" x-show="currentStep < totalSteps - 1">
+                        <span x-text="$t('next')">Далее</span>
+                    </button>
                 </div>
             </div>
             <div id="tab-macos" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-macos-tab" role="tabpanel" x-data="stepGuide(4)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
@@ -982,9 +915,6 @@
                                     <svg class="bi"><use href="#download"></use></svg>
                                     <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
                                 </a>
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -999,9 +929,6 @@
                                     <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
                                     <span x-text="isLinkCopied ? $t('copied') : $t('copyLink')"></span>
                                 </button>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -1010,14 +937,6 @@
                             <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.third.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()">
-                                    <span x-text="$t('next')">Далее</span>
-                                </button>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
-                            </div>
                         </div>
                     </div>
                     <div class="col" x-show="currentStep === 3">
@@ -1031,12 +950,17 @@
                                     <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
                                     <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
                                 </a>
-                                <button class="btn my-btn-outline" type="button" @click="prevStep()">
-                                    <span x-text="$t('back')">Назад</span>
-                                </button>
                             </div>
                         </div>
                     </div>
+                </div>
+                <div class="d-flex gap-2 mt-3">
+                    <button class="btn my-btn-outline" type="button" @click="prevStep()" x-show="currentStep > 0">
+                        <span x-text="$t('back')">Назад</span>
+                    </button>
+                    <button class="btn my-btn-primary fw-semibold" type="button" @click="nextStep()" x-show="currentStep < totalSteps - 1">
+                        <span x-text="$t('next')">Далее</span>
+                    </button>
                 </div>
             </div>
         </div>
