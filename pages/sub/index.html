@@ -670,7 +670,7 @@
 </header>
     <div class="container my-container px-3" x-data>
         <div class="tab-content" role="tablist">
-            <div id="tab-android" class="tab-pane my-tab-pane fade show active" aria-labelledby="btn-guide-android-tab" role="tabpanel" x-data="stepGuide(5)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
+            <div id="tab-android" class="tab-pane fade show active" aria-labelledby="btn-guide-android-tab" role="tabpanel" x-data="stepGuide(5)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
@@ -752,7 +752,7 @@
                     </button>
                 </div>
             </div>
-            <div id="tab-ios" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-ios-tab" role="tabpanel" x-data="stepGuide(4)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
+            <div id="tab-ios" class="tab-pane fade" aria-labelledby="btn-guide-ios-tab" role="tabpanel" x-data="stepGuide(4)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
@@ -815,7 +815,7 @@
                     </button>
                 </div>
             </div>
-            <div id="tab-pc" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-pc-tab" role="tabpanel" x-data="stepGuide(5)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
+            <div id="tab-pc" class="tab-pane fade" aria-labelledby="btn-guide-pc-tab" role="tabpanel" x-data="stepGuide(5)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
@@ -886,7 +886,7 @@
                     </button>
                 </div>
             </div>
-            <div id="tab-tv" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-tv-tab" role="tabpanel" x-data="stepGuide(5)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
+            <div id="tab-tv" class="tab-pane fade" aria-labelledby="btn-guide-tv-tab" role="tabpanel" x-data="stepGuide(6)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
@@ -928,6 +928,21 @@
                             <p class="my-text-content" x-html="$t('guideContent.tv.fifth.text')"></p>
                         </div>
                     </div>
+                    <div class="col" x-show="currentStep === 5">
+                        <div class="my-block-big h-100">
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
+                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.sixth.title')">
+                            </h5>
+                            <p class="my-text-content" x-html="$t('guideContent.tv.sixth.text')"></p>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
+                                    role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
+                                    <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="d-flex gap-2 justify-content-center bottom-controls">
                     <button class="btn my-btn-outline" type="button" @click="prevStep()" x-show="currentStep > 0">
@@ -940,7 +955,7 @@
                     </button>
                 </div>
             </div>
-            <div id="tab-macos" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-macos-tab" role="tabpanel" x-data="stepGuide(4)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
+            <div id="tab-macos" class="tab-pane fade" aria-labelledby="btn-guide-macos-tab" role="tabpanel" x-data="stepGuide(4)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
