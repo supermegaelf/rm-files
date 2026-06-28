@@ -1442,6 +1442,13 @@
                 if (val) el.innerHTML = val;
             });
         }, 4000);
+
+        document.addEventListener('touchend', function(e) {
+            var link = e.target.closest('a.btn');
+            if (!link) return;
+            link.style.setProperty('--bs-btn-active-bg', 'var(--bs-btn-bg)');
+            setTimeout(function() { link.style.removeProperty('--bs-btn-active-bg'); }, 400);
+        }, { passive: true });
     </script>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <div class="modal my-modal fade" id="get-link-modal" tabindex="-1">
