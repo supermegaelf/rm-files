@@ -383,12 +383,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        @media (hover: none) {
-            .my-btn-primary {
-                --bs-btn-active-bg: var(--bs-btn-bg);
-            }
-        }
-
         .bottom-controls .my-btn-outline,
         .bottom-controls .my-btn-primary {
             --bs-btn-padding-x: 1rem;
@@ -400,6 +394,13 @@
             --bs-btn-hover-bg: rgb(23, 130, 135);
             --bs-btn-focus-shadow-rgb: 25, 125, 225;
             --bs-btn-active-bg: rgb(18, 106, 110);
+        }
+
+        @media (hover: none) {
+            .my-btn-primary:active {
+                background-color: rgb(28, 154, 160);
+                border-color: transparent;
+            }
         }
 
         .my-btn-primary .bi,
