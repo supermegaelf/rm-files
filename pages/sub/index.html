@@ -189,15 +189,6 @@
             user-select: none;
         }
 
-        .my-step-counter::after {
-            content: counter(step-counter);
-            counter-increment: step-counter;
-        }
-
-        .my-tab-pane {
-            counter-reset: step-counter 0;
-        }
-
         /* ========== CONTENT BLOCKS ========== */
         .my-block,
         .my-block-big {
@@ -648,11 +639,11 @@
 </header>
     <div class="container my-container px-3" x-data>
         <div class="tab-content" role="tablist">
-            <div id="tab-android" class="tab-pane my-tab-pane fade show active" aria-labelledby="btn-guide-android-tab" role="tabpanel" x-data="stepGuide(5)">
+            <div id="tab-android" class="tab-pane my-tab-pane fade show active" aria-labelledby="btn-guide-android-tab" role="tabpanel" x-data="stepGuide(5)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-                    <div class="col" style="counter-reset: step-counter 0" x-show="currentStep === 0">
+                    <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.first.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.android.first.text')"></p>
@@ -669,9 +660,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 1" x-show="currentStep === 1">
+                    <div class="col" x-show="currentStep === 1">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.second.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.android.second.text')"></p>
@@ -691,9 +682,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 2" x-show="currentStep === 2">
+                    <div class="col" x-show="currentStep === 2">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.android.third.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -708,9 +699,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 3" x-show="currentStep === 3">
+                    <div class="col" x-show="currentStep === 3">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.fourth.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.android.fourth.text')"></p>
@@ -724,9 +715,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 4" x-show="currentStep === 4">
+                    <div class="col" x-show="currentStep === 4">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.android.fifth.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.android.fifth.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -743,11 +734,11 @@
                     </div>
                 </div>
             </div>
-            <div id="tab-ios" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-ios-tab" role="tabpanel" x-data="stepGuide(4)">
+            <div id="tab-ios" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-ios-tab" role="tabpanel" x-data="stepGuide(4)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-                    <div class="col" style="counter-reset: step-counter 0" x-show="currentStep === 0">
+                    <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.first.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -762,9 +753,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 1" x-show="currentStep === 1">
+                    <div class="col" x-show="currentStep === 1">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.second.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.second.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -780,9 +771,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 2" x-show="currentStep === 2">
+                    <div class="col" x-show="currentStep === 2">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.third.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -795,9 +786,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 3" x-show="currentStep === 3">
+                    <div class="col" x-show="currentStep === 3">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.fourth.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.fourth.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -814,11 +805,11 @@
                     </div>
                 </div>
             </div>
-            <div id="tab-pc" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-pc-tab" role="tabpanel" x-data="stepGuide(5)">
+            <div id="tab-pc" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-pc-tab" role="tabpanel" x-data="stepGuide(5)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-                    <div class="col" style="counter-reset: step-counter 0" x-show="currentStep === 0">
+                    <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.pc.first.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -834,9 +825,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 1" x-show="currentStep === 1">
+                    <div class="col" x-show="currentStep === 1">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.second.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.pc.second.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -849,9 +840,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 2" x-show="currentStep === 2">
+                    <div class="col" x-show="currentStep === 2">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.pc.third.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -866,9 +857,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 3" x-show="currentStep === 3">
+                    <div class="col" x-show="currentStep === 3">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.fourth.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.pc.fourth.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -881,9 +872,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 4" x-show="currentStep === 4">
+                    <div class="col" x-show="currentStep === 4">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.pc.fifth.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.pc.fifth.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -900,11 +891,11 @@
                     </div>
                 </div>
             </div>
-            <div id="tab-tv" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-tv-tab" role="tabpanel" x-data="stepGuide(5)">
+            <div id="tab-tv" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-tv-tab" role="tabpanel" x-data="stepGuide(5)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-                    <div class="col" style="counter-reset: step-counter 0" x-show="currentStep === 0">
+                    <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.first.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.first.text')"></p>
@@ -915,9 +906,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 1" x-show="currentStep === 1">
+                    <div class="col" x-show="currentStep === 1">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.second.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.second.text')"></p>
@@ -931,9 +922,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 2" x-show="currentStep === 2">
+                    <div class="col" x-show="currentStep === 2">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.third.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.third.text')"></p>
@@ -947,9 +938,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 3" x-show="currentStep === 3">
+                    <div class="col" x-show="currentStep === 3">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.fourth.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.fourth.text')"></p>
@@ -963,9 +954,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 4" x-show="currentStep === 4">
+                    <div class="col" x-show="currentStep === 4">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.tv.fifth.title')">
                             </h5>
                             <p class="my-text-content" x-html="$t('guideContent.tv.fifth.text')"></p>
@@ -978,11 +969,11 @@
                     </div>
                 </div>
             </div>
-            <div id="tab-macos" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-macos-tab" role="tabpanel" x-data="stepGuide(4)">
+            <div id="tab-macos" class="tab-pane my-tab-pane fade" aria-labelledby="btn-guide-macos-tab" role="tabpanel" x-data="stepGuide(4)" @tab-changed.window="currentStep = 0; isLinkCopied = false">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
-                    <div class="col" style="counter-reset: step-counter 0" x-show="currentStep === 0">
+                    <div class="col" x-show="currentStep === 0">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.first.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -997,9 +988,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 1" x-show="currentStep === 1">
+                    <div class="col" x-show="currentStep === 1">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.second.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.second.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -1014,9 +1005,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 2" x-show="currentStep === 2">
+                    <div class="col" x-show="currentStep === 2">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.third.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -1029,9 +1020,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col" style="counter-reset: step-counter 3" x-show="currentStep === 3">
+                    <div class="col" x-show="currentStep === 3">
                         <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
+                            <span class="my-step-counter mb-1" x-text="currentStep + 1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.fourth.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.fourth.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
@@ -1387,12 +1378,6 @@
                 currentStep: 0,
                 totalSteps,
                 isLinkCopied: false,
-                init() {
-                    document.addEventListener('tab-changed', () => {
-                        this.currentStep = 0;
-                        this.isLinkCopied = false;
-                    });
-                },
                 nextStep() {
                     if (this.currentStep < this.totalSteps - 1) this.currentStep++;
                 },
@@ -1450,7 +1435,7 @@
                         tabPane.classList.add('show', 'active');
                     }
                     showActiveDropdownItem(btnGuide, item);
-                    document.dispatchEvent(new CustomEvent('tab-changed'));
+                    window.dispatchEvent(new CustomEvent('tab-changed'));
                 });
             });
 
