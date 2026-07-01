@@ -23,8 +23,8 @@ readonly ARROW="→"
 DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 
 SCRIPT_VERSION="1.0.0"
-PANEL_VERSION="2.7.4"
-NODE_VERSION="2.7.0"
+PANEL_VERSION="2.8.0"
+NODE_VERSION="2.8.0"
 SUBSCRIPTION_PAGE_VERSION="7.1.8"
 
 #======================
@@ -1715,7 +1715,11 @@ HWID_MAX_DEVICES_ANNOUNCE="You have reached the maximum number of devices for yo
 ### Bandwidth usage reached notifications
 BANDWIDTH_USAGE_NOTIFICATIONS_ENABLED=true
 # Only in ASC order (example: [60, 80]), must be valid array of integer(min: 25, max: 95) numbers. No more than 5 values.
-BANDWIDTH_USAGE_NOTIFICATIONS_THRESHOLD=[75]
+BANDWIDTH_USAGE_NOTIFICATIONS_THRESHOLD=[50, 75]
+
+### Expiration notifications
+EXPIRATION_NOTIFICATIONS_ENABLED=true
+EXPIRATION_NOTIFICATIONS=[-72,-48,-24]
 
 ### CLOUDFLARE ###
 # USED ONLY FOR docker-compose-prod-with-cf.yml
