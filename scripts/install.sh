@@ -2067,6 +2067,7 @@ server {
         text/xml;
 
     location /sub {
+        proxy_hide_header X-Frame-Options;
         proxy_http_version 1.1;
         proxy_pass http://127.0.0.1:3010;
         proxy_set_header Host \$host;
