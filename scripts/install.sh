@@ -544,7 +544,6 @@ install_system_packages() {
 }
 
 configure_tcp_optimizations() {
-    echo -e "${CYAN}${INFO}${NC} Configuring TCP optimizations..."
     echo -e "${GRAY}  ${ARROW}${NC} Applying sysctl parameters"
     cat > /etc/sysctl.d/99-xray.conf << 'EOF'
 # Connection queues
@@ -2855,7 +2854,12 @@ install_node() {
     echo
 
     install_system_packages
+
     echo
+    echo -e "${GREEN}Configuring TCP optimizations${NC}"
+    echo -e "${GREEN}=============================${NC}"
+    echo
+
     configure_tcp_optimizations
 
     echo
