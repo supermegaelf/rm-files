@@ -544,7 +544,8 @@ install_system_packages() {
 }
 
 configure_tcp_optimizations() {
-    echo -e "${GRAY}  ${ARROW}${NC} Configuring TCP optimizations"
+    echo -e "${CYAN}${INFO}${NC} Configuring TCP optimizations..."
+    echo -e "${GRAY}  ${ARROW}${NC} Applying sysctl parameters"
     cat > /etc/sysctl.d/99-xray.conf << 'EOF'
 # Connection queues
 net.core.somaxconn = 65535
@@ -574,6 +575,7 @@ net.ipv4.tcp_syncookies = 1
 fs.file-max = 1000000
 EOF
     sysctl -p /etc/sysctl.d/99-xray.conf >/dev/null
+    echo -e "${GREEN}${CHECK}${NC} TCP optimizations configured"
 }
 
 #========================
@@ -2853,6 +2855,7 @@ install_node() {
     echo
 
     install_system_packages
+    echo
     configure_tcp_optimizations
 
     echo
