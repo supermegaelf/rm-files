@@ -525,9 +525,27 @@ install_system_packages() {
         return 1
     fi
 
-    if [ "$1" = "node" ]; then
-        echo -e "${GRAY}  ${ARROW}${NC} Configuring TCP optimizations"
-        cat > /etc/sysctl.d/99-xray.conf << 'EOF'
+    echo -e "${GRAY}  ${ARROW}${NC} Configuring UFW firewall"
+    if ! ufw allow 22/tcp comment 'SSH' > /dev/null 2>&1 || ! ufw allow 443/tcp comment 'HTTPS' > /dev/null 2>&1 || ! ufw --force enable > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to configure UFW"
+        return 1
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Configuring automatic security updates"
+    echo 'Unattended-Upgrade::Mail "root";' >> /etc/apt/apt.conf.d/50unattended-upgrades
+    echo unattended-upgrades unattended-upgrades/enable_auto_updates boolean true | debconf-set-selections
+    if ! dpkg-reconfigure -f noninteractive unattended-upgrades > /dev/null 2>&1 || ! systemctl restart unattended-upgrades > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to configure unattended-upgrades"
+        return 1
+    fi
+
+    touch ${DIR_REMNAWAVE}install_packages
+    echo -e "${GREEN}${CHECK}${NC} System packages configured"
+}
+
+configure_tcp_optimizations() {
+    echo -e "${GRAY}  ${ARROW}${NC} Configuring TCP optimizations"
+    cat > /etc/sysctl.d/99-xray.conf << 'EOF'
 # Connection queues
 net.core.somaxconn = 65535
 net.ipv4.tcp_max_syn_backlog = 8192
@@ -555,25 +573,7 @@ net.ipv4.tcp_fastopen = 3
 net.ipv4.tcp_syncookies = 1
 fs.file-max = 1000000
 EOF
-        sysctl -p /etc/sysctl.d/99-xray.conf >/dev/null
-    fi
-
-    echo -e "${GRAY}  ${ARROW}${NC} Configuring UFW firewall"
-    if ! ufw allow 22/tcp comment 'SSH' > /dev/null 2>&1 || ! ufw allow 443/tcp comment 'HTTPS' > /dev/null 2>&1 || ! ufw --force enable > /dev/null 2>&1; then
-        echo -e "${RED}${CROSS}${NC} Failed to configure UFW"
-        return 1
-    fi
-
-    echo -e "${GRAY}  ${ARROW}${NC} Configuring automatic security updates"
-    echo 'Unattended-Upgrade::Mail "root";' >> /etc/apt/apt.conf.d/50unattended-upgrades
-    echo unattended-upgrades unattended-upgrades/enable_auto_updates boolean true | debconf-set-selections
-    if ! dpkg-reconfigure -f noninteractive unattended-upgrades > /dev/null 2>&1 || ! systemctl restart unattended-upgrades > /dev/null 2>&1; then
-        echo -e "${RED}${CROSS}${NC} Failed to configure unattended-upgrades"
-        return 1
-    fi
-
-    touch ${DIR_REMNAWAVE}install_packages
-    echo -e "${GREEN}${CHECK}${NC} System packages configured"
+    sysctl -p /etc/sysctl.d/99-xray.conf >/dev/null
 }
 
 #========================
@@ -2852,7 +2852,8 @@ install_node() {
     echo -e "${GREEN}===================${NC}"
     echo
 
-    install_system_packages node
+    install_system_packages
+    configure_tcp_optimizations
 
     echo
     echo -e "${GREEN}Preparing installation${NC}"
