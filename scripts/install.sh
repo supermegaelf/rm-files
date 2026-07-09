@@ -544,7 +544,8 @@ install_system_packages() {
 }
 
 configure_tcp_optimizations() {
-    echo -e "${GRAY}  ${ARROW}${NC} Applying sysctl parameters"
+    echo -e "${CYAN}${INFO}${NC} Applying TCP optimizations..."
+    echo -e "${GRAY}  ${ARROW}${NC} Writing sysctl configuration"
     cat > /etc/sysctl.d/99-xray.conf << 'EOF'
 # Connection queues
 net.core.somaxconn = 65535
