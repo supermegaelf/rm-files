@@ -525,8 +525,9 @@ install_system_packages() {
         return 1
     fi
 
-    echo -e "${GRAY}  ${ARROW}${NC} Configuring TCP optimizations"
-    cat > /etc/sysctl.d/99-xray.conf << 'EOF'
+    if [ "$1" = "node" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Configuring TCP optimizations"
+        cat > /etc/sysctl.d/99-xray.conf << 'EOF'
 # Connection queues
 net.core.somaxconn = 65535
 net.ipv4.tcp_max_syn_backlog = 8192
@@ -554,16 +555,8 @@ net.ipv4.tcp_fastopen = 3
 net.ipv4.tcp_syncookies = 1
 fs.file-max = 1000000
 EOF
-    sysctl -p /etc/sysctl.d/99-xray.conf >/dev/null
-
-    echo -e "${GRAY}  ${ARROW}${NC} Configuring file descriptor limits"
-    if ! grep -q '^\* hard nofile' /etc/security/limits.conf; then
-        echo "* hard nofile 1048576" >> /etc/security/limits.conf
+        sysctl -p /etc/sysctl.d/99-xray.conf >/dev/null
     fi
-    if ! grep -q '^\* soft nofile' /etc/security/limits.conf; then
-        echo "* soft nofile 1048576" >> /etc/security/limits.conf
-    fi
-    ulimit -n 1048576
 
     echo -e "${GRAY}  ${ARROW}${NC} Configuring UFW firewall"
     if ! ufw allow 22/tcp comment 'SSH' > /dev/null 2>&1 || ! ufw allow 443/tcp comment 'HTTPS' > /dev/null 2>&1 || ! ufw --force enable > /dev/null 2>&1; then
@@ -2859,7 +2852,7 @@ install_node() {
     echo -e "${GREEN}===================${NC}"
     echo
 
-    install_system_packages
+    install_system_packages node
 
     echo
     echo -e "${GREEN}Preparing installation${NC}"
