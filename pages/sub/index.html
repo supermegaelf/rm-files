@@ -30,6 +30,7 @@
 
         const cleanUrl = getSubscriptionUrl();
         const happUrl = "happ://add/" + cleanUrl + "#Title";
+        const incyUrl = "incy://add/" + cleanUrl;
 
         function handleUrlParameters() {
             const urlParams = new URLSearchParams(window.location.search);
@@ -696,7 +697,7 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.first.text')"></p>
-                            <a class="btn my-btn-primary" href="https://apps.apple.com/ru/app/happ-proxy-utility/id6783623643"
+                            <a class="btn my-btn-primary" href="https://apps.apple.com/us/app/incy/id6756943388"
                                 role="button" rel="noopener noreferrer" target="_blank">
                                 <svg class="bi"><use href="#download"></use></svg>
                                 <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
@@ -708,10 +709,10 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.second.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.second.text')"></p>
-                            <a class="btn my-btn-primary" href="https://apps.apple.com/us/app/happ-proxy-utility/id6504287215"
-                                role="button" rel="noopener noreferrer" target="_blank">
-                                <svg class="bi"><use href="#download"></use></svg>
-                                <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
+                            <a class="btn my-btn-primary fw-semibold" id="sub-url-ios" role="button"
+                                rel="noopener noreferrer" target="_blank">
+                                <svg class="bi"><use href="#link"></use></svg>
+                                <span x-text="$t('addSubscription')">Добавить</span>
                             </a>
                         </div>
                     </div>
@@ -719,12 +720,7 @@
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.third.title')"></h5>
-                            <p class="my-text-content" x-html="$t('guideContent.ios.third.text')"></p>
-                            <a class="btn my-btn-primary fw-semibold" id="sub-url-ios" role="button"
-                                rel="noopener noreferrer" target="_blank">
-                                <svg class="bi"><use href="#link"></use></svg>
-                                <span x-text="$t('addSubscription')">Добавить</span>
-                            </a>
+                            <p class="my-text-content mb-0" x-html="$t('guideContent.ios.third.text')"></p>
                         </div>
                     </div>
                     <div class="col">
@@ -921,7 +917,7 @@
         const SUB_URL_SCHEMES = {
             pc: happUrl,
             android: happUrl,
-            ios: happUrl,
+            ios: incyUrl,
             macos: happUrl,
         };
         const DEFAULT_LOCALE = 'en';
@@ -943,12 +939,12 @@
                             text: `Click button below to download app.`,
                         },
                         second: {
-                            title: 'Unable to download?',
-                            text: `Click button below to download app from another source.`,
-                        },
-                        third: {
                             title: 'Add subscription',
                             text: `Click button below to add subscription to app.`,
+                        },
+                        third: {
+                            title: 'Activate TUN',
+                            text: `In the app's main menu, tap «Settings», then «Advanced settings» and enable the «Use xray-TUN (beta)» option. After that, return to the main menu.`,
                         },
                         fourth: {
                             title: 'Enable VPN',
@@ -1066,12 +1062,12 @@
                             text: `Нажмите кнопку ниже, чтобы скачать приложение.`,
                         },
                         second: {
-                            title: 'Не удалось скачать?',
-                            text: `Нажмите кнопку ниже, чтобы скачать приложение из другого источника.`,
-                        },
-                        third: {
                             title: 'Добавьте подписку',
                             text: `Нажмите кнопку ниже, чтобы добавить подписку в приложение.`,
+                        },
+                        third: {
+                            title: 'Активируйте TUN',
+                            text: `В главном меню приложения нажмите «Настройки», затем «Расширенные настройки» и включите параметр «Использовать xray-TUN (бета)». После этого вернитесь в главное меню.`,
                         },
                         fourth: {
                             title: 'Включите VPN',
