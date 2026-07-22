@@ -197,6 +197,7 @@ confirm_setup() {
     echo
     echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
     read -r confirm
+    confirm=$(printf '%s' "$confirm" | tr -cd 'a-zA-Z')
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo -e "${YELLOW}${WARNING}${NC} Setup cancelled"
         exit 0
@@ -621,6 +622,7 @@ main() {
                 echo -e "${YELLOW}${WARNING}${NC} This will restore all node hosts in the panel and remove HAProxy."
                 echo -ne "${YELLOW}Are you sure? (y/n): ${NC}"
                 read -r confirm
+                confirm=$(printf '%s' "$confirm" | tr -cd 'a-zA-Z')
                 if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
                     echo -e "${YELLOW}${WARNING}${NC} Cancelled"
                     exit 0
