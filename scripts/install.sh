@@ -597,6 +597,7 @@ check_domain() {
             echo
             echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
             read confirm
+            confirm=$(printf '%s' "$confirm" | tr -cd 'a-zA-Z')
             echo
             if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
                 return 0
@@ -653,6 +654,7 @@ check_domain() {
                 echo
                 echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
                 read confirm
+                confirm=$(printf '%s' "$confirm" | tr -cd 'a-zA-Z')
                 echo
                 if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
                     return 0
@@ -669,6 +671,7 @@ check_domain() {
             echo
             echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
             read confirm
+            confirm=$(printf '%s' "$confirm" | tr -cd 'a-zA-Z')
             echo
             if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
                 return 0
@@ -2292,6 +2295,7 @@ create_node_in_panel() {
 
     echo -ne "${YELLOW}Are you sure the Secret Key is correct? (y/n): ${NC}"
     read confirm
+    confirm=$(printf '%s' "$confirm" | tr -cd 'a-zA-Z')
 
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo -e "${RED}${CROSS}${NC} Installation aborted by user"
@@ -2756,6 +2760,7 @@ delete_node() {
     echo
     echo -ne "${YELLOW}Are you sure? (y/n): ${NC}"
     read -r confirm
+    confirm=$(printf '%s' "$confirm" | tr -cd 'a-zA-Z')
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo -e "${YELLOW}${WARNING}${NC} Deletion cancelled"
         echo
