@@ -881,6 +881,18 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.second.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.second.text')"></p>
+                            <a class="btn my-btn-primary" href="https://apps.apple.com/us/app/happ-proxy-utility/id6504287215"
+                                role="button" rel="noopener noreferrer" target="_blank">
+                                <svg class="bi"><use href="#download"></use></svg>
+                                <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="my-block-big h-100">
+                            <span class="my-step-counter mb-1"></span>
+                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.third.title')"></h5>
+                            <p class="my-text-content" x-html="$t('guideContent.macos.third.text')"></p>
                             <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied">
                                 <svg class="bi" x-show="!isLinkCopied"><use href="#clipboard"></use></svg>
                                 <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
@@ -891,15 +903,15 @@
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
-                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.third.title')"></h5>
-                            <p class="my-text-content mb-0" x-html="$t('guideContent.macos.third.text')"></p>
+                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.fourth.title')"></h5>
+                            <p class="my-text-content mb-0" x-html="$t('guideContent.macos.fourth.text')"></p>
                         </div>
                     </div>
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
-                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.fourth.title')"></h5>
-                            <p class="my-text-content" x-html="$t('guideContent.macos.fourth.text')"></p>
+                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.fifth.title')"></h5>
+                            <p class="my-text-content" x-html="$t('guideContent.macos.fifth.text')"></p>
                             <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
                                 role="button" rel="noopener noreferrer" target="_blank">
                                 <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
@@ -987,14 +999,18 @@
                             text: `Click on button below to download app.`,
                         },
                         second: {
+                            title: 'Unable to download?',
+                            text: `Click button below to download app from another source.`,
+                        },
+                        third: {
                             title: 'Add subscription',
                             text: `- Click button below to copy subscription link.<br>- Open installed app, click <b>«Skip»</b> (if you are launching it for the first time), and tap <b>«Clipboard»</b>.`,
                         },
-                        third: {
+                        fourth: {
                             title: 'Enable VPN',
                             text: `Click big round button to enable VPN.`,
                         },
-                        fourth: {
+                        fifth: {
                             title: 'Not working?',
                             text: `Click button below to open tips for fixing connection error.`,
                         },
@@ -1110,14 +1126,18 @@
                             text: `Нажмите кнопку ниже, чтобы скачать приложение.`,
                         },
                         second: {
+                            title: 'Не удалось скачать?',
+                            text: `Нажмите кнопку ниже, чтобы скачать приложение из другого источника.`,
+                        },
+                        third: {
                             title: 'Добавьте подписку',
                             text: `- Нажмите кнопку ниже, чтобы скопировать ссылку на подписку.<br>- Откройте установленное приложение, кликните <b>«Пропустить»</b> (если запускаете его впервые) и нажмите <b>«Из Буфера»</b>.`,
                         },
-                        third: {
+                        fourth: {
                             title: 'Включите VPN',
                             text: `Нажмите большую круглую кнопку, чтобы включить VPN.`,
                         },
-                        fourth: {
+                        fifth: {
                             title: 'Не работает?',
                             text: `Нажмите кнопку ниже, чтобы открыть рекомендации по устранению ошибки подключения.`,
                         },
