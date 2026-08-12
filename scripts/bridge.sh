@@ -191,19 +191,6 @@ input_node_ip() {
     done
 }
 
-confirm_setup() {
-    echo
-    echo -e "${YELLOW}${WARNING}${NC} ${RED}Do not point any domain to the BRIDGE server.${NC}"
-    echo
-    echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
-    read -r confirm
-    confirm=$(printf '%s' "$confirm" | tr -cd 'a-zA-Z')
-    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        echo -e "${YELLOW}${WARNING}${NC} Setup cancelled"
-        exit 0
-    fi
-}
-
 #=====================
 # CREDENTIALS
 #=====================
@@ -654,7 +641,6 @@ main() {
                 input_node_domain
                 input_node_ip
                 get_bridge_ip
-                confirm_setup
 
                 install_bridge
                 ;;
