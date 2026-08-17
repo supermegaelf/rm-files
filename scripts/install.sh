@@ -2428,7 +2428,7 @@ services:
       - /var/www/html:/var/www/html:ro
       - /etc/letsencrypt/live/${NODE_CERT_DOMAIN}/fullchain.pem:/etc/nginx/ssl/${NODE_CERT_DOMAIN}/fullchain.pem:ro
       - /etc/letsencrypt/live/${NODE_CERT_DOMAIN}/privkey.pem:/etc/nginx/ssl/${NODE_CERT_DOMAIN}/privkey.pem:ro
-    command: sh -c 'rm -f /dev/shm/nginx.sock && nginx -g "daemon off;"'
+    command: sh -c 'rm -f /dev/shm/nginx.sock && sed -ri "s/worker_connections[[:space:]]+[0-9]+;/worker_connections 16384;/" /etc/nginx/nginx.conf && nginx -g "daemon off;"'
     network_mode: host
     depends_on:
       - remnanode
