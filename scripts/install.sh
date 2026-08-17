@@ -23,8 +23,8 @@ readonly ARROW="→"
 DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 
 SCRIPT_VERSION="1.0.0"
-PANEL_VERSION="2.8.0"
-NODE_VERSION="2.8.0"
+PANEL_VERSION="3.2.3"
+NODE_VERSION="3.2.2"
 SUBSCRIPTION_PAGE_VERSION="7.1.8"
 
 #======================
