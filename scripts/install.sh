@@ -23,8 +23,8 @@ readonly ARROW="→"
 DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 
 SCRIPT_VERSION="1.0.0"
-PANEL_VERSION="2.8.0"
-NODE_VERSION="2.8.0"
+PANEL_VERSION="3.2.3"
+NODE_VERSION="3.2.2"
 SUBSCRIPTION_PAGE_VERSION="7.1.8"
 
 #======================
@@ -329,7 +329,7 @@ generate_configuration() {
     POSTGRES_PASSWORD=$(generate_password)
     
     echo -e "${GRAY}  ${ARROW}${NC} Generating JWT secrets"
-    JWT_AUTH_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
+    APP_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
     JWT_API_TOKENS_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
 
     echo -e "${GRAY}  ${ARROW}${NC} Generating webhook secret"
@@ -358,7 +358,7 @@ export METRICS_USER="$METRICS_USER"
 export METRICS_PASS="$METRICS_PASS"
 
 # JWT secrets
-export JWT_AUTH_SECRET="$JWT_AUTH_SECRET"
+export APP_SECRET="$APP_SECRET"
 export JWT_API_TOKENS_SECRET="$JWT_API_TOKENS_SECRET"
 
 # Database password
@@ -1620,7 +1620,7 @@ DATABASE_URL="postgresql://remnawave:$POSTGRES_PASSWORD@remnawave-db:5432/remnaw
 REDIS_SOCKET=/var/run/valkey/valkey.sock
 
 ### JWT ###
-JWT_AUTH_SECRET=$JWT_AUTH_SECRET
+APP_SECRET=$APP_SECRET
 JWT_API_TOKENS_SECRET=$JWT_API_TOKENS_SECRET
 
 # Set the session idle timeout in the panel to avoid daily logins.
@@ -2428,7 +2428,7 @@ services:
       - /var/www/html:/var/www/html:ro
       - /etc/letsencrypt/live/${NODE_CERT_DOMAIN}/fullchain.pem:/etc/nginx/ssl/${NODE_CERT_DOMAIN}/fullchain.pem:ro
       - /etc/letsencrypt/live/${NODE_CERT_DOMAIN}/privkey.pem:/etc/nginx/ssl/${NODE_CERT_DOMAIN}/privkey.pem:ro
-    command: sh -c 'rm -f /dev/shm/nginx.sock && nginx -g "daemon off;"'
+    command: sh -c 'rm -f /dev/shm/nginx.sock && sed -ri "s/worker_connections[[:space:]]+[0-9]+;/worker_connections 16384;/" /etc/nginx/nginx.conf && nginx -g "daemon off;"'
     network_mode: host
     depends_on:
       - remnanode
