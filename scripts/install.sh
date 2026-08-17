@@ -331,6 +331,7 @@ generate_configuration() {
     echo -e "${GRAY}  ${ARROW}${NC} Generating JWT secrets"
     JWT_AUTH_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
     JWT_API_TOKENS_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
+    APP_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | head -c 64)
 
     echo -e "${GRAY}  ${ARROW}${NC} Generating webhook secret"
     WEBHOOK_SECRET_HEADER=$(tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c 64)
@@ -360,6 +361,7 @@ export METRICS_PASS="$METRICS_PASS"
 # JWT secrets
 export JWT_AUTH_SECRET="$JWT_AUTH_SECRET"
 export JWT_API_TOKENS_SECRET="$JWT_API_TOKENS_SECRET"
+export APP_SECRET="$APP_SECRET"
 
 # Database password
 export POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
@@ -1622,6 +1624,7 @@ REDIS_SOCKET=/var/run/valkey/valkey.sock
 ### JWT ###
 JWT_AUTH_SECRET=$JWT_AUTH_SECRET
 JWT_API_TOKENS_SECRET=$JWT_API_TOKENS_SECRET
+APP_SECRET=$APP_SECRET
 
 # Set the session idle timeout in the panel to avoid daily logins.
 # Value in hours: 12–168
