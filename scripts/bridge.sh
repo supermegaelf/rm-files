@@ -68,6 +68,8 @@ ensure_dns() {
     echo -e "${CYAN}${INFO}${NC} Checking DNS resolution..."
 
     local probe="one.one.one.one"
+
+    echo -e "${GRAY}  ${ARROW}${NC} Resolving ${probe}"
     if getent hosts "$probe" > /dev/null 2>&1; then
         echo -e "${GREEN}${CHECK}${NC} DNS working"
         return 0
@@ -79,10 +81,12 @@ ensure_dns() {
         error "DNS broken and /etc/resolv.conf is managed (systemd-resolved). Fix DNS manually."
     fi
 
+    echo -e "${GRAY}  ${ARROW}${NC} Writing public resolvers"
     if ! printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' > /etc/resolv.conf; then
         error "DNS broken and /etc/resolv.conf is not writable."
     fi
 
+    echo -e "${GRAY}  ${ARROW}${NC} Re-checking resolution"
     if getent hosts "$probe" > /dev/null 2>&1; then
         echo -e "${GREEN}${CHECK}${NC} DNS working"
         return 0
@@ -409,6 +413,7 @@ install_bridge() {
     echo
 
     ensure_dns
+    echo
     install_system_packages
 
     echo
