@@ -1157,9 +1157,10 @@
 
         function getTabIdByDevice() {
             const userAgent = navigator.userAgent.toLowerCase();
+            const isIpadOS = userAgent.includes('macintosh') && navigator.maxTouchPoints > 1;
             if (userAgent.includes('android')) {
                 return '#tab-android';
-            } else if (userAgent.includes('iphone') || userAgent.includes('ipad')) {
+            } else if (userAgent.includes('iphone') || userAgent.includes('ipad') || userAgent.includes('ipod') || isIpadOS) {
                 return '#tab-ios';
             } else if (userAgent.includes('mac os x') || userAgent.includes('macintosh')) {
                 return '#tab-macos';
@@ -1185,22 +1186,38 @@
             return russianLanguageCodes.some(code => browserLang.includes(code)) ? 'ru' : 'en';
         }
 
-        function showActiveDropdownItem(btn, newItem, prevItem) {
-            if (prevItem) {
-                bootstrap.Button.getOrCreateInstance(prevItem).toggle();
-                bootstrap.Button.getOrCreateInstance(newItem).toggle();
+        function setActivePlatform(item) {
+            if (!item) return;
+            const btn = document.getElementById('btn-guide');
+
+            // 1. content pane
+            const tabPane = document.querySelector(item.dataset.bsTarget);
+            if (tabPane) {
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+                tabPane.classList.add('show', 'active');
             }
 
-            const btnIcon = btn.querySelector('.my-nav-link-icon use');
-            const newItemIcon = newItem.querySelector('.my-dropdown-item-icon use');
-            if (btnIcon && newItemIcon) {
-                btnIcon.setAttribute('href', newItemIcon.getAttribute('href'));
+            // 2. active dropdown item
+            document.querySelectorAll('.my-dropdown-item-guide').forEach(el => {
+                const isActive = el === item;
+                el.classList.toggle('active', isActive);
+                el.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            // 3. toggle button icon
+            const btnIcon = btn && btn.querySelector('.my-nav-link-icon use');
+            const itemIcon = item.querySelector('.my-dropdown-item-icon use');
+            if (btnIcon && itemIcon) {
+                btnIcon.setAttribute('href', itemIcon.getAttribute('href'));
             }
 
-            const btnText = btn.querySelector('.my-nav-link-text');
-            const newItemText = newItem.querySelector('span');
-            if (btnText && newItemText) {
-                btnText.innerHTML = newItemText.outerHTML;
+            // 4. toggle button label (clone keeps x-text for i18n, replaceChildren keeps it idempotent)
+            const btnText = btn && btn.querySelector('.my-nav-link-text');
+            const itemText = item.querySelector('span');
+            if (btnText && itemText) {
+                btnText.replaceChildren(itemText.cloneNode(true));
             }
         }
 
@@ -1239,34 +1256,15 @@
         });
 
         document.addEventListener('DOMContentLoaded', () => {
-            const btnGuide = document.getElementById('btn-guide');
             document.querySelectorAll('.my-dropdown-item-guide').forEach(item => {
-                item.addEventListener('click', () => {
-                    const tabPane = document.querySelector(item.dataset.bsTarget);
-                    if (tabPane) {
-                        document.querySelectorAll('.tab-pane').forEach(pane => {
-                            pane.classList.remove('show', 'active');
-                        });
-                        tabPane.classList.add('show', 'active');
-                    }
-                    showActiveDropdownItem(btnGuide, item);
-                });
+                item.addEventListener('click', () => setActivePlatform(item));
             });
 
             const itemInitialGuideTab =
                 `.my-dropdown-item-guide[data-bs-target="${getTabIdByDevice()}"]`;
             const selectedItem = document.querySelector(itemInitialGuideTab)
                 || document.querySelector('.my-dropdown-item-guide.active');
-
-            if (selectedItem) {
-                const tabPane = document.querySelector(selectedItem.dataset.bsTarget);
-                if (tabPane) {
-                    document.querySelectorAll('.tab-pane').forEach(pane => {
-                        pane.classList.remove('show', 'active');
-                    });
-                    tabPane.classList.add('show', 'active');
-                }
-            }
+            setActivePlatform(selectedItem);
 
             for (const [os, url] of Object.entries(SUB_URL_SCHEMES)) {
                 const element = document.getElementById(`sub-url-${os}`);
@@ -1276,20 +1274,9 @@
             }
         });
 
+        // Re-sync only the button label once Alpine has resolved i18n text
         document.addEventListener('alpine:initialized', () => {
-            const btnGuide = document.getElementById('btn-guide');
-            const itemInitialGuideTab =
-                `.my-dropdown-item-guide[data-bs-target="${getTabIdByDevice()}"]`;
-            const selectedItem = document.querySelector(itemInitialGuideTab)
-                || document.querySelector('.my-dropdown-item-guide.active');
-
-            if (selectedItem) {
-                showActiveDropdownItem(
-                    btnGuide,
-                    selectedItem,
-                    document.querySelector('.my-dropdown-item-guide.active'),
-                );
-            }
+            setActivePlatform(document.querySelector('.my-dropdown-item-guide.active'));
         });
 
         setTimeout(() => {
