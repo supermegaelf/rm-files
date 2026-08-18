@@ -589,6 +589,7 @@ check_domain() {
 
     local domain_ip=$(dig +short A "$domain" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
     local server_ip=$(curl -s -4 ifconfig.me || curl -s -4 api.ipify.org || curl -s -4 ipinfo.io/ip)
+    local local_ips=$(ip -4 -o addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1)
 
     if [ -z "$domain_ip" ] || [ -z "$server_ip" ]; then
         if [ "$show_warning" = true ]; then
@@ -642,7 +643,7 @@ check_domain() {
         done
     fi
 
-    if [ "$domain_ip" = "$server_ip" ]; then
+    if [ "$domain_ip" = "$server_ip" ] || printf '%s\n' $local_ips | grep -qxF "$domain_ip"; then
         return 0
     elif [ "$ip_in_cloudflare" = true ]; then
         if [ "$allow_cf_proxy" = true ]; then
