@@ -1266,8 +1266,8 @@ create_config_profile() {
         config: {
             log: { loglevel: "warning" },
             dns: {
-                queryStrategy: "ForceIPv4",
-                servers: [{ address: "https://dns.google/dns-query", skipFallback: false }]
+                servers: [{ address: "https://8.8.8.8/dns-query", skipFallback: false }],
+                queryStrategy: "UseIPv4"
             },
             inbounds: [{
                 tag: $inbound_tag,
