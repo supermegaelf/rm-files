@@ -86,10 +86,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
         crossorigin="anonymous" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH">
     <style>
-        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
-
         :root {
-            --bs-body-font-family: "Inter", sans-serif;
+            --bs-body-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
         }
 
         /* ========== THEMES ========== */
@@ -923,12 +921,6 @@
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs-i18n@2.x.x/dist/cdn.min.js"
-        onerror="this.onerror=null;this.src='https://unpkg.com/alpinejs-i18n@2/dist/cdn.min.js'"></script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer
-        onerror="this.onerror=null;this.src='https://unpkg.com/alpinejs@3/dist/cdn.min.js'"></script>
     <script>
         const SUB_URL_SCHEMES = {
             pc: happUrl,
@@ -936,6 +928,77 @@
             ios: happUrl,
             macos: happUrl,
         };
+
+        function getTabIdByDevice() {
+            const userAgent = navigator.userAgent.toLowerCase();
+            const isIpadOS = userAgent.includes('macintosh') && navigator.maxTouchPoints > 1;
+            if (userAgent.includes('android')) {
+                return '#tab-android';
+            } else if (userAgent.includes('iphone') || userAgent.includes('ipad') || userAgent.includes('ipod') || isIpadOS) {
+                return '#tab-ios';
+            } else if (userAgent.includes('mac os x') || userAgent.includes('macintosh')) {
+                return '#tab-macos';
+            } else {
+                return '#tab-pc';
+            }
+        }
+
+        function setActivePlatform(item) {
+            if (!item) return;
+            const btn = document.getElementById('btn-guide');
+
+            const tabPane = document.querySelector(item.dataset.bsTarget);
+            if (tabPane) {
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.remove('show', 'active');
+                });
+                tabPane.classList.add('show', 'active');
+            }
+
+            document.querySelectorAll('.my-dropdown-item-guide').forEach(el => {
+                const isActive = el === item;
+                el.classList.toggle('active', isActive);
+                el.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            });
+
+            const btnIcon = btn && btn.querySelector('.my-nav-link-icon use');
+            const itemIcon = item.querySelector('.my-dropdown-item-icon use');
+            if (btnIcon && itemIcon) {
+                btnIcon.setAttribute('href', itemIcon.getAttribute('href'));
+            }
+
+            const btnText = btn && btn.querySelector('.my-nav-link-text');
+            const itemText = item.querySelector('span');
+            if (btnText && itemText) {
+                btnText.replaceChildren(itemText.cloneNode(true));
+            }
+        }
+
+        (function initPlatform() {
+            document.querySelectorAll('.my-dropdown-item-guide').forEach(item => {
+                item.addEventListener('click', () => setActivePlatform(item));
+            });
+
+            const selectedItem =
+                document.querySelector(`.my-dropdown-item-guide[data-bs-target="${getTabIdByDevice()}"]`)
+                || document.querySelector('.my-dropdown-item-guide.active');
+            setActivePlatform(selectedItem);
+
+            for (const [os, url] of Object.entries(SUB_URL_SCHEMES)) {
+                const element = document.getElementById(`sub-url-${os}`);
+                if (element) {
+                    element.href = url;
+                }
+            }
+        })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous" defer
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs-i18n@2.x.x/dist/cdn.min.js" defer
+        onerror="this.onerror=null;this.src='https://unpkg.com/alpinejs-i18n@2/dist/cdn.min.js'"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer
+        onerror="this.onerror=null;this.src='https://unpkg.com/alpinejs@3/dist/cdn.min.js'"></script>
+    <script>
         const DEFAULT_LOCALE = 'en';
         const MESSAGES = {
             en: {
@@ -1194,20 +1257,6 @@
             },
         };
 
-        function getTabIdByDevice() {
-            const userAgent = navigator.userAgent.toLowerCase();
-            const isIpadOS = userAgent.includes('macintosh') && navigator.maxTouchPoints > 1;
-            if (userAgent.includes('android')) {
-                return '#tab-android';
-            } else if (userAgent.includes('iphone') || userAgent.includes('ipad') || userAgent.includes('ipod') || isIpadOS) {
-                return '#tab-ios';
-            } else if (userAgent.includes('mac os x') || userAgent.includes('macintosh')) {
-                return '#tab-macos';
-            } else {
-                return '#tab-pc';
-            }
-        }
-
         function getUserLocale() {
             const urlParams = new URLSearchParams(window.location.search);
             const urlLang = urlParams.get('lang');
@@ -1223,41 +1272,6 @@
             const browserLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
             const russianLanguageCodes = ['ru', 'ru-ru', 'ru_ru', 'by', 'kz', 'kg', 'uz'];
             return russianLanguageCodes.some(code => browserLang.includes(code)) ? 'ru' : 'en';
-        }
-
-        function setActivePlatform(item) {
-            if (!item) return;
-            const btn = document.getElementById('btn-guide');
-
-            // 1. content pane
-            const tabPane = document.querySelector(item.dataset.bsTarget);
-            if (tabPane) {
-                document.querySelectorAll('.tab-pane').forEach(pane => {
-                    pane.classList.remove('show', 'active');
-                });
-                tabPane.classList.add('show', 'active');
-            }
-
-            // 2. active dropdown item
-            document.querySelectorAll('.my-dropdown-item-guide').forEach(el => {
-                const isActive = el === item;
-                el.classList.toggle('active', isActive);
-                el.setAttribute('aria-selected', isActive ? 'true' : 'false');
-            });
-
-            // 3. toggle button icon
-            const btnIcon = btn && btn.querySelector('.my-nav-link-icon use');
-            const itemIcon = item.querySelector('.my-dropdown-item-icon use');
-            if (btnIcon && itemIcon) {
-                btnIcon.setAttribute('href', itemIcon.getAttribute('href'));
-            }
-
-            // 4. toggle button label (clone keeps x-text for i18n, replaceChildren keeps it idempotent)
-            const btnText = btn && btn.querySelector('.my-nav-link-text');
-            const itemText = item.querySelector('span');
-            if (btnText && itemText) {
-                btnText.replaceChildren(itemText.cloneNode(true));
-            }
         }
 
         document.addEventListener('alpine-i18n:ready', () => {
@@ -1294,26 +1308,6 @@
             }));
         });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.my-dropdown-item-guide').forEach(item => {
-                item.addEventListener('click', () => setActivePlatform(item));
-            });
-
-            const itemInitialGuideTab =
-                `.my-dropdown-item-guide[data-bs-target="${getTabIdByDevice()}"]`;
-            const selectedItem = document.querySelector(itemInitialGuideTab)
-                || document.querySelector('.my-dropdown-item-guide.active');
-            setActivePlatform(selectedItem);
-
-            for (const [os, url] of Object.entries(SUB_URL_SCHEMES)) {
-                const element = document.getElementById(`sub-url-${os}`);
-                if (element) {
-                    element.href = url;
-                }
-            }
-        });
-
-        // Re-sync only the button label once Alpine has resolved i18n text
         document.addEventListener('alpine:initialized', () => {
             setActivePlatform(document.querySelector('.my-dropdown-item-guide.active'));
         });
@@ -1335,7 +1329,7 @@
             });
         }, 4000);
     </script>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js" defer></script>
 </body>
 
 </html>
