@@ -866,21 +866,6 @@
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
-                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.second.title')"></h5>
-                            <p class="my-text-content" x-html="$t('guideContent.macos.second.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <a class="btn my-btn-primary"
-                                    href="https://github.com/Happ-proxy/happ-desktop/releases/latest/download/Happ.macOS.universal.dmg" role="button"
-                                    rel="noopener noreferrer" target="_blank">
-                                    <svg class="bi"><use href="#download"></use></svg>
-                                    <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <div class="my-block-big h-100">
-                            <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.third.text')"></p>
                             <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied">
@@ -1049,10 +1034,6 @@
                             title: 'Download app',
                             text: `Click on button below to download app.`,
                         },
-                        second: {
-                            title: 'Unable to download?',
-                            text: `Click button below to download app from another source and install it manually.`,
-                        },
                         third: {
                             title: 'Add subscription',
                             text: `- Click button below to copy subscription link.<br>- Open installed app and tap <b>«Paste»</b>.`,
@@ -1171,10 +1152,6 @@
                         first: {
                             title: 'Скачайте приложение',
                             text: `Нажмите кнопку ниже, чтобы скачать приложение.`,
-                        },
-                        second: {
-                            title: 'Не удалось скачать?',
-                            text: `Нажмите кнопку ниже, чтобы скачать приложение из другого источника и установите его вручную.`,
                         },
                         third: {
                             title: 'Добавьте подписку',
