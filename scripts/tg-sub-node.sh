@@ -1831,6 +1831,7 @@ main() {
                 echo -e "${PURPLE}==============${NC}"
                 echo -e "${WHITE}Node Deletion${NC}"
                 echo -e "${PURPLE}==============${NC}"
+                echo
                 load_saved_node_credentials
                 delete_node
                 ;;
