@@ -81,29 +81,16 @@ input_panel_domain() {
     PANEL_URL="https://${PANEL_DOMAIN}"
 }
 
-input_panel_token() {
-    echo -ne "${CYAN}Panel API token (eyJhbGciOi...): ${NC}"
-    read -r PANEL_TOKEN
-    while [[ -z "$PANEL_TOKEN" ]]; do
-        echo -e "${RED}${CROSS}${NC} Token cannot be empty!"
-        echo
-        echo -ne "${CYAN}Panel API token (eyJhbGciOi...): ${NC}"
-        read -r PANEL_TOKEN
-    done
-}
-
 load_panel_vars() {
     local vars="${REMNAWAVE_DIR}/remnawave-vars.sh"
     if [ -f "$vars" ]; then
         source "$vars"
-        PANEL_TOKEN="${REMNAWAVE_TOKEN}"
     fi
     if [ -n "$PANEL_DOMAIN" ]; then
         PANEL_URL="https://${PANEL_DOMAIN}"
     else
         input_panel_domain
     fi
-    [ -n "$PANEL_TOKEN" ] || input_panel_token
 }
 
 deploy_shim() {
@@ -123,7 +110,6 @@ $SWAP    = array_values(array_filter(array_map('trim',
     explode(',', strtolower((string) (getenv('SWAP_STATUSES') ?: 'expired,limited'))))));
 $PREFIX  = trim((string) (getenv('SUB_PREFIX') ?: 'sub'), '/');
 $GRACE   = (int) (getenv('GRACE_DAYS') ?: 0);
-$TOKEN   = trim((string) getenv('PANEL_TOKEN'));
 
 $method   = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $uri      = $_SERVER['REQUEST_URI'] ?? '/';
@@ -225,9 +211,6 @@ if (stripos($accept, 'text/html') !== false) {
 }
 
 $infoHeaders = ['Accept: application/json', 'X-Forwarded-For: ' . $clientIp];
-if ($TOKEN !== '') {
-    $infoHeaders[] = 'Authorization: Bearer ' . $TOKEN;
-}
 $info   = httpReq('GET', $PANEL . '/api/sub/' . rawurlencode($shortUuid) . '/info', $infoHeaders);
 $status    = 'active';
 $expiresAt = '';
@@ -261,6 +244,7 @@ if ($svc['code'] !== 200 || $svc['body'] === '') {
 }
 
 http_response_code(200);
+header('Cache-Control: no-store');
 
 $keep = [
     'subscription-userinfo', 'profile-title', 'profile-update-interval', 'support-url',
@@ -285,7 +269,6 @@ services:
     restart: always
     environment:
       - PANEL_URL=${PANEL_URL}
-      - PANEL_TOKEN=${PANEL_TOKEN}
       - SUBPAGE_URL=http://remnawave-subscription-page:3010
       - SERVICE_SHORT_UUID=${SERVICE_SHORT_UUID}
       - SWAP_STATUSES=${SWAP_STATUSES}
@@ -346,7 +329,6 @@ patch_nginx() {
 save_state() {
     cat > "$STATE_FILE" <<EOF
 PANEL_URL="${PANEL_URL}"
-PANEL_TOKEN="${PANEL_TOKEN}"
 SERVICE_SHORT_UUID="${SERVICE_SHORT_UUID}"
 SWAP_STATUSES="${SWAP_STATUSES}"
 GRACE_DAYS="${GRACE_DAYS}"
