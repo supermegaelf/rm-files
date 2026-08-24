@@ -204,7 +204,7 @@ input_node_api_token() {
 }
 
 input_node_name() {
-    echo -ne "${CYAN}Node name (e.g., NL-1, DE-1, FI-1, PL-1, RU-1): ${NC}"
+    echo -ne "${CYAN}Node name (e.g., NL-TG, DE-TG, FI-TG, PL-TG, RU-TG): ${NC}"
     read NODE_NAME
     while [[ -z "$NODE_NAME" ]]; do
         echo -e "${RED}${CROSS}${NC} Node name cannot be empty!"
