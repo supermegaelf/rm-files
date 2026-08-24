@@ -1087,6 +1087,15 @@ create_node_host_in_panel() {
         return 0
     fi
 
+    local tmpl_uuid tmpl_response
+    tmpl_response=$(make_panel_api_request GET "/api/subscription-templates")
+    tmpl_uuid=$(echo "$tmpl_response" | jq -r '[.. | objects | select(.name? == "tg" and .templateType? == "XRAY_JSON") | .uuid] | .[0] // empty')
+    if [ -n "$tmpl_uuid" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Binding Xray JSON template tg"
+    else
+        echo -e "${YELLOW}  ${WARNING}${NC} Xray JSON template tg not found, host created without client routing"
+    fi
+
     echo -e "${GRAY}  ${ARROW}${NC} Building host config"
     local host_data
     host_data=$(jq -n \
@@ -1094,6 +1103,7 @@ create_node_host_in_panel() {
         --arg address "$SELFSTEAL_DOMAIN" \
         --arg profile_uuid "$NEW_PROFILE_UUID" \
         --arg inbound_uuid "$NEW_PROFILE_INBOUND_UUID" \
+        --arg tmpl "$tmpl_uuid" \
         '{
             remark: $remark,
             address: $address,
@@ -1106,7 +1116,7 @@ create_node_host_in_panel() {
                 configProfileUuid: $profile_uuid,
                 configProfileInboundUuid: $inbound_uuid
             }
-        }')
+        } + (if $tmpl != "" then {xrayJsonTemplateUuid: $tmpl} else {} end)')
 
     echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
     local host_response
@@ -1262,18 +1272,18 @@ create_tg_service_user() {
     TG_SERVICE_SHORT_UUID=$(echo "$response" | jq -r '.response.shortUuid')
     if [ -z "$TG_SERVICE_SHORT_UUID" ] || [ "$TG_SERVICE_SHORT_UUID" = "null" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} User exists, reassigning to TG-Only squad"
-        local user_response user_uuid
+        local user_response user_id
         user_response=$(make_panel_api_request GET "/api/users/by-username/tg-service")
-        user_uuid=$(echo "$user_response" | jq -r '.response.uuid // empty')
+        user_id=$(echo "$user_response" | jq -r '.response.id // empty')
         TG_SERVICE_SHORT_UUID=$(echo "$user_response" | jq -r '.response.shortUuid // empty')
-        if [ -z "$user_uuid" ] || [ -z "$TG_SERVICE_SHORT_UUID" ]; then
+        if [ -z "$user_id" ] || [ -z "$TG_SERVICE_SHORT_UUID" ]; then
             echo -e "${RED}${CROSS}${NC} Failed to create user: $response"
             exit 1
         fi
         local reassign_body reassign_response
-        reassign_body=$(jq -n --arg uuid "$user_uuid" --arg sq "$TG_SQUAD_UUID" \
+        reassign_body=$(jq -n --argjson id "$user_id" --arg sq "$TG_SQUAD_UUID" \
             '{
-                uuid: $uuid,
+                id: $id,
                 status: "ACTIVE",
                 trafficLimitBytes: 0,
                 trafficLimitStrategy: "NO_RESET",
@@ -1281,7 +1291,7 @@ create_tg_service_user() {
                 activeInternalSquads: [$sq]
             }')
         reassign_response=$(make_panel_api_request PATCH "/api/users" "$reassign_body")
-        if ! echo "$reassign_response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+        if ! echo "$reassign_response" | jq -e '.response.id' > /dev/null 2>&1; then
             echo -e "${RED}${CROSS}${NC} Failed to reassign user: $reassign_response"
             exit 1
         fi
@@ -1528,11 +1538,11 @@ delete_tg_service_user_from_panel() {
     echo -e "${CYAN}${INFO}${NC} Removing tg-service user from panel..."
 
     echo -e "${GRAY}  ${ARROW}${NC} Looking up user"
-    local user_response user_uuid
+    local user_response user_id
     user_response=$(make_panel_api_request GET "/api/users/by-username/tg-service")
-    user_uuid=$(echo "$user_response" | jq -r '.response.uuid // empty')
+    user_id=$(echo "$user_response" | jq -r '.response.id // empty')
 
-    if [ -z "$user_uuid" ]; then
+    if [ -z "$user_id" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} User not found, skipping"
         echo -e "${GREEN}${CHECK}${NC} User step skipped"
         return 0
@@ -1540,7 +1550,7 @@ delete_tg_service_user_from_panel() {
 
     echo -e "${GRAY}  ${ARROW}${NC} Deleting user"
     local delete_response
-    delete_response=$(make_panel_api_request DELETE "/api/users/${user_uuid}")
+    delete_response=$(make_panel_api_request DELETE "/api/users/${user_id}")
 
     if echo "$delete_response" | jq -e '.response.isDeleted' > /dev/null 2>&1; then
         echo -e "${GREEN}${CHECK}${NC} tg-service user removed"
