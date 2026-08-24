@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#================
-# TG-SUB MANAGER
-#================
+#=============
+# TG-SUB NODE
+#=============
 
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -74,9 +74,9 @@ show_main_menu() {
     [ -d /opt/remnanode ] && NODE_INSTALLED=true
 
     echo
-    echo -e "${PURPLE}==============${NC}"
-    echo -e "${WHITE}TG-SUB MANAGER${NC}"
-    echo -e "${PURPLE}==============${NC}"
+    echo -e "${PURPLE}============${NC}"
+    echo -e "${WHITE}TG-SUB NODE${NC}"
+    echo -e "${PURPLE}============${NC}"
     echo
     echo -e "${CYAN}Script version: ${WHITE}${SCRIPT_VERSION}${NC}"
     echo -e "${CYAN}Node version: ${WHITE}${NODE_VERSION}${NC}"

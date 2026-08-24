@@ -1,5 +1,9 @@
 #!/bin/bash
 
+#==============
+# TG-SUB PANEL
+#==============
+
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
@@ -425,9 +429,9 @@ show_main_menu() {
     [ -f "$COMPOSE_OVERRIDE" ] && SHIM_INSTALLED=true
 
     echo
-    echo -e "${PURPLE}==========================${NC}"
-    echo -e "${WHITE}REMNAWAVE TELEGRAM FALLBACK${NC}"
-    echo -e "${PURPLE}==========================${NC}"
+    echo -e "${PURPLE}=============${NC}"
+    echo -e "${WHITE}TG-SUB PANEL${NC}"
+    echo -e "${PURPLE}=============${NC}"
     echo
     echo -e "${CYAN}Please select an option:${NC}"
     echo
