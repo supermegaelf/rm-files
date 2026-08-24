@@ -151,47 +151,55 @@ input_cloudflare_email() {
 
 input_node_selfsteal_domain() {
     echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
-    read SELFSTEAL_DOMAIN
+    read -r SELFSTEAL_DOMAIN
+    SELFSTEAL_DOMAIN=$(printf '%s' "$SELFSTEAL_DOMAIN" | tr -d '[:space:]')
     while [[ -z "$SELFSTEAL_DOMAIN" ]] || ! validate_domain "$SELFSTEAL_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
         echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
-        read SELFSTEAL_DOMAIN
+        read -r SELFSTEAL_DOMAIN
+        SELFSTEAL_DOMAIN=$(printf '%s' "$SELFSTEAL_DOMAIN" | tr -d '[:space:]')
     done
 }
 
 
 input_panel_ip() {
     echo -ne "${CYAN}Panel IP address: ${NC}"
-    read PANEL_IP
+    read -r PANEL_IP
+    PANEL_IP=$(printf '%s' "$PANEL_IP" | tr -d '[:space:]')
     while [[ -z "$PANEL_IP" ]] || ! validate_ip "$PANEL_IP"; do
         echo -e "${RED}${CROSS}${NC} Invalid IP! Please enter a valid IPv4 address (e.g., 1.2.3.4)."
         echo
         echo -ne "${CYAN}Panel IP address: ${NC}"
-        read PANEL_IP
+        read -r PANEL_IP
+        PANEL_IP=$(printf '%s' "$PANEL_IP" | tr -d '[:space:]')
     done
 }
 
 input_node_panel_domain() {
     echo -ne "${CYAN}Panel domain (e.g., example.com): ${NC}"
-    read PANEL_NODE_DOMAIN
+    read -r PANEL_NODE_DOMAIN
+    PANEL_NODE_DOMAIN=$(printf '%s' "$PANEL_NODE_DOMAIN" | tr -d '[:space:]')
     while [[ -z "$PANEL_NODE_DOMAIN" ]] || ! validate_domain "$PANEL_NODE_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
         echo -ne "${CYAN}Panel domain: ${NC}"
-        read PANEL_NODE_DOMAIN
+        read -r PANEL_NODE_DOMAIN
+        PANEL_NODE_DOMAIN=$(printf '%s' "$PANEL_NODE_DOMAIN" | tr -d '[:space:]')
     done
     PANEL_NODE_URL="https://${PANEL_NODE_DOMAIN}"
 }
 
 input_node_api_token() {
     echo -ne "${CYAN}API token (e.g., eyJhbGciOi...): ${NC}"
-    read PANEL_NODE_TOKEN
+    read -r PANEL_NODE_TOKEN
+    PANEL_NODE_TOKEN=$(printf '%s' "$PANEL_NODE_TOKEN" | tr -d '[:space:]')
     while [[ -z "$PANEL_NODE_TOKEN" ]]; do
         echo -e "${RED}${CROSS}${NC} API token cannot be empty!"
         echo
         echo -ne "${CYAN}API token (e.g., eyJhbGciOi...): ${NC}"
-        read PANEL_NODE_TOKEN
+        read -r PANEL_NODE_TOKEN
+        PANEL_NODE_TOKEN=$(printf '%s' "$PANEL_NODE_TOKEN" | tr -d '[:space:]')
     done
 }
 
