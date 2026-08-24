@@ -374,10 +374,6 @@ install_tg() {
     echo -e "${WHITE}• TG service shortUuid: ${SERVICE_SHORT_UUID}${NC}"
     echo -e "${WHITE}• Grace days: ${GRACE_DAYS} $([ "$GRACE_DAYS" = "0" ] && echo '(unlimited)')${NC}"
     echo
-    echo -e "${CYAN}Useful Commands:${NC}"
-    echo -e "${WHITE}• Shim logs: docker logs -f remnawave-tg-shim${NC}"
-    echo -e "${WHITE}• Restart shim: docker compose -f ${REMNAWAVE_DIR}/docker-compose.yml up -d remnawave-tg-shim${NC}"
-    echo
 }
 
 remove_tg() {
