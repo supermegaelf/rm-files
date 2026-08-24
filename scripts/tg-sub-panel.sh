@@ -22,6 +22,7 @@ NGINX_CONF="${REMNAWAVE_DIR}/nginx.conf"
 COMPOSE_OVERRIDE="${REMNAWAVE_DIR}/docker-compose.override.yml"
 
 SUB_PREFIX="sub"
+SWAP_STATUSES="expired,limited"
 
 error() {
     echo -e "${RED}${CROSS}${NC} $1"
@@ -41,37 +42,24 @@ check_prerequisites() {
 }
 
 input_service_shortuuid() {
-    echo -e "${GRAY}${INFO}${NC} Create the telegram-only user in the panel first, then paste its shortUuid."
-    echo
-    echo -ne "${CYAN}tg-service shortUuid: ${NC}"
+    echo -ne "${CYAN}TG service shortUuid: ${NC}"
     read -r SERVICE_SHORT_UUID
     while ! [[ "$SERVICE_SHORT_UUID" =~ ^[A-Za-z0-9_-]{4,64}$ ]]; do
         echo -e "${RED}${CROSS}${NC} Invalid shortUuid!"
         echo
-        echo -ne "${CYAN}tg-service shortUuid: ${NC}"
+        echo -ne "${CYAN}TG service shortUuid: ${NC}"
         read -r SERVICE_SHORT_UUID
     done
 }
 
-input_swap_statuses() {
-    echo -ne "${CYAN}Also swap DISABLED users to telegram-only? (y/n): ${NC}"
-    read -r ans
-    ans=$(printf '%s' "$ans" | tr -cd 'a-zA-Z')
-    if [[ "$ans" == "y" || "$ans" == "Y" ]]; then
-        SWAP_STATUSES="expired,limited,disabled"
-    else
-        SWAP_STATUSES="expired,limited"
-    fi
-}
-
 input_grace_days() {
-    echo -ne "${CYAN}Days of telegram-only access after expiry (0 = unlimited) [1]: ${NC}"
+    echo -ne "${CYAN}Grace days (default 1, 0 = unlimited): ${NC}"
     read -r GRACE_DAYS
     GRACE_DAYS="${GRACE_DAYS:-1}"
     while ! [[ "$GRACE_DAYS" =~ ^[0-9]+$ ]]; do
         echo -e "${RED}${CROSS}${NC} Enter a whole number (0 or more)!"
         echo
-        echo -ne "${CYAN}Days of telegram-only access after expiry (0 = unlimited) [1]: ${NC}"
+        echo -ne "${CYAN}Grace days (default 1, 0 = unlimited): ${NC}"
         read -r GRACE_DAYS
         GRACE_DAYS="${GRACE_DAYS:-1}"
     done
@@ -369,6 +357,7 @@ install_tg() {
     echo
 
     deploy_shim
+    echo
     patch_nginx
     save_state
 
@@ -395,6 +384,7 @@ remove_tg() {
     echo
 
     echo -e "${CYAN}${INFO}${NC} Restoring nginx..."
+    echo -e "${GRAY}  ${ARROW}${NC} Reverting proxy_pass to 3010"
     if [ -f "${NGINX_CONF}.tg-sub-expire.bak" ]; then
         cat "${NGINX_CONF}.tg-sub-expire.bak" > "$NGINX_CONF"
         rm -f "${NGINX_CONF}.tg-sub-expire.bak"
@@ -403,12 +393,14 @@ remove_tg() {
         cat "${NGINX_CONF}.tmp" > "$NGINX_CONF"
         rm -f "${NGINX_CONF}.tmp"
     fi
+    echo -e "${GRAY}  ${ARROW}${NC} Reloading nginx"
     docker exec remnawave-nginx nginx -t > /dev/null 2>&1 && \
         docker exec remnawave-nginx nginx -s reload > /dev/null 2>&1
     echo -e "${GREEN}${CHECK}${NC} nginx restored"
 
     echo
     echo -e "${CYAN}${INFO}${NC} Removing shim container..."
+    echo -e "${GRAY}  ${ARROW}${NC} Stopping and removing container"
     cd "$REMNAWAVE_DIR"
     docker compose -f docker-compose.yml -f docker-compose.override.yml rm -sf remnawave-tg-shim > /dev/null 2>&1 || true
     rm -f "$COMPOSE_OVERRIDE"
@@ -416,6 +408,7 @@ remove_tg() {
 
     echo
     echo -e "${CYAN}${INFO}${NC} Cleaning up files..."
+    echo -e "${GRAY}  ${ARROW}${NC} Removing state file and router.php"
     rm -f "$STATE_FILE" "${SHIM_DIR}/router.php"
     rmdir "$SHIM_DIR" 2>/dev/null || true
     echo -e "${GREEN}${CHECK}${NC} Files removed"
@@ -473,7 +466,6 @@ main() {
                 echo
                 load_panel_vars
                 input_service_shortuuid
-                input_swap_statuses
                 input_grace_days
                 install_tg
                 ;;
