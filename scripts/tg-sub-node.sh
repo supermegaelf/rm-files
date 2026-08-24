@@ -23,6 +23,7 @@ DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 
 SCRIPT_VERSION="1.0.0"
 NODE_VERSION="2.8.0"
+TG_TEMPLATE_NAME="tg"
 
 #======================
 # VALIDATION FUNCTIONS
@@ -1078,22 +1079,27 @@ create_node_in_panel() {
 create_node_host_in_panel() {
     echo -e "${CYAN}${INFO}${NC} Creating host in panel..."
 
+    local tmpl_uuid tmpl_response
+    tmpl_response=$(make_panel_api_request GET "/api/subscription-templates")
+    tmpl_uuid=$(echo "$tmpl_response" | jq -r --arg name "$TG_TEMPLATE_NAME" '[.. | objects | select(.name? == $name and .templateType? == "XRAY_JSON") | .uuid] | .[0] // empty')
+    if [ -n "$tmpl_uuid" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Binding Xray JSON template ${TG_TEMPLATE_NAME}"
+    else
+        echo -e "${YELLOW}  ${WARNING}${NC} Xray JSON template ${TG_TEMPLATE_NAME} not found, host created without client routing"
+    fi
+
     local hosts_response
     hosts_response=$(make_panel_api_request GET "/api/hosts")
     local existing_uuid
     existing_uuid=$(echo "$hosts_response" | jq -r --arg addr "$SELFSTEAL_DOMAIN" '(.response // [])[] | select(.address == $addr) | .uuid' | head -n 1)
     if [ -n "$existing_uuid" ] && [ "$existing_uuid" != "null" ]; then
+        if [ -n "$tmpl_uuid" ]; then
+            local patch_body
+            patch_body=$(jq -n --arg uuid "$existing_uuid" --arg tmpl "$tmpl_uuid" '{uuid: $uuid, xrayJsonTemplateUuid: $tmpl}')
+            make_panel_api_request PATCH "/api/hosts" "$patch_body" > /dev/null 2>&1 || true
+        fi
         echo -e "${GREEN}${CHECK}${NC} Host created"
         return 0
-    fi
-
-    local tmpl_uuid tmpl_response
-    tmpl_response=$(make_panel_api_request GET "/api/subscription-templates")
-    tmpl_uuid=$(echo "$tmpl_response" | jq -r '[.. | objects | select(.name? == "tg" and .templateType? == "XRAY_JSON") | .uuid] | .[0] // empty')
-    if [ -n "$tmpl_uuid" ]; then
-        echo -e "${GRAY}  ${ARROW}${NC} Binding Xray JSON template tg"
-    else
-        echo -e "${YELLOW}  ${WARNING}${NC} Xray JSON template tg not found, host created without client routing"
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Building host config"
