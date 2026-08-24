@@ -98,31 +98,6 @@ show_main_menu() {
 # UTILITY FUNCTIONS
 #===================
 
-generate_user() {
-    local length=8
-    tr -dc 'a-zA-Z' < /dev/urandom | fold -w $length | head -n 1
-}
-
-generate_password() {
-    local length=24
-    local password=""
-    local upper_chars='A-Z'
-    local lower_chars='a-z'
-    local digit_chars='0-9'
-    local special_chars='_+-'
-    local all_chars='A-Za-z0-9_+-'
-
-    password+=$(head /dev/urandom | tr -dc "$upper_chars" | head -c 1)
-    password+=$(head /dev/urandom | tr -dc "$lower_chars" | head -c 1)
-    password+=$(head /dev/urandom | tr -dc "$digit_chars" | head -c 1)
-    password+=$(head /dev/urandom | tr -dc "$special_chars" | head -c 3)
-    password+=$(head /dev/urandom | tr -dc "$all_chars" | head -c $(($length - 6)))
-
-    password=$(echo "$password" | fold -w1 | shuf | tr -d '\n')
-
-    echo "$password"
-}
-
 log_entry() {
     mkdir -p ${DIR_REMNAWAVE}
     LOGFILE="${DIR_REMNAWAVE}remnawave_reverse.log"
@@ -1147,6 +1122,16 @@ create_node_host_in_panel() {
 
 create_tg_config_profile() {
     echo -e "${CYAN}${INFO}${NC} Creating TG-Only config profile..."
+
+    local profiles_response
+    profiles_response=$(make_panel_api_request GET "/api/config-profiles")
+    NEW_PROFILE_UUID=$(echo "$profiles_response" | jq -r '.response.configProfiles[] | select(.name == "TG-Only") | .uuid' | head -n1)
+    if [ -n "$NEW_PROFILE_UUID" ] && [ "$NEW_PROFILE_UUID" != "null" ]; then
+        NEW_PROFILE_INBOUND_UUID=$(echo "$profiles_response" | jq -r --arg u "$NEW_PROFILE_UUID" '.response.configProfiles[] | select(.uuid == $u) | .inbounds[0].uuid')
+        echo -e "${GRAY}  ${ARROW}${NC} Profile exists, reusing"
+        echo -e "${GREEN}${CHECK}${NC} TG-Only profile reused"
+        return 0
+    fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Generating x25519 keys"
     local key_response
