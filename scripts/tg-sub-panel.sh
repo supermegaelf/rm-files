@@ -371,8 +371,7 @@ install_tg() {
     echo -e "${PURPLE}========================${NC}"
     echo
     echo -e "${CYAN}Summary:${NC}"
-    echo -e "${WHITE}• tg-service shortUuid: ${SERVICE_SHORT_UUID}${NC}"
-    echo -e "${WHITE}• Swap statuses: ${SWAP_STATUSES}${NC}"
+    echo -e "${WHITE}• TG service shortUuid: ${SERVICE_SHORT_UUID}${NC}"
     echo -e "${WHITE}• Grace days: ${GRACE_DAYS} $([ "$GRACE_DAYS" = "0" ] && echo '(unlimited)')${NC}"
     echo
     echo -e "${CYAN}Useful Commands:${NC}"
