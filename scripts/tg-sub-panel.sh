@@ -110,6 +110,7 @@ $SWAP    = array_values(array_filter(array_map('trim',
     explode(',', strtolower((string) (getenv('SWAP_STATUSES') ?: 'expired,limited'))))));
 $PREFIX  = trim((string) (getenv('SUB_PREFIX') ?: 'sub'), '/');
 $GRACE   = (int) (getenv('GRACE_DAYS') ?: 0);
+$GRACE_ANNOUNCE = trim((string) @file_get_contents('/app/grace-announce.txt'));
 
 $method   = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $uri      = $_SERVER['REQUEST_URI'] ?? '/';
@@ -248,12 +249,17 @@ header('Cache-Control: no-store');
 
 $keep = [
     'subscription-userinfo', 'profile-title', 'profile-update-interval', 'support-url',
-    'announce', 'content-disposition', 'profile-web-page-url', 'subscription-refill-date',
+    'content-disposition', 'profile-web-page-url', 'subscription-refill-date',
 ];
 foreach ($keep as $k) {
     if (isset($orig['headers'][$k])) {
         header($k . ': ' . $orig['headers'][$k]);
     }
+}
+if ($status === 'expired' && $GRACE_ANNOUNCE !== '') {
+    header('announce: base64:' . base64_encode($GRACE_ANNOUNCE));
+} elseif (isset($orig['headers']['announce'])) {
+    header('announce: ' . $orig['headers']['announce']);
 }
 header('Content-Type: ' . ($svc['headers']['content-type'] ?? 'text/plain; charset=utf-8'));
 echo $svc['body'];
@@ -279,6 +285,7 @@ services:
     working_dir: /app
     volumes:
       - ./tg-sub-expire/router.php:/app/router.php:ro
+      - ./tg-sub-expire/grace-announce.txt:/app/grace-announce.txt:ro
     ports:
       - '127.0.0.1:3011:3011'
     networks:
@@ -292,6 +299,15 @@ services:
         max-size: '30m'
         max-file: '5'
 EOF
+
+    if [ ! -f "${SHIM_DIR}/grace-announce.txt" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Writing grace-announce.txt"
+        cat > "${SHIM_DIR}/grace-announce.txt" <<'GRACE_EOF'
+⚠️ Подписка истекла ⏳
+1. Выключите VPN ➔ нажмите 🔄 ➔ включите VPN
+2. Откройте Telegram ➔ @surf_v_bot ➔ Подписка ⭐️ ➔ Продлить 💳
+GRACE_EOF
+    fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Starting shim container"
     cd "$REMNAWAVE_DIR"
@@ -390,7 +406,7 @@ remove_tg() {
     echo
     echo -e "${CYAN}${INFO}${NC} Cleaning up files..."
     echo -e "${GRAY}  ${ARROW}${NC} Removing state file and router.php"
-    rm -f "$STATE_FILE" "${SHIM_DIR}/router.php"
+    rm -f "$STATE_FILE" "${SHIM_DIR}/router.php" "${SHIM_DIR}/grace-announce.txt"
     rmdir "$SHIM_DIR" 2>/dev/null || true
     echo -e "${GREEN}${CHECK}${NC} Files removed"
 
