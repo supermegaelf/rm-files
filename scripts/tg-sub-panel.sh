@@ -69,6 +69,20 @@ input_grace_days() {
     done
 }
 
+input_bot_username() {
+    echo -ne "${CYAN}Telegram bot for renewals (e.g., @test_bot): ${NC}"
+    read -r BOT_USERNAME
+    BOT_USERNAME=$(printf '%s' "$BOT_USERNAME" | tr -d '[:space:]@')
+    while ! [[ "$BOT_USERNAME" =~ ^[A-Za-z0-9_]{4,32}$ ]]; do
+        echo -e "${RED}${CROSS}${NC} Invalid bot username!"
+        echo
+        echo -ne "${CYAN}Telegram bot for renewals (e.g., @test_bot): ${NC}"
+        read -r BOT_USERNAME
+        BOT_USERNAME=$(printf '%s' "$BOT_USERNAME" | tr -d '[:space:]@')
+    done
+    BOT_USERNAME="@${BOT_USERNAME}"
+}
+
 input_panel_domain() {
     echo -ne "${CYAN}Panel domain (e.g., panel.example.com): ${NC}"
     read -r PANEL_DOMAIN
@@ -304,10 +318,10 @@ EOF
 
     if [ ! -f "${SHIM_DIR}/grace-announce.txt" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Writing grace-announce.txt"
-        cat > "${SHIM_DIR}/grace-announce.txt" <<'GRACE_EOF'
+        cat > "${SHIM_DIR}/grace-announce.txt" <<GRACE_EOF
 ⚠️ Подписка истекла ⏳
 1. Выключите VPN ➔ нажмите 🔄 ➔ включите VPN
-2. Откройте Telegram ➔ @surf_v_bot ➔ Подписка ⭐️ ➔ Продлить 💳
+2. Откройте Telegram ➔ ${BOT_USERNAME} ➔ Подписка ⭐️ ➔ Продлить 💳
 GRACE_EOF
     fi
 
@@ -466,6 +480,7 @@ main() {
                 load_panel_vars
                 input_service_shortuuid
                 input_grace_days
+                input_bot_username
                 install_tg
                 ;;
             2) echo; echo -e "${YELLOW}${WARNING}${NC} Exiting..."; exit 0 ;;
