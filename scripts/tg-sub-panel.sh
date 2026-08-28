@@ -110,7 +110,6 @@ $SWAP    = array_values(array_filter(array_map('trim',
     explode(',', strtolower((string) (getenv('SWAP_STATUSES') ?: 'expired,limited'))))));
 $PREFIX  = trim((string) (getenv('SUB_PREFIX') ?: 'sub'), '/');
 $GRACE   = (int) (getenv('GRACE_DAYS') ?: 0);
-$GRACE_ANNOUNCE = trim((string) @file_get_contents('/app/grace-announce.txt'));
 
 $method   = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $uri      = $_SERVER['REQUEST_URI'] ?? '/';
@@ -226,7 +225,6 @@ if (!in_array($status, $SWAP, true)) {
     exit;
 }
 
-// Grace period: give telegram-only access for GRACE_DAYS after expiry, then stop.
 if ($GRACE > 0 && $expiresAt !== '') {
     $expTs = strtotime($expiresAt);
     if ($expTs !== false && time() > $expTs + $GRACE * 86400) {
@@ -256,10 +254,14 @@ foreach ($keep as $k) {
         header($k . ': ' . $orig['headers'][$k]);
     }
 }
-if ($status === 'expired' && $GRACE_ANNOUNCE !== '') {
-    header('announce: base64:' . base64_encode($GRACE_ANNOUNCE));
-} elseif (isset($orig['headers']['announce'])) {
-    header('announce: ' . $orig['headers']['announce']);
+$graceAnnounce = ($status === 'expired')
+    ? trim((string) @file_get_contents('/app/grace-announce.txt'))
+    : '';
+$announce = $graceAnnounce !== ''
+    ? 'base64:' . base64_encode($graceAnnounce)
+    : ($orig['headers']['announce'] ?? null);
+if ($announce !== null) {
+    header('announce: ' . $announce);
 }
 header('Content-Type: ' . ($svc['headers']['content-type'] ?? 'text/plain; charset=utf-8'));
 echo $svc['body'];
