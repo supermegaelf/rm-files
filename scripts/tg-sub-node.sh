@@ -223,7 +223,7 @@ input_node_host_remark() {
         echo -ne "${CYAN}Host flag: ${NC}"
         read HOST_FLAG
     done
-    HOST_REMARK="${HOST_FLAG} Telegram"
+    HOST_REMARK="${HOST_FLAG} Telegram ☝️"
 }
 
 
