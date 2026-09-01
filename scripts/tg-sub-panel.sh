@@ -427,9 +427,9 @@ remove_tg() {
     echo -e "${GREEN}${CHECK}${NC} Files removed"
 
     echo
-    echo -e "${PURPLE}==================${NC}"
+    echo -e "${PURPLE}===================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Removal complete"
-    echo -e "${PURPLE}==================${NC}"
+    echo -e "${PURPLE}===================${NC}"
     echo
 }
 
