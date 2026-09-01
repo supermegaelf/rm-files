@@ -152,13 +152,13 @@ input_cloudflare_email() {
 input_node_selfsteal_domain() {
     echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
     read -r SELFSTEAL_DOMAIN
-    SELFSTEAL_DOMAIN=$(printf '%s' "$SELFSTEAL_DOMAIN" | tr -d '[:space:]')
+    SELFSTEAL_DOMAIN=$(printf '%s' "$SELFSTEAL_DOMAIN" | tr -cd 'a-zA-Z0-9.-')
     while [[ -z "$SELFSTEAL_DOMAIN" ]] || ! validate_domain "$SELFSTEAL_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
         echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
         read -r SELFSTEAL_DOMAIN
-        SELFSTEAL_DOMAIN=$(printf '%s' "$SELFSTEAL_DOMAIN" | tr -d '[:space:]')
+        SELFSTEAL_DOMAIN=$(printf '%s' "$SELFSTEAL_DOMAIN" | tr -cd 'a-zA-Z0-9.-')
     done
 }
 
@@ -179,13 +179,13 @@ input_panel_ip() {
 input_node_panel_domain() {
     echo -ne "${CYAN}Panel domain (e.g., example.com): ${NC}"
     read -r PANEL_NODE_DOMAIN
-    PANEL_NODE_DOMAIN=$(printf '%s' "$PANEL_NODE_DOMAIN" | tr -d '[:space:]')
+    PANEL_NODE_DOMAIN=$(printf '%s' "$PANEL_NODE_DOMAIN" | tr -cd 'a-zA-Z0-9.-')
     while [[ -z "$PANEL_NODE_DOMAIN" ]] || ! validate_domain "$PANEL_NODE_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
         echo -ne "${CYAN}Panel domain: ${NC}"
         read -r PANEL_NODE_DOMAIN
-        PANEL_NODE_DOMAIN=$(printf '%s' "$PANEL_NODE_DOMAIN" | tr -d '[:space:]')
+        PANEL_NODE_DOMAIN=$(printf '%s' "$PANEL_NODE_DOMAIN" | tr -cd 'a-zA-Z0-9.-')
     done
     PANEL_NODE_URL="https://${PANEL_NODE_DOMAIN}"
 }
@@ -1826,6 +1826,7 @@ install_node() {
 
 main() {
     log_entry
+    exec < /dev/tty
     check_root
     check_os
 
