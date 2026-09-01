@@ -48,23 +48,27 @@ check_prerequisites() {
 input_service_shortuuid() {
     echo -ne "${CYAN}TG service shortUuid: ${NC}"
     read -r SERVICE_SHORT_UUID
+    SERVICE_SHORT_UUID=$(printf '%s' "$SERVICE_SHORT_UUID" | tr -cd 'A-Za-z0-9_-')
     while ! [[ "$SERVICE_SHORT_UUID" =~ ^[A-Za-z0-9_-]{4,64}$ ]]; do
         echo -e "${RED}${CROSS}${NC} Invalid shortUuid!"
         echo
         echo -ne "${CYAN}TG service shortUuid: ${NC}"
         read -r SERVICE_SHORT_UUID
+        SERVICE_SHORT_UUID=$(printf '%s' "$SERVICE_SHORT_UUID" | tr -cd 'A-Za-z0-9_-')
     done
 }
 
 input_grace_days() {
     echo -ne "${CYAN}Grace days (default 1, 0 = unlimited): ${NC}"
     read -r GRACE_DAYS
+    GRACE_DAYS=$(printf '%s' "$GRACE_DAYS" | tr -cd '0-9')
     GRACE_DAYS="${GRACE_DAYS:-1}"
     while ! [[ "$GRACE_DAYS" =~ ^[0-9]+$ ]]; do
         echo -e "${RED}${CROSS}${NC} Enter a whole number (0 or more)!"
         echo
         echo -ne "${CYAN}Grace days (default 1, 0 = unlimited): ${NC}"
         read -r GRACE_DAYS
+        GRACE_DAYS=$(printf '%s' "$GRACE_DAYS" | tr -cd '0-9')
         GRACE_DAYS="${GRACE_DAYS:-1}"
     done
 }
@@ -72,13 +76,13 @@ input_grace_days() {
 input_bot_username() {
     echo -ne "${CYAN}Telegram bot for renewals (e.g., @test_bot): ${NC}"
     read -r BOT_USERNAME
-    BOT_USERNAME=$(printf '%s' "$BOT_USERNAME" | tr -d '[:space:]@')
+    BOT_USERNAME=$(printf '%s' "$BOT_USERNAME" | tr -cd 'A-Za-z0-9_')
     while ! [[ "$BOT_USERNAME" =~ ^[A-Za-z0-9_]{4,32}$ ]]; do
         echo -e "${RED}${CROSS}${NC} Invalid bot username!"
         echo
         echo -ne "${CYAN}Telegram bot for renewals (e.g., @test_bot): ${NC}"
         read -r BOT_USERNAME
-        BOT_USERNAME=$(printf '%s' "$BOT_USERNAME" | tr -d '[:space:]@')
+        BOT_USERNAME=$(printf '%s' "$BOT_USERNAME" | tr -cd 'A-Za-z0-9_')
     done
     BOT_USERNAME="@${BOT_USERNAME}"
 }
@@ -86,11 +90,13 @@ input_bot_username() {
 input_panel_domain() {
     echo -ne "${CYAN}Panel domain (e.g., panel.example.com): ${NC}"
     read -r PANEL_DOMAIN
-    while [[ -z "$PANEL_DOMAIN" ]] || [[ "$PANEL_DOMAIN" =~ [[:space:]] ]] || ! [[ "$PANEL_DOMAIN" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; do
+    PANEL_DOMAIN=$(printf '%s' "$PANEL_DOMAIN" | tr -cd 'a-zA-Z0-9.-')
+    while [[ -z "$PANEL_DOMAIN" ]] || ! [[ "$PANEL_DOMAIN" =~ ^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; do
         echo -e "${RED}${CROSS}${NC} Invalid domain!"
         echo
         echo -ne "${CYAN}Panel domain (e.g., panel.example.com): ${NC}"
         read -r PANEL_DOMAIN
+        PANEL_DOMAIN=$(printf '%s' "$PANEL_DOMAIN" | tr -cd 'a-zA-Z0-9.-')
     done
     PANEL_URL="https://${PANEL_DOMAIN}"
 }
