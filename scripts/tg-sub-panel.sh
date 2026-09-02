@@ -239,7 +239,7 @@ if ($info['code'] === 200) {
     $data      = json_decode($info['body'], true);
     $status    = strtolower((string) ($data['response']['user']['userStatus'] ?? 'active'));
     $expiresAt = (string) ($data['response']['user']['expiresAt'] ?? '');
-} else {
+} elseif ($info['code'] === 0 || $info['code'] >= 500) {
     error_log("tg-shim sub=$shortUuid action=pass reason=info-fail info={$info['code']}");
 }
 
