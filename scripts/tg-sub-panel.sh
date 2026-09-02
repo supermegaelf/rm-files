@@ -122,6 +122,7 @@ deploy_shim() {
     cat > "${SHIM_DIR}/router.php" <<'PHP_EOF'
 <?php
 declare(strict_types=1);
+ini_set('log_errors', '1');
 
 $PANEL   = rtrim((string) (getenv('PANEL_URL')   ?: 'http://remnawave:3000'), '/');
 $SUBPAGE = rtrim((string) (getenv('SUBPAGE_URL') ?: 'http://remnawave-subscription-page:3010'), '/');
@@ -238,6 +239,8 @@ if ($info['code'] === 200) {
     $data      = json_decode($info['body'], true);
     $status    = strtolower((string) ($data['response']['user']['userStatus'] ?? 'active'));
     $expiresAt = (string) ($data['response']['user']['expiresAt'] ?? '');
+} else {
+    error_log("tg-shim sub=$shortUuid action=pass reason=info-fail info={$info['code']}");
 }
 
 if (!in_array($status, $SWAP, true)) {
@@ -248,6 +251,7 @@ if (!in_array($status, $SWAP, true)) {
 if ($GRACE > 0 && $expiresAt !== '') {
     $expTs = strtotime($expiresAt);
     if ($expTs !== false && time() > $expTs + $GRACE * 86400) {
+        error_log("tg-shim sub=$shortUuid action=pass reason=grace-expired status=$status");
         passthrough();
         exit;
     }
@@ -258,11 +262,13 @@ $orig = httpReq('GET', $SUBPAGE . '/' . $PREFIX . '/' . rawurlencode($shortUuid)
 $svc  = httpReq('GET', $SUBPAGE . '/' . $PREFIX . '/' . rawurlencode($SERVICE)   . $rest . $qs, fwdHeaders());
 
 if ($svc['code'] !== 200 || $svc['body'] === '') {
+    error_log("tg-shim sub=$shortUuid action=pass reason=svc-fail status=$status svc={$svc['code']}");
     passthrough();
     exit;
 }
 
 http_response_code(200);
+error_log("tg-shim sub=$shortUuid action=swap status=$status svc=200 orig={$orig['code']}");
 header('Cache-Control: no-store');
 
 $keep = [
