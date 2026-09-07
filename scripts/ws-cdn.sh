@@ -23,7 +23,9 @@ DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 
 SCRIPT_VERSION="1.0.0"
 NODE_VERSION="2.8.0"
-CDN_PROFILE_NAME="Vless-WS-CDN"
+PROFILE_NAME="StealConfig"
+WS_INBOUND_TAG="Vless WS Yandex"
+WS_INBOUND_PORT=10000
 
 #======================
 # VALIDATION FUNCTIONS
@@ -664,35 +666,61 @@ make_panel_api_request() {
     fi
 }
 
-create_cdn_config_profile() {
-    echo -e "${CYAN}${INFO}${NC} Creating ${CDN_PROFILE_NAME} config profile..."
-
+resolve_ws_inbound_uuid() {
     local profiles_response
     profiles_response=$(make_panel_api_request GET "/api/config-profiles")
-    NEW_PROFILE_UUID=$(echo "$profiles_response" | jq -r --arg n "$CDN_PROFILE_NAME" '.response.configProfiles[] | select(.name == $n) | .uuid' | head -n1)
+    WS_INBOUND_UUID=$(echo "$profiles_response" | jq -r \
+        --arg u "$PROFILE_UUID" --arg tag "$WS_INBOUND_TAG" \
+        '.response.configProfiles[] | select(.uuid == $u) | .inbounds[] | select(.tag == $tag) | .uuid' | head -n1)
+}
 
-    if [ -n "$NEW_PROFILE_UUID" ] && [ "$NEW_PROFILE_UUID" != "null" ]; then
-        echo -e "${GRAY}  ${ARROW}${NC} Profile exists, reusing"
-        NEW_PROFILE_INBOUND_UUID=$(echo "$profiles_response" | jq -r --arg u "$NEW_PROFILE_UUID" '.response.configProfiles[] | select(.uuid == $u) | .inbounds[0].uuid')
+ensure_ws_inbound_in_profile() {
+    echo -e "${CYAN}${INFO}${NC} Ensuring ${WS_INBOUND_TAG} inbound in ${PROFILE_NAME} profile..."
 
-        local full_profile
-        full_profile=$(make_panel_api_request GET "/api/config-profiles/$NEW_PROFILE_UUID")
+    echo -e "${GRAY}  ${ARROW}${NC} Locating ${PROFILE_NAME} profile"
+    local profiles_response
+    profiles_response=$(make_panel_api_request GET "/api/config-profiles")
+    PROFILE_UUID=$(echo "$profiles_response" | jq -r --arg n "$PROFILE_NAME" '.response.configProfiles[] | select(.name == $n) | .uuid' | head -n1)
+    if [ -z "$PROFILE_UUID" ] || [ "$PROFILE_UUID" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} Config profile '${PROFILE_NAME}' not found in panel"
+        exit 1
+    fi
+
+    local full_profile config
+    full_profile=$(make_panel_api_request GET "/api/config-profiles/$PROFILE_UUID")
+    config=$(echo "$full_profile" | jq -c '.response.config')
+    if [ -z "$config" ] || [ "$config" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} Failed to read config of profile '${PROFILE_NAME}'"
+        exit 1
+    fi
+
+    if echo "$config" | jq -e --arg tag "$WS_INBOUND_TAG" '.inbounds[] | select(.tag == $tag)' > /dev/null 2>&1; then
+        echo -e "${YELLOW}${WARNING}${NC} Inbound '${WS_INBOUND_TAG}' already exists in '${PROFILE_NAME}', reusing it"
         local existing_path
-        existing_path=$(echo "$full_profile" | jq -r '.response.config.inbounds[0].streamSettings.wsSettings.path // empty')
+        existing_path=$(echo "$config" | jq -r --arg tag "$WS_INBOUND_TAG" '.inbounds[] | select(.tag == $tag) | .streamSettings.wsSettings.path // empty')
         RANDOM_PATH=$(printf '%s' "$existing_path" | sed 's|^/||; s|?ed=2560$||')
-
         if [ -z "$RANDOM_PATH" ]; then
-            echo -e "${RED}${CROSS}${NC} Failed to recover WS path from existing profile"
+            echo -e "${RED}${CROSS}${NC} Failed to recover WS path from existing inbound"
             exit 1
         fi
-        echo -e "${GREEN}${CHECK}${NC} ${CDN_PROFILE_NAME} profile reused"
+        resolve_ws_inbound_uuid
+        if [ -z "$WS_INBOUND_UUID" ] || [ "$WS_INBOUND_UUID" = "null" ]; then
+            echo -e "${RED}${CROSS}${NC} Failed to resolve existing inbound UUID"
+            exit 1
+        fi
+        echo -e "${GREEN}${CHECK}${NC} Reusing existing ${WS_INBOUND_TAG} inbound"
         return 0
     fi
 
+    if echo "$config" | jq -e --argjson port "$WS_INBOUND_PORT" '.inbounds[] | select(.port == $port)' > /dev/null 2>&1; then
+        echo -e "${YELLOW}${WARNING}${NC} Port ${WS_INBOUND_PORT} is already used by another inbound in '${PROFILE_NAME}'"
+        echo -e "${YELLOW}Resolve it manually (rename it to '${WS_INBOUND_TAG}' or free the port), then re-run.${NC}"
+        exit 1
+    fi
+
     echo -e "${GRAY}  ${ARROW}${NC} Generating x25519 key"
-    local key_response
+    local key_response private_key
     key_response=$(make_panel_api_request GET "/api/system/tools/x25519/generate")
-    local private_key
     private_key=$(echo "$key_response" | jq -r '.response.keypairs[0].privateKey')
     if [ -z "$private_key" ] || [ "$private_key" = "null" ]; then
         echo -e "${RED}${CROSS}${NC} Failed to generate keys: $key_response"
@@ -702,59 +730,45 @@ create_cdn_config_profile() {
     echo -e "${GRAY}  ${ARROW}${NC} Generating WS path"
     RANDOM_PATH="$(openssl rand -base64 12 | tr -dc 'a-zA-Z0-9' | head -c15)"
 
-    echo -e "${GRAY}  ${ARROW}${NC} Building profile"
-    local decryption="mlkem768x25519plus.native.600s.$private_key"
-    local request_body
-    request_body=$(jq -n \
-        --arg name "$CDN_PROFILE_NAME" \
+    echo -e "${GRAY}  ${ARROW}${NC} Appending ${WS_INBOUND_TAG} inbound"
+    local decryption updated_config
+    decryption="mlkem768x25519plus.native.600s.$private_key"
+    updated_config=$(echo "$config" | jq -c \
+        --arg tag "$WS_INBOUND_TAG" \
+        --argjson port "$WS_INBOUND_PORT" \
         --arg dec "$decryption" \
         --arg path "/$RANDOM_PATH?ed=2560" \
-        '{
-        name: $name,
-        config: {
-            log: { loglevel: "warning" },
-            dns: {
-                queryStrategy: "ForceIPv4",
-                servers: [{ address: "https://dns.google/dns-query", skipFallback: false }]
-            },
-            inbounds: [{
-                tag: "Vless WS",
-                port: 10000,
-                listen: "127.0.0.1",
-                protocol: "vless",
-                settings: { clients: [], decryption: $dec },
-                sniffing: { enabled: true, destOverride: ["http", "tls"] },
-                streamSettings: {
-                    network: "ws",
-                    wsSettings: { path: $path }
-                }
-            }],
-            outbounds: [
-                { tag: "DIRECT", protocol: "freedom" },
-                { tag: "BLOCK", protocol: "blackhole" }
-            ],
-            routing: {
-                domainStrategy: "IPIfNonMatch",
-                rules: [
-                    { type: "field", network: "tcp,udp", outboundTag: "DIRECT" }
-                ]
+        '.inbounds += [{
+            tag: $tag,
+            port: $port,
+            listen: "127.0.0.1",
+            protocol: "vless",
+            settings: { clients: [], decryption: $dec },
+            sniffing: { enabled: true, destOverride: ["http", "tls"] },
+            streamSettings: {
+                network: "ws",
+                wsSettings: { path: $path }
             }
-        }
-    }')
+        }]')
+
+    local patch_data
+    patch_data=$(jq -n --arg uuid "$PROFILE_UUID" --argjson config "$updated_config" '{ uuid: $uuid, config: $config }')
 
     echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
     local response
-    response=$(make_panel_api_request POST "/api/config-profiles" "$request_body")
-
-    NEW_PROFILE_UUID=$(echo "$response" | jq -r '.response.uuid')
-    NEW_PROFILE_INBOUND_UUID=$(echo "$response" | jq -r '.response.inbounds[0].uuid')
-
-    if [ -z "$NEW_PROFILE_UUID" ] || [ "$NEW_PROFILE_UUID" = "null" ] || [ -z "$NEW_PROFILE_INBOUND_UUID" ] || [ "$NEW_PROFILE_INBOUND_UUID" = "null" ]; then
-        echo -e "${RED}${CROSS}${NC} Failed to create profile: $response"
+    response=$(make_panel_api_request PATCH "/api/config-profiles" "$patch_data")
+    if ! echo "$response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to update profile: $response"
         exit 1
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} ${CDN_PROFILE_NAME} profile created"
+    resolve_ws_inbound_uuid
+    if [ -z "$WS_INBOUND_UUID" ] || [ "$WS_INBOUND_UUID" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} Failed to resolve new inbound UUID"
+        exit 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} ${WS_INBOUND_TAG} inbound added to ${PROFILE_NAME}"
 }
 
 create_node_in_panel() {
@@ -765,8 +779,8 @@ create_node_in_panel() {
     node_data=$(jq -n \
         --arg name "$NODE_NAME" \
         --arg address "$SELFSTEAL_DOMAIN" \
-        --arg profile_uuid "$NEW_PROFILE_UUID" \
-        --arg inbound_uuid "$NEW_PROFILE_INBOUND_UUID" \
+        --arg profile_uuid "$PROFILE_UUID" \
+        --arg inbound_uuid "$WS_INBOUND_UUID" \
         '{
             name: $name,
             address: $address,
@@ -881,8 +895,8 @@ create_cdn_host_in_panel() {
         --arg reqhost "$CDN_DOMAIN" \
         --arg path "/$RANDOM_PATH?ed=2560" \
         --arg pin "$pin" \
-        --arg profile_uuid "$NEW_PROFILE_UUID" \
-        --arg inbound_uuid "$NEW_PROFILE_INBOUND_UUID" \
+        --arg profile_uuid "$PROFILE_UUID" \
+        --arg inbound_uuid "$WS_INBOUND_UUID" \
         '{
             remark: $remark,
             address: $address,
@@ -1192,41 +1206,29 @@ owncloud_account_step() {
 # NODE DELETE FUNCTIONS
 #==========================
 
-list_nodes_from_panel() {
-    echo -e "${CYAN}${INFO}${NC} Fetching CDN nodes from panel..."
+find_node_to_delete() {
+    echo -e "${CYAN}${INFO}${NC} Locating this node in panel..."
 
-    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
-    local nodes_response
-    nodes_response=$(make_panel_api_request GET "/api/nodes")
-
-    echo -e "${GRAY}  ${ARROW}${NC} Filtering CDN nodes"
-    local profiles_response
-    profiles_response=$(make_panel_api_request GET "/api/config-profiles")
-
-    local cdn_profile_uuids
-    cdn_profile_uuids=$(echo "$profiles_response" | jq -c --arg n "$CDN_PROFILE_NAME" '[.response.configProfiles[] | select(.name == $n) | .uuid]')
-
-    NODE_LIST_JSON=$(echo "$nodes_response" | jq -c --argjson cdn "$cdn_profile_uuids" \
-        '[.response[] | select((.configProfile.activeConfigProfileUuid // "") as $u | ($cdn | index($u)) != null)]')
-
-    NODE_COUNT=$(echo "$NODE_LIST_JSON" | jq 'length')
-
-    if [ -z "$NODE_COUNT" ] || [ "$NODE_COUNT" = "null" ] || [ "$NODE_COUNT" -eq 0 ]; then
-        echo -e "${RED}${CROSS}${NC} No CDN nodes found in panel"
+    if [ -z "$SELFSTEAL_DOMAIN" ]; then
+        echo -e "${RED}${CROSS}${NC} Origin domain unknown (missing saved credentials)"
         exit 1
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} Found $NODE_COUNT CDN node(s)"
-}
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
+    local nodes_response selected
+    nodes_response=$(make_panel_api_request GET "/api/nodes")
+    selected=$(echo "$nodes_response" | jq -c --arg addr "$SELFSTEAL_DOMAIN" '[.response[] | select(.address == $addr)] | .[0] // empty')
 
-select_node_to_delete() {
-    local selected_node
-    selected_node=$(echo "$NODE_LIST_JSON" | jq -c '.[0]')
+    if [ -z "$selected" ] || [ "$selected" = "null" ]; then
+        echo -e "${RED}${CROSS}${NC} No node found for $SELFSTEAL_DOMAIN"
+        exit 1
+    fi
 
-    DELETE_NODE_UUID=$(echo "$selected_node" | jq -r '.uuid')
-    DELETE_NODE_NAME=$(echo "$selected_node" | jq -r '.name')
-    DELETE_NODE_ADDRESS=$(echo "$selected_node" | jq -r '.address')
-    DELETE_NODE_PROFILE_UUID=$(echo "$selected_node" | jq -r '.configProfile.activeConfigProfileUuid // empty')
+    DELETE_NODE_UUID=$(echo "$selected" | jq -r '.uuid')
+    DELETE_NODE_NAME=$(echo "$selected" | jq -r '.name')
+    DELETE_NODE_ADDRESS=$(echo "$selected" | jq -r '.address')
+
+    echo -e "${GREEN}${CHECK}${NC} Found node $DELETE_NODE_NAME"
 }
 
 delete_node_host_from_panel() {
@@ -1273,37 +1275,6 @@ delete_node_from_panel() {
     fi
 }
 
-delete_cdn_config_profile_from_panel() {
-    echo -e "${CYAN}${INFO}${NC} Removing ${CDN_PROFILE_NAME} profile from panel..."
-
-    if [ -z "$DELETE_NODE_PROFILE_UUID" ] || [ "$DELETE_NODE_PROFILE_UUID" = "null" ]; then
-        echo -e "${GRAY}  ${ARROW}${NC} Node had no config profile, skipping"
-        echo -e "${GREEN}${CHECK}${NC} Profile step skipped"
-        return 0
-    fi
-
-    echo -e "${GRAY}  ${ARROW}${NC} Checking for other nodes using this profile"
-    local nodes_response in_use
-    nodes_response=$(make_panel_api_request GET "/api/nodes")
-    in_use=$(echo "$nodes_response" | jq -r --arg u "$DELETE_NODE_PROFILE_UUID" '[.response[] | select((.configProfile.activeConfigProfileUuid // "") == $u)] | length')
-    if [ -n "$in_use" ] && [ "$in_use" != "null" ] && [ "$in_use" -gt 0 ]; then
-        echo -e "${YELLOW}${WARNING}${NC} Profile still used by $in_use other node(s), keeping it"
-        echo -e "${GREEN}${CHECK}${NC} Profile step skipped"
-        return 0
-    fi
-
-    echo -e "${GRAY}  ${ARROW}${NC} Deleting profile ${DELETE_NODE_PROFILE_UUID}"
-    local delete_response
-    delete_response=$(make_panel_api_request DELETE "/api/config-profiles/${DELETE_NODE_PROFILE_UUID}")
-
-    if ! echo "$delete_response" | jq -e '.response.isDeleted == true' > /dev/null 2>&1; then
-        echo -e "${YELLOW}${WARNING}${NC} Failed to delete profile: $delete_response"
-        return 0
-    fi
-
-    echo -e "${GREEN}${CHECK}${NC} ${CDN_PROFILE_NAME} profile removed"
-}
-
 cleanup_node_server() {
     echo -e "${CYAN}${INFO}${NC} Cleaning up server..."
 
@@ -1334,12 +1305,12 @@ delete_node() {
     echo -e "${GREEN}===============${NC}"
     echo
 
-    list_nodes_from_panel
-    select_node_to_delete
+    find_node_to_delete
 
     echo
     echo -e "${YELLOW}${WARNING}${NC} You are about to delete node: ${WHITE}$DELETE_NODE_NAME${NC} ${GRAY}($DELETE_NODE_ADDRESS)${NC}"
-    echo -e "${RED}This will remove the node from the panel and clean up this server.${NC}"
+    echo -e "${RED}This will remove the node and its host from the panel and clean up this server.${NC}"
+    echo -e "${GRAY}The shared ${PROFILE_NAME} profile and the ${WS_INBOUND_TAG} inbound are left untouched.${NC}"
     echo
     echo -ne "${YELLOW}Are you sure? (y/n): ${NC}"
     read -r confirm
@@ -1358,8 +1329,6 @@ delete_node() {
     delete_node_host_from_panel
     echo
     delete_node_from_panel
-    echo
-    delete_cdn_config_profile_from_panel
 
     echo
     echo -e "${GREEN}Cleaning up server${NC}"
@@ -1415,11 +1384,11 @@ install_node() {
     setup_certificate
 
     echo
-    echo -e "${GREEN}Creating profile and node${NC}"
-    echo -e "${GREEN}=========================${NC}"
+    echo -e "${GREEN}Configuring inbound and node${NC}"
+    echo -e "${GREEN}============================${NC}"
     echo
 
-    create_cdn_config_profile
+    ensure_ws_inbound_in_profile
     echo
     create_node_in_panel
 
@@ -1474,7 +1443,7 @@ install_node() {
     echo -e "${WHITE}• WS path: /${RANDOM_PATH}?ed=2560${NC}"
     echo
     echo -e "${YELLOW}${WARNING}${NC} Finish in the panel:"
-    echo -e "${WHITE}• Activate the ${CDN_PROFILE_NAME} inbound in the desired Internal Squads${NC}"
+    echo -e "${WHITE}• Activate the ${WS_INBOUND_TAG} inbound in the desired Internal Squads${NC}"
     echo -e "${WHITE}• Apply CDN routing for this host${NC}"
     echo
     echo -e "${CYAN}Maintenance:${NC}"
