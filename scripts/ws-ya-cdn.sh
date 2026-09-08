@@ -917,6 +917,48 @@ create_cdn_host_in_panel() {
     echo -e "${GREEN}${CHECK}${NC} Host created"
 }
 
+setup_pin_autoupdate() {
+    echo -e "${CYAN}${INFO}${NC} Configuring pin auto-update..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Writing updater script"
+    cat > /opt/remnanode/update-pin.sh <<'EOF'
+#!/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+[ -f /opt/remnanode/rm-node-config.env ] || exit 0
+source /opt/remnanode/rm-node-config.env
+PANEL_URL="https://${PANEL_NODE_DOMAIN}"
+
+new_pin=$(echo | openssl s_client -connect "$CDN_DOMAIN:443" -servername yastatic.net 2>/dev/null \
+    | openssl x509 -noout -fingerprint -sha256 | sed 's/.*=//; s/://g' | tr 'A-Z' 'a-z')
+if [ -z "$new_pin" ]; then
+    echo "update-pin: failed to read certificate from $CDN_DOMAIN" >&2
+    exit 1
+fi
+
+hosts=$(curl -s -X GET "${PANEL_URL}/api/hosts" -H "Authorization: Bearer $PANEL_NODE_TOKEN" -H "X-Remnawave-Client-Type: browser")
+if ! echo "$hosts" | jq -e '.response' > /dev/null 2>&1; then
+    echo "update-pin: panel API not reachable or unauthorized" >&2
+    exit 1
+fi
+
+host=$(echo "$hosts" | jq -c --arg a "$CDN_DOMAIN" '.response[] | select(.address == $a)' | head -n1)
+[ -z "$host" ] && exit 0
+
+uuid=$(echo "$host" | jq -r '.uuid')
+cur=$(echo "$host" | jq -r '.pinnedPeerCertSha256 // empty')
+[ "$new_pin" = "$cur" ] && exit 0
+
+patch=$(jq -n --arg uuid "$uuid" --arg pin "$new_pin" '{uuid: $uuid, pinnedPeerCertSha256: $pin}')
+curl -s -X PATCH "${PANEL_URL}/api/hosts" -H "Authorization: Bearer $PANEL_NODE_TOKEN" -H "Content-Type: application/json" -H "X-Remnawave-Client-Type: browser" -d "$patch" > /dev/null
+EOF
+    chmod +x /opt/remnanode/update-pin.sh
+
+    echo -e "${GRAY}  ${ARROW}${NC} Adding daily cron job"
+    add_cron_rule "0 4 * * * /opt/remnanode/update-pin.sh"
+
+    echo -e "${GREEN}${CHECK}${NC} Pin auto-update configured"
+}
+
 #=============================
 # NODE INSTALLATION FUNCTIONS
 #=============================
@@ -1244,6 +1286,9 @@ cleanup_node_server() {
     ufw delete allow 443/tcp > /dev/null 2>&1 || true
     ufw reload > /dev/null 2>&1 || true
 
+    echo -e "${GRAY}  ${ARROW}${NC} Removing pin auto-update cron"
+    crontab -u root -l 2>/dev/null | grep -v '/opt/remnanode/update-pin.sh' | crontab -u root - 2>/dev/null || true
+
     echo -e "${GREEN}${CHECK}${NC} Server cleanup complete"
 }
 
@@ -1382,6 +1427,8 @@ install_node() {
 
     create_cdn_host_in_panel
     save_node_credentials
+    echo
+    setup_pin_autoupdate
 
     echo
     echo -e "${PURPLE}========================${NC}"
