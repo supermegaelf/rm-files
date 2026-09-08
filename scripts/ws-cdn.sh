@@ -1394,9 +1394,6 @@ install_node() {
     echo -e "${CYAN}ownCloud:${NC}"
     echo -e "${WHITE}• Create the admin account at http://${server_ip}:8800/${NC}"
     echo
-    echo -e "${YELLOW}${WARNING}${NC} Finish in the panel:"
-    echo -e "${WHITE}• Apply CDN routing for this host${NC}"
-    echo
     echo -e "${CYAN}Useful Commands:${NC}"
     echo -e "${WHITE}• Check logs: cd /opt/remnanode && docker compose logs -f${NC}"
     echo -e "${WHITE}• Restart service: cd /opt/remnanode && docker compose restart${NC}"
