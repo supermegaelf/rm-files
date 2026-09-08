@@ -26,6 +26,7 @@ NODE_VERSION="2.8.0"
 PROFILE_NAME="StealConfig"
 WS_INBOUND_TAG="Vless WS Yandex"
 WS_INBOUND_PORT=10000
+SQUAD_NAME="Default-Squad"
 
 #======================
 # VALIDATION FUNCTIONS
@@ -771,6 +772,31 @@ ensure_ws_inbound_in_profile() {
     echo -e "${GREEN}${CHECK}${NC} ${WS_INBOUND_TAG} inbound added to ${PROFILE_NAME}"
 }
 
+activate_inbound_in_squad() {
+    echo -e "${CYAN}${INFO}${NC} Activating ${WS_INBOUND_TAG} inbound in ${SQUAD_NAME}..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Locating ${SQUAD_NAME}"
+    local squads_response squad_uuid
+    squads_response=$(make_panel_api_request GET "/api/internal-squads")
+    squad_uuid=$(echo "$squads_response" | jq -r --arg n "$SQUAD_NAME" '.response.internalSquads[] | select(.name == $n) | .uuid' | head -n1)
+
+    if echo "$squads_response" | jq -e --arg n "$SQUAD_NAME" --arg u "$WS_INBOUND_UUID" '.response.internalSquads[] | select(.name == $n) | .inbounds[] | select(.uuid == $u)' > /dev/null 2>&1; then
+        echo -e "${GRAY}  ${ARROW}${NC} Inbound already active in ${SQUAD_NAME}"
+        echo -e "${GREEN}${CHECK}${NC} Inbound active in ${SQUAD_NAME}"
+        return 0
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Adding inbound to squad"
+    local inbounds_json patch_data
+    inbounds_json=$(echo "$squads_response" | jq -c --arg n "$SQUAD_NAME" --arg u "$WS_INBOUND_UUID" '[(.response.internalSquads[] | select(.name == $n) | .inbounds[].uuid), $u] | unique')
+    patch_data=$(jq -n --arg uuid "$squad_uuid" --argjson inbounds "$inbounds_json" '{ uuid: $uuid, inbounds: $inbounds }')
+
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
+    make_panel_api_request PATCH "/api/internal-squads" "$patch_data" > /dev/null 2>&1 || true
+
+    echo -e "${GREEN}${CHECK}${NC} Inbound active in ${SQUAD_NAME}"
+}
+
 create_node_in_panel() {
     echo -e "${CYAN}${INFO}${NC} Creating node in panel..."
 
@@ -1322,6 +1348,8 @@ install_node() {
 
     ensure_ws_inbound_in_profile
     echo
+    activate_inbound_in_squad
+    echo
     create_node_in_panel
 
     echo
@@ -1363,16 +1391,10 @@ install_node() {
     local server_ip
     server_ip=$(curl -s -4 ifconfig.me || curl -s -4 api.ipify.org || curl -s -4 ipinfo.io/ip)
 
-    echo -e "${CYAN}CDN setup:${NC}"
-    echo -e "${WHITE}• Origin domain: ${SELFSTEAL_DOMAIN}${NC}"
-    echo -e "${WHITE}• CDN domain: ${CDN_DOMAIN}${NC}"
-    echo -e "${WHITE}• WS path: /${RANDOM_PATH}?ed=2560${NC}"
-    echo
     echo -e "${CYAN}ownCloud:${NC}"
     echo -e "${WHITE}• Create the admin account at http://${server_ip}:8800/${NC}"
     echo
     echo -e "${YELLOW}${WARNING}${NC} Finish in the panel:"
-    echo -e "${WHITE}• Activate the ${WS_INBOUND_TAG} inbound in the desired Internal Squads${NC}"
     echo -e "${WHITE}• Apply CDN routing for this host${NC}"
     echo
     echo -e "${CYAN}Useful Commands:${NC}"
