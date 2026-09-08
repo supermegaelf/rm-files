@@ -1111,20 +1111,18 @@ verify_cdn() {
         -H "Connection: Upgrade" -H "Upgrade: websocket" \
         -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" -H "Sec-WebSocket-Version: 13" \
         --max-time 10 "https://yastatic.net/$RANDOM_PATH?ed=2560" 2>/dev/null | grep -oiE 'HTTP/[0-9.]+ [0-9]+' | head -n 1)
-    if echo "$ws_status" | grep -q '101'; then
-        echo -e "${GREEN}${CHECK}${NC} WebSocket handshake OK (101)"
-    else
+    if ! echo "$ws_status" | grep -q '101'; then
         echo -e "${YELLOW}${WARNING}${NC} Unexpected WebSocket response: ${ws_status:-none}"
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Testing origin fallback (expecting 302)"
     local http_status
     http_status=$(curl -skI --max-time 10 "https://$CDN_DOMAIN/" 2>/dev/null | grep -oiE 'HTTP/[0-9.]+ [0-9]+' | head -n 1)
-    if echo "$http_status" | grep -q '302'; then
-        echo -e "${GREEN}${CHECK}${NC} Origin fallback OK (302)"
-    else
+    if ! echo "$http_status" | grep -q '302'; then
         echo -e "${YELLOW}${WARNING}${NC} Unexpected origin response: ${http_status:-none}"
     fi
+
+    echo -e "${GREEN}${CHECK}${NC} CDN verified"
 }
 
 #==========================
@@ -1132,7 +1130,7 @@ verify_cdn() {
 #==========================
 
 continue_by_instruction() {
-    echo -e "${CYAN}Continue with ws-ya-cdn.md — the Yandex Cloud steps (certificate import, CDN resource, cdn CNAME).${NC}"
+    echo -e "${YELLOW}${WARNING}${NC} Continue with ws-ya-cdn.md"
     pause_step
 }
 
