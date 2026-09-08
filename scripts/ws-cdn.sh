@@ -78,9 +78,9 @@ show_main_menu() {
     [ -d /opt/remnanode ] && NODE_INSTALLED=true
 
     echo
-    echo -e "${PURPLE}==================${NC}"
-    echo -e "${WHITE}WS YANDEX CDN NODE${NC}"
-    echo -e "${PURPLE}==================${NC}"
+    echo -e "${PURPLE}==============${NC}"
+    echo -e "${WHITE}WS YANDEX CDN${NC}"
+    echo -e "${PURPLE}==============${NC}"
     echo
     echo -e "${CYAN}Script version: ${WHITE}${SCRIPT_VERSION}${NC}"
     echo -e "${CYAN}Node version: ${WHITE}${NODE_VERSION}${NC}"
