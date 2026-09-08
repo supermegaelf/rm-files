@@ -125,7 +125,6 @@ pause_step() {
     echo
     echo -ne "${YELLOW}Press Enter once the step above is done in the console...${NC}"
     read -r _
-    echo
 }
 
 #======================
@@ -1086,30 +1085,6 @@ docker_compose_up() {
     done
 }
 
-verify_cdn() {
-    echo -e "${CYAN}${INFO}${NC} Verifying CDN connectivity..."
-
-    echo -e "${GRAY}  ${ARROW}${NC} Testing WebSocket handshake (expecting 101)"
-    local ws_status
-    ws_status=$(curl -ski --http1.1 --connect-to "yastatic.net:443:$CDN_DOMAIN:443" \
-        -H "Host: $CDN_DOMAIN" \
-        -H "Connection: Upgrade" -H "Upgrade: websocket" \
-        -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" -H "Sec-WebSocket-Version: 13" \
-        --max-time 10 "https://yastatic.net/$RANDOM_PATH?ed=2560" 2>/dev/null | grep -oiE 'HTTP/[0-9.]+ [0-9]+' | head -n 1)
-    if ! echo "$ws_status" | grep -q '101'; then
-        echo -e "${YELLOW}${WARNING}${NC} Unexpected WebSocket response: ${ws_status:-none}"
-    fi
-
-    echo -e "${GRAY}  ${ARROW}${NC} Testing origin fallback (expecting 302)"
-    local http_status
-    http_status=$(curl -skI --max-time 10 "https://$CDN_DOMAIN/" 2>/dev/null | grep -oiE 'HTTP/[0-9.]+ [0-9]+' | head -n 1)
-    if ! echo "$http_status" | grep -q '302'; then
-        echo -e "${YELLOW}${WARNING}${NC} Unexpected origin response: ${http_status:-none}"
-    fi
-
-    echo -e "${GREEN}${CHECK}${NC} CDN verified"
-}
-
 #==========================
 # MANUAL STEPS
 #==========================
@@ -1407,13 +1382,6 @@ install_node() {
 
     create_cdn_host_in_panel
     save_node_credentials
-
-    echo
-    echo -e "${GREEN}Verifying CDN${NC}"
-    echo -e "${GREEN}=============${NC}"
-    echo
-
-    verify_cdn
 
     echo
     echo -e "${PURPLE}========================${NC}"
