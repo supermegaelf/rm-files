@@ -1234,7 +1234,6 @@ delete_node() {
     echo
     echo -e "${YELLOW}${WARNING}${NC} You are about to delete node: ${WHITE}$DELETE_NODE_NAME${NC} ${GRAY}($DELETE_NODE_ADDRESS)${NC}"
     echo -e "${RED}This will remove the node and its host from the panel and clean up this server.${NC}"
-    echo -e "${GRAY}The shared ${PROFILE_NAME} profile and the ${WS_INBOUND_TAG} inbound are left untouched.${NC}"
     echo
     echo -ne "${YELLOW}Are you sure? (y/n): ${NC}"
     read -r confirm
