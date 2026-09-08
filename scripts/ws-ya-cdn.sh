@@ -79,7 +79,7 @@ show_main_menu() {
 
     echo
     echo -e "${PURPLE}==============${NC}"
-    echo -e "${WHITE}WS YANDEX CDN${NC}"
+    echo -e "${WHITE}WS YA CDN${NC}"
     echo -e "${PURPLE}==============${NC}"
     echo
     echo -e "${CYAN}Script version: ${WHITE}${SCRIPT_VERSION}${NC}"
@@ -220,7 +220,7 @@ input_node_api_token() {
 }
 
 input_node_name() {
-    echo -ne "${CYAN}Node name (e.g., DE-CDN, NL-CDN, FI-CDN, PL-CDN, RU-CDN): ${NC}"
+    echo -ne "${CYAN}Node name (e.g., DE-CDN, NL-CDN, FI-CDN): ${NC}"
     read NODE_NAME
     while [[ -z "$NODE_NAME" ]]; do
         echo -e "${RED}${CROSS}${NC} Node name cannot be empty!"
@@ -231,7 +231,7 @@ input_node_name() {
 }
 
 input_host_remark() {
-    echo -ne "${CYAN}Host remark (e.g., 🇩🇪 Германия (CDN), 🇳🇱 Нидерланды (CDN)): ${NC}"
+    echo -ne "${CYAN}Host remark (e.g., 🇩🇪 Германия (CDN), 🇳🇱 Нидерланды (CDN), 🇫🇮 Финляндия (CDN)): ${NC}"
     read HOST_REMARK
     while [[ -z "$HOST_REMARK" ]]; do
         echo -e "${RED}${CROSS}${NC} Host remark cannot be empty!"
