@@ -154,13 +154,13 @@ input_cloudflare_email() {
 }
 
 input_node_selfsteal_domain() {
-    echo -ne "${CYAN}Origin (self-steal) domain (e.g., de.example.com): ${NC}"
+    echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
     read -r SELFSTEAL_DOMAIN
     SELFSTEAL_DOMAIN=$(printf '%s' "$SELFSTEAL_DOMAIN" | tr -cd 'a-zA-Z0-9.-')
     while [[ -z "$SELFSTEAL_DOMAIN" ]] || ! validate_domain "$SELFSTEAL_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
-        echo -ne "${CYAN}Origin (self-steal) domain (e.g., de.example.com): ${NC}"
+        echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
         read -r SELFSTEAL_DOMAIN
         SELFSTEAL_DOMAIN=$(printf '%s' "$SELFSTEAL_DOMAIN" | tr -cd 'a-zA-Z0-9.-')
     done
