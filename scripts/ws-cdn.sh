@@ -1192,6 +1192,64 @@ delete_node_from_panel() {
     fi
 }
 
+remove_ws_inbound_if_unused() {
+    echo -e "${CYAN}${INFO}${NC} Checking ${WS_INBOUND_TAG} inbound usage..."
+
+    echo -e "${GRAY}  ${ARROW}${NC} Checking remaining nodes"
+    local nodes_response in_use
+    nodes_response=$(make_panel_api_request GET "/api/nodes")
+    in_use=$(echo "$nodes_response" | jq -r --arg tag "$WS_INBOUND_TAG" '[.response[] | select(.configProfile.activeInbounds[]?.tag == $tag)] | length')
+    if [ -n "$in_use" ] && [ "$in_use" != "null" ] && [ "$in_use" -gt 0 ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Still used by $in_use node(s), keeping it"
+        echo -e "${GREEN}${CHECK}${NC} Inbound kept"
+        return 0
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Removing inbound from ${SQUAD_NAME}"
+    local squads_response squad_uuid
+    squads_response=$(make_panel_api_request GET "/api/internal-squads")
+    squad_uuid=$(echo "$squads_response" | jq -r --arg n "$SQUAD_NAME" '.response.internalSquads[] | select(.name == $n) | .uuid' | head -n1)
+    if [ -n "$squad_uuid" ] && [ "$squad_uuid" != "null" ]; then
+        local squad_inbounds squad_patch
+        squad_inbounds=$(echo "$squads_response" | jq -c --arg n "$SQUAD_NAME" --arg tag "$WS_INBOUND_TAG" '[.response.internalSquads[] | select(.name == $n) | .inbounds[] | select(.tag != $tag) | .uuid]')
+        squad_patch=$(jq -n --arg uuid "$squad_uuid" --argjson inbounds "$squad_inbounds" '{ uuid: $uuid, inbounds: $inbounds }')
+        make_panel_api_request PATCH "/api/internal-squads" "$squad_patch" > /dev/null 2>&1 || true
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Locating ${PROFILE_NAME} profile"
+    local profiles_response profile_uuid
+    profiles_response=$(make_panel_api_request GET "/api/config-profiles")
+    profile_uuid=$(echo "$profiles_response" | jq -r --arg n "$PROFILE_NAME" '.response.configProfiles[] | select(.name == $n) | .uuid' | head -n1)
+    if [ -z "$profile_uuid" ] || [ "$profile_uuid" = "null" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Profile ${PROFILE_NAME} not found"
+        echo -e "${GREEN}${CHECK}${NC} Nothing to remove"
+        return 0
+    fi
+
+    local full_profile config
+    full_profile=$(make_panel_api_request GET "/api/config-profiles/$profile_uuid")
+    config=$(echo "$full_profile" | jq -c '.response.config')
+    if ! echo "$config" | jq -e --arg tag "$WS_INBOUND_TAG" '.inbounds[] | select(.tag == $tag)' > /dev/null 2>&1; then
+        echo -e "${GRAY}  ${ARROW}${NC} Inbound already absent"
+        echo -e "${GREEN}${CHECK}${NC} Nothing to remove"
+        return 0
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Removing inbound from profile"
+    local updated_config patch_data response
+    updated_config=$(echo "$config" | jq -c --arg tag "$WS_INBOUND_TAG" 'del(.inbounds[] | select(.tag == $tag))')
+    patch_data=$(jq -n --arg uuid "$profile_uuid" --argjson config "$updated_config" '{ uuid: $uuid, config: $config }')
+
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
+    response=$(make_panel_api_request PATCH "/api/config-profiles" "$patch_data")
+    if ! echo "$response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+        echo -e "${YELLOW}${WARNING}${NC} Failed to remove inbound: $response"
+        return 0
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} ${WS_INBOUND_TAG} inbound removed (last node)"
+}
+
 cleanup_node_server() {
     echo -e "${CYAN}${INFO}${NC} Cleaning up server..."
 
@@ -1252,6 +1310,8 @@ delete_node() {
     delete_node_host_from_panel
     echo
     delete_node_from_panel
+    echo
+    remove_ws_inbound_if_unused
 
     echo
     echo -e "${GREEN}Cleaning up server${NC}"
