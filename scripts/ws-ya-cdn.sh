@@ -1114,19 +1114,7 @@ verify_cdn() {
 # MANUAL STEPS
 #==========================
 
-output_yandex_certificate() {
-    local fullchain="/etc/letsencrypt/live/$SELFSTEAL_DOMAIN/fullchain.pem"
-    local privkey="/etc/letsencrypt/live/$SELFSTEAL_DOMAIN/privkey.pem"
-
-    echo -e "${WHITE}Certificate:${NC}"
-    awk '{print} /-----END CERTIFICATE-----/{exit}' "$fullchain"
-    echo
-    echo -e "${WHITE}Intermediate certificate chain:${NC}"
-    awk 'f{print} /-----END CERTIFICATE-----/{f=1}' "$fullchain"
-    echo
-    echo -e "${WHITE}Private key:${NC}"
-    cat "$privkey"
-    echo
+continue_by_instruction() {
     echo -e "${YELLOW}${WARNING}${NC} Continue with ws-ya-cdn.md"
     pause_step
 }
@@ -1410,7 +1398,7 @@ install_node() {
     echo -e "${GREEN}============${NC}"
     echo
 
-    output_yandex_certificate
+    continue_by_instruction
 
     echo
     echo -e "${GREEN}Creating host${NC}"
