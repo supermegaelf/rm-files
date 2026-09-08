@@ -79,7 +79,7 @@ show_main_menu() {
 
     echo
     echo -e "${PURPLE}==============${NC}"
-    echo -e "${WHITE}WS YA CDN${NC}"
+    echo -e "${WHITE}WS YANDEX CDN${NC}"
     echo -e "${PURPLE}==============${NC}"
     echo
     echo -e "${CYAN}Script version: ${WHITE}${SCRIPT_VERSION}${NC}"
