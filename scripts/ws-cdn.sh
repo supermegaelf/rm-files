@@ -940,8 +940,6 @@ create_cdn_host_in_panel() {
 create_cdn_node() {
     mkdir -p /opt/remnanode && cd /opt/remnanode
 
-    echo -e "${CYAN}${INFO}${NC} The origin domain ${WHITE}$SELFSTEAL_DOMAIN${NC} must resolve to this node (A record, DNS only)"
-    echo -e "${GRAY}  ${ARROW}${NC} Yandex CDN fetches content from the origin over this domain; the panel also connects to the node through it"
     check_domain "$SELFSTEAL_DOMAIN" true false
     local domain_check_result=$?
     if [ $domain_check_result -eq 2 ]; then
@@ -1085,21 +1083,6 @@ start_cdn_services() {
     done
 }
 
-configure_owncloud() {
-    echo -e "${CYAN}${INFO}${NC} Configuring ownCloud trusted domain and overwrite host..."
-
-    echo -e "${GRAY}  ${ARROW}${NC} Setting trusted domain"
-    docker exec -u www-data owncloud php occ config:system:set trusted_domains 1 --value="$SELFSTEAL_DOMAIN" > /dev/null 2>&1
-    echo -e "${GRAY}  ${ARROW}${NC} Setting overwrite host"
-    docker exec -u www-data owncloud php occ config:system:set overwritehost --value="$CDN_DOMAIN" > /dev/null 2>&1
-    echo -e "${GRAY}  ${ARROW}${NC} Setting overwrite protocol"
-    docker exec -u www-data owncloud php occ config:system:set overwriteprotocol --value=https > /dev/null 2>&1
-    echo -e "${GRAY}  ${ARROW}${NC} Setting overwrite CLI URL"
-    docker exec -u www-data owncloud php occ config:system:set overwrite.cli.url --value="https://$CDN_DOMAIN" > /dev/null 2>&1
-
-    echo -e "${GREEN}${CHECK}${NC} ownCloud configured"
-}
-
 docker_compose_up() {
     local max_attempts=3
     local attempt=1
@@ -1145,60 +1128,11 @@ verify_cdn() {
 }
 
 #==========================
-# MANUAL YANDEX STEPS
+# MANUAL STEPS
 #==========================
 
-yandex_certificate_and_cdn_step() {
-    local fullchain="/etc/letsencrypt/live/$SELFSTEAL_DOMAIN/fullchain.pem"
-    local privkey="/etc/letsencrypt/live/$SELFSTEAL_DOMAIN/privkey.pem"
-
-    echo -e "${CYAN}${INFO}${NC} Manual step — import the certificate into Yandex Certificate Manager"
-    echo
-    echo -e "${WHITE}Console:${NC} ${CYAN}https://console.yandex.cloud/.../certificate-manager/certificate-import${NC}"
-    echo -e "${WHITE}Name:${NC} $SELFSTEAL_DOMAIN"
-    echo -e "${WHITE}Certificate:${NC} first block of fullchain.pem (BEGIN...END CERTIFICATE)"
-    echo -e "${WHITE}Intermediate chain:${NC} the remaining blocks of fullchain.pem"
-    echo -e "${WHITE}Private key:${NC} privkey.pem"
-    echo
-    echo -e "${GRAY}----- fullchain.pem -----${NC}"
-    cat "$fullchain"
-    echo -e "${GRAY}----- privkey.pem -----${NC}"
-    cat "$privkey"
-    echo
-    echo -e "${CYAN}${INFO}${NC} Manual step — create the Yandex Cloud CDN resource"
-    echo
-    echo -e "${WHITE}Origin domain name:${NC} $SELFSTEAL_DOMAIN"
-    echo -e "${WHITE}Origin request protocol:${NC} HTTPS"
-    echo -e "${WHITE}Set SNI hostname manually:${NC} ON"
-    echo -e "${WHITE}SNI hostname:${NC} $SELFSTEAL_DOMAIN"
-    echo -e "${WHITE}Header value:${NC} $SELFSTEAL_DOMAIN"
-    echo -e "${WHITE}Domain name:${NC} $CDN_DOMAIN"
-    echo -e "${WHITE}Certificate type:${NC} Use from Certificate Manager → $SELFSTEAL_DOMAIN"
-    echo -e "${WHITE}CDN caching:${NC} DISABLED"
-    echo
-    echo -e "${YELLOW}${WARNING}${NC} After creating the resource, open its ${WHITE}Primary domain name${NC} and copy the"
-    echo -e "${YELLOW}   ${NC}${WHITE}CNAME-value${NC} (looks like ${WHITE}xxxxxxxx.topology.gslb.yccdn.ru${NC})."
-    pause_step
-}
-
-dns_cname_step() {
-    echo -e "${CYAN}${INFO}${NC} Manual step — add the CDN CNAME record in Cloudflare"
-    echo
-    echo -e "${WHITE}Type:${NC}  CNAME"
-    echo -e "${WHITE}Name:${NC}  $CDN_DOMAIN"
-    echo -e "${WHITE}Content:${NC} <CNAME-value from Yandex>"
-    echo -e "${WHITE}Proxy status:${NC} DNS only"
-    pause_step
-}
-
-owncloud_account_step() {
-    local server_ip
-    server_ip=$(curl -s -4 ifconfig.me || curl -s -4 api.ipify.org || curl -s -4 ipinfo.io/ip)
-
-    echo -e "${CYAN}${INFO}${NC} Manual step — create the ownCloud account"
-    echo
-    echo -e "${WHITE}Open:${NC} ${CYAN}http://${server_ip}:8800/${NC}"
-    echo -e "${GRAY}Create the admin account, then return here.${NC}"
+continue_by_instruction() {
+    echo -e "${CYAN}Continue with ws-ya-cdn.md — the Yandex Cloud steps (certificate import, CDN resource, cdn CNAME).${NC}"
     pause_step
 }
 
@@ -1402,20 +1336,11 @@ install_node() {
     start_cdn_services
 
     echo
-    echo -e "${GREEN}Configuring ownCloud${NC}"
-    echo -e "${GREEN}====================${NC}"
+    echo -e "${GREEN}Yandex Cloud${NC}"
+    echo -e "${GREEN}============${NC}"
     echo
 
-    owncloud_account_step
-    configure_owncloud
-
-    echo
-    echo -e "${GREEN}Configuring Yandex CDN${NC}"
-    echo -e "${GREEN}======================${NC}"
-    echo
-
-    yandex_certificate_and_cdn_step
-    dns_cname_step
+    continue_by_instruction
 
     echo
     echo -e "${GREEN}Creating host${NC}"
@@ -1437,18 +1362,20 @@ install_node() {
     echo -e "${GREEN}${CHECK}${NC} Installation complete"
     echo -e "${PURPLE}========================${NC}"
     echo
+    local server_ip
+    server_ip=$(curl -s -4 ifconfig.me || curl -s -4 api.ipify.org || curl -s -4 ipinfo.io/ip)
+
     echo -e "${CYAN}CDN setup:${NC}"
     echo -e "${WHITE}• Origin domain: ${SELFSTEAL_DOMAIN}${NC}"
     echo -e "${WHITE}• CDN domain: ${CDN_DOMAIN}${NC}"
     echo -e "${WHITE}• WS path: /${RANDOM_PATH}?ed=2560${NC}"
     echo
+    echo -e "${CYAN}ownCloud:${NC}"
+    echo -e "${WHITE}• Create the admin account at http://${server_ip}:8800/${NC}"
+    echo
     echo -e "${YELLOW}${WARNING}${NC} Finish in the panel:"
     echo -e "${WHITE}• Activate the ${WS_INBOUND_TAG} inbound in the desired Internal Squads${NC}"
     echo -e "${WHITE}• Apply CDN routing for this host${NC}"
-    echo
-    echo -e "${CYAN}Maintenance:${NC}"
-    echo -e "${WHITE}• After certbot renew, re-import fullchain/privkey into the Yandex CM certificate (caddy restarts via renew_hook)${NC}"
-    echo -e "${WHITE}• If the yccdn certificate rotates, refresh Pinned Peer Cert SHA256 on the host${NC}"
     echo
     echo -e "${CYAN}Useful Commands:${NC}"
     echo -e "${WHITE}• Check logs: cd /opt/remnanode && docker compose logs -f${NC}"
