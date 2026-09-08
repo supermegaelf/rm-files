@@ -259,6 +259,8 @@ load_saved_node_credentials() {
         input_panel_ip
         input_node_panel_domain
         input_node_api_token
+        input_node_selfsteal_domain
+        input_cdn_domain
         save_node_credentials
     fi
 }
@@ -473,7 +475,6 @@ EOF
 check_domain() {
     local domain="$1"
     local show_warning="${2:-true}"
-    local allow_cf_proxy="${3:-true}"
 
     local domain_ip=$(dig +short A "$domain" | grep -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
     local server_ip=$(curl -s -4 ifconfig.me || curl -s -4 api.ipify.org || curl -s -4 ipinfo.io/ip)
@@ -497,81 +498,25 @@ check_domain() {
         return 1
     fi
 
-    local cf_ranges=$(curl -s https://www.cloudflare.com/ips-v4)
-    local cf_array=()
-    if [ -n "$cf_ranges" ]; then
-        while IFS= read -r line; do
-            [ -n "$line" ] && cf_array+=("$line")
-        done <<< "$cf_ranges"
-    fi
-
-    local ip_in_cloudflare=false
-    local IFS='.'
-    read -r a b c d <<<"$domain_ip"
-    local domain_ip_int=$(( (a << 24) + (b << 16) + (c << 8) + d ))
-
-    if [ ${#cf_array[@]} -gt 0 ]; then
-        for cidr in "${cf_array[@]}"; do
-            if [[ -z "$cidr" ]]; then
-                continue
-            fi
-            local network=$(echo "$cidr" | cut -d'/' -f1)
-            local mask=$(echo "$cidr" | cut -d'/' -f2)
-            read -r a b c d <<<"$network"
-            local network_int=$(( (a << 24) + (b << 16) + (c << 8) + d ))
-            local mask_bits=$(( 32 - mask ))
-            local range_size=$(( 1 << mask_bits ))
-            local min_ip_int=$network_int
-            local max_ip_int=$(( network_int + range_size - 1 ))
-
-            if [ "$domain_ip_int" -ge "$min_ip_int" ] && [ "$domain_ip_int" -le "$max_ip_int" ]; then
-                ip_in_cloudflare=true
-                break
-            fi
-        done
-    fi
-
     if [ "$domain_ip" = "$server_ip" ] || printf '%s\n' $local_ips | grep -qxF "$domain_ip"; then
         return 0
-    elif [ "$ip_in_cloudflare" = true ]; then
-        if [ "$allow_cf_proxy" = true ]; then
-            return 0
-        else
-            if [ "$show_warning" = true ]; then
-                echo -e "${YELLOW}${WARNING}${NC} ${RED}The domain $domain points to a Cloudflare IP ($domain_ip).${NC}"
-                echo -e "${YELLOW}Cloudflare proxying is not allowed for the origin domain. Disable proxying (switch to 'DNS Only').${NC}"
-                echo
-                echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
-                read confirm
-                confirm=$(printf '%s' "$confirm" | tr -cd 'a-zA-Z')
-                echo
-                if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-                    return 0
-                else
-                    return 2
-                fi
-            fi
-            return 1
-        fi
-    else
-        if [ "$show_warning" = true ]; then
-            echo -e "${YELLOW}${WARNING}${NC} ${RED}The domain $domain points to IP address $domain_ip, which differs from this server's IP ($server_ip).${NC}"
-            echo -e "${YELLOW}For proper operation, the domain must point to the current server.${NC}"
-            echo
-            echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
-            read confirm
-            confirm=$(printf '%s' "$confirm" | tr -cd 'a-zA-Z')
-            echo
-            if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
-                return 0
-            else
-                return 2
-            fi
-        fi
-        return 1
     fi
 
-    return 0
+    if [ "$show_warning" = true ]; then
+        echo -e "${YELLOW}${WARNING}${NC} ${RED}The domain $domain points to IP address $domain_ip, which differs from this server's IP ($server_ip).${NC}"
+        echo -e "${YELLOW}For proper operation, the domain must point to the current server (DNS only, not proxied).${NC}"
+        echo
+        echo -ne "${CYAN}Enter 'y' to continue or 'n' to exit (y/n): ${NC}"
+        read confirm
+        confirm=$(printf '%s' "$confirm" | tr -cd 'a-zA-Z')
+        echo
+        if [[ "$confirm" == "y" || "$confirm" == "Y" ]]; then
+            return 0
+        else
+            return 2
+        fi
+    fi
+    return 1
 }
 
 check_api() {
@@ -665,6 +610,20 @@ make_panel_api_request() {
             -H "Content-Type: application/json" \
             -H "X-Remnawave-Client-Type: browser"
     fi
+}
+
+check_panel_api() {
+    echo -e "${CYAN}${INFO}${NC} Checking panel API..."
+    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
+    local code
+    code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 -X GET "${PANEL_NODE_URL}/api/config-profiles" \
+        -H "Authorization: Bearer $PANEL_NODE_TOKEN" \
+        -H "X-Remnawave-Client-Type: browser") || true
+    if [ "$code" != "200" ]; then
+        echo -e "${RED}${CROSS}${NC} Panel API not reachable or unauthorized (HTTP ${code:-000}) — check domain and token"
+        exit 1
+    fi
+    echo -e "${GREEN}${CHECK}${NC} Panel API reachable"
 }
 
 resolve_ws_inbound_uuid() {
@@ -966,7 +925,7 @@ create_cdn_host_in_panel() {
 create_cdn_node() {
     mkdir -p /opt/remnanode && cd /opt/remnanode
 
-    check_domain "$SELFSTEAL_DOMAIN" true false
+    check_domain "$SELFSTEAL_DOMAIN" true
     local domain_check_result=$?
     if [ $domain_check_result -eq 2 ]; then
         echo -e "${RED}Installation aborted by user${NC}"
@@ -1092,7 +1051,7 @@ start_cdn_services() {
 
     while [ $attempt -le $max_attempts ]; do
         echo -e "${GRAY}  ${ARROW}${NC} Attempt $attempt of $max_attempts"
-        if curl -sk --max-time 10 "https://$SELFSTEAL_DOMAIN" | grep -qi "html"; then
+        if curl -skI --max-time 10 "https://$SELFSTEAL_DOMAIN/" | grep -qiE 'HTTP/'; then
             echo -e "${GREEN}${CHECK}${NC} Origin connection established successfully"
             break
         else
@@ -1259,6 +1218,13 @@ delete_node() {
     set -e
 
     echo
+    echo -e "${GREEN}Checking panel${NC}"
+    echo -e "${GREEN}==============${NC}"
+    echo
+
+    check_panel_api
+
+    echo
     echo -e "${GREEN}Selecting node${NC}"
     echo -e "${GREEN}===============${NC}"
     echo
@@ -1312,6 +1278,13 @@ install_node() {
     INSTALL_DIR="/opt"
     APP_NAME="remnanode"
     APP_DIR="$INSTALL_DIR/$APP_NAME"
+
+    echo
+    echo -e "${GREEN}Checking panel${NC}"
+    echo -e "${GREEN}==============${NC}"
+    echo
+
+    check_panel_api
 
     echo
     echo -e "${GREEN}Installing packages${NC}"
