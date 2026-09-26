@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#=========================
-# REMNAWAVE BESZEL MANAGER
-#=========================
+#==================
+# REMNAWAVE BESZEL
+#==================
 
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -1443,9 +1443,9 @@ main() {
     check_root_privileges
 
     echo
-    echo -e "${PURPLE}=========================${NC}"
-    echo -e "${WHITE}REMNAWAVE BESZEL MANAGER${NC}"
-    echo -e "${PURPLE}=========================${NC}"
+    echo -e "${PURPLE}=================${NC}"
+    echo -e "${WHITE}REMNAWAVE BESZEL${NC}"
+    echo -e "${PURPLE}=================${NC}"
     echo
 
     show_main_menu
