@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#===============================
-# REMNAWAVE / REMNANODE MANAGER
-#===============================
+#=======================
+# REMNAWAVE / REMNANODE
+#=======================
 
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -78,9 +78,9 @@ show_main_menu() {
     [ -d /opt/remnanode ] && NODE_INSTALLED=true
 
     echo
-    echo -e "${PURPLE}==============================${NC}"
-    echo -e "${WHITE}REMNAWAVE / REMNANODE MANAGER${NC}"
-    echo -e "${PURPLE}==============================${NC}"
+    echo -e "${PURPLE}======================${NC}"
+    echo -e "${WHITE}REMNAWAVE / REMNANODE${NC}"
+    echo -e "${PURPLE}======================${NC}"
     echo
     echo -e "${CYAN}Script version: ${WHITE}${SCRIPT_VERSION}${NC}"
     echo -e "${CYAN}Panel version: ${WHITE}${PANEL_VERSION}${NC}"
