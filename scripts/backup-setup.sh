@@ -237,7 +237,7 @@ perform_uninstall() {
 show_main_menu() {
     echo
     echo -e "${PURPLE}============================${NC}"
-    echo -e "${NC}Remnawave TG Backup Manager${NC}"
+    echo -e "${NC}REMNAWAVE TG BACKUP MANAGER${NC}"
     echo -e "${PURPLE}============================${NC}"
     echo
     echo -e "${CYAN}Please select an action:${NC}"
