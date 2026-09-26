@@ -361,9 +361,9 @@ cleanup_files() {
 
 show_completion_summary() {
     echo
-    echo -e "${PURPLE}===================${NC}"
+    echo -e "${PURPLE}==================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Backup complete"
-    echo -e "${PURPLE}===================${NC}"
+    echo -e "${PURPLE}==================${NC}"
 }
 
 #==================
