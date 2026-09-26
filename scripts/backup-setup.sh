@@ -26,10 +26,19 @@ readonly ARROW="→"
 SCRIPT_URL="https://raw.githubusercontent.com/supermegaelf/rm-files/main/scripts/backup.sh"
 SCRIPT_DIR="/root/scripts"
 SCRIPT_PATH="$SCRIPT_DIR/backup.sh"
+BACKUP_LOG="/root/backup-output.txt"
 
 #================
-# MAIN FUNCTIONS
+# HELPER
 #================
+
+is_installed() {
+    [ -f "$SCRIPT_PATH" ] || grep -q "$SCRIPT_PATH" /etc/crontab 2>/dev/null
+}
+
+#=====================
+# INSTALL FUNCTIONS
+#=====================
 
 prepare_environment() {
     echo -e "${GREEN}Environment Preparation${NC}"
@@ -123,16 +132,30 @@ show_completion_summary() {
     echo -e "${WHITE}• Service status: Active and configured${NC}"
 }
 
-#==================
-# MAIN ENTRY POINT
-#==================
+perform_installation() {
+    echo
+    echo -e "${PURPLE}==================${NC}"
+    echo -e "${WHITE}Backup Installation${NC}"
+    echo -e "${PURPLE}==================${NC}"
+    echo
 
-main() {
-    echo
-    echo -e "${PURPLE}==================================${NC}"
-    echo -e "${NC}REMNAWAVE TELEGRAM BACKUP MANAGER${NC}"
-    echo -e "${PURPLE}==================================${NC}"
-    echo
+    if [[ $EUID -ne 0 ]]; then
+        echo -e "${RED}${CROSS}${NC} This script must be run as root"
+        exit 1
+    fi
+
+    if is_installed; then
+        echo -e "${YELLOW}${WARNING}${NC} Backup appears to be already installed."
+        echo
+        echo -ne "${YELLOW}Do you want to reinstall? (y/N): ${NC}"
+        read -r REINSTALL
+
+        if [[ ! "$REINSTALL" =~ ^[Yy]$ ]]; then
+            echo -e "${CYAN}Installation cancelled.${NC}"
+            exit 0
+        fi
+        echo
+    fi
 
     set -e
 
@@ -144,5 +167,142 @@ main() {
     echo
 }
 
+#====================
+# UNINSTALL FUNCTION
+#====================
+
+perform_uninstall() {
+    echo
+    echo -e "${PURPLE}====================${NC}"
+    echo -e "${WHITE}Backup Uninstallation${NC}"
+    echo -e "${PURPLE}====================${NC}"
+    echo
+
+    if [[ $EUID -ne 0 ]]; then
+        echo -e "${RED}${CROSS}${NC} This script must be run as root"
+        exit 1
+    fi
+
+    if ! is_installed; then
+        echo -e "${YELLOW}${WARNING}${NC} Backup is not installed on this system."
+        echo
+        exit 0
+    fi
+
+    echo -ne "${YELLOW}Are you sure you want to continue? (y/N): ${NC}"
+    read -r CONFIRM
+
+    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+        echo -e "${CYAN}Uninstallation cancelled.${NC}"
+        exit 0
+    fi
+
+    echo
+    echo -e "${GREEN}Removing Cron Job${NC}"
+    echo -e "${GREEN}=================${NC}"
+    echo
+
+    echo -e "${CYAN}${INFO}${NC} Removing scheduled backup..."
+    echo -e "${GRAY}  ${ARROW}${NC} Removing entry from /etc/crontab"
+    sed -i "\|$SCRIPT_PATH|d" /etc/crontab
+
+    echo -e "${GRAY}  ${ARROW}${NC} Restarting cron service"
+    systemctl restart cron > /dev/null 2>&1 || service cron restart > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo -e "${YELLOW}${WARNING}${NC} Failed to restart cron service, changes may not apply until next reboot"
+    fi
+    echo -e "${GREEN}${CHECK}${NC} Cron job removed"
+
+    echo
+    echo -e "${GREEN}Removing Files${NC}"
+    echo -e "${GREEN}==============${NC}"
+    echo
+
+    echo -e "${CYAN}${INFO}${NC} Removing backup files..."
+    echo -e "${GRAY}  ${ARROW}${NC} Removing backup script"
+    rm -f "$SCRIPT_PATH"
+    echo -e "${GRAY}  ${ARROW}${NC} Removing log file"
+    rm -f "$BACKUP_LOG"
+    echo -e "${GRAY}  ${ARROW}${NC} Removing scripts directory if empty"
+    rmdir "$SCRIPT_DIR" > /dev/null 2>&1
+    echo -e "${GREEN}${CHECK}${NC} Backup files removed"
+
+    echo
+    echo -e "${PURPLE}===========================${NC}"
+    echo -e "${GREEN}${CHECK}${NC} Uninstallation complete!"
+    echo -e "${PURPLE}===========================${NC}"
+    echo
+    exit 0
+}
+
+#================
+# MENU FUNCTIONS
+#================
+
+show_main_menu() {
+    echo
+    echo -e "${PURPLE}==================================${NC}"
+    echo -e "${NC}REMNAWAVE TELEGRAM BACKUP MANAGER${NC}"
+    echo -e "${PURPLE}==================================${NC}"
+    echo
+    echo -e "${CYAN}Please select an action:${NC}"
+    echo
+
+    if is_installed; then
+        echo -e "${GREEN}1.${NC} Uninstall"
+        echo -e "${RED}2.${NC} Exit"
+    else
+        echo -e "${GREEN}1.${NC} Install"
+        echo -e "${RED}2.${NC} Exit"
+    fi
+    echo
+}
+
+handle_user_choice() {
+    while true; do
+        echo -ne "${CYAN}Enter your choice (1-2): ${NC}"
+        read CHOICE
+        case $CHOICE in
+            1)
+                if is_installed; then
+                    ACTION="uninstall"
+                else
+                    ACTION="install"
+                fi
+                break
+                ;;
+            2)
+                echo -e "${CYAN}Goodbye!${NC}"
+                exit 0
+                ;;
+            *)
+                echo -e "${RED}${CROSS}${NC} Invalid choice. Please enter 1 or 2."
+                ;;
+        esac
+    done
+}
+
+#==================
+# MAIN ENTRY POINT
+#==================
+
+main() {
+    if [ "$1" = "uninstall" ] || [ "$1" = "--uninstall" ] || [ "$1" = "-u" ]; then
+        ACTION="uninstall"
+    elif [ "$1" = "install" ] || [ "$1" = "--install" ] || [ "$1" = "-i" ]; then
+        ACTION="install"
+    else
+        show_main_menu
+        handle_user_choice
+    fi
+
+    if [ "$ACTION" = "uninstall" ]; then
+        perform_uninstall
+    else
+        perform_installation
+    fi
+}
+
 # Execute main function
-main
+main "$@"
+exit 0
