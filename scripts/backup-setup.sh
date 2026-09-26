@@ -112,8 +112,7 @@ verify_installation() {
         exit 1
     fi
 
-    systemctl restart cron > /dev/null 2>&1 || service cron restart > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
+    if ! { systemctl restart cron || service cron restart; } > /dev/null 2>&1; then
         echo -e "${YELLOW}${WARNING}${NC} Failed to restart cron service, changes may not apply until next reboot"
     fi
 
@@ -207,8 +206,7 @@ perform_uninstall() {
     sed -i "\|$SCRIPT_PATH|d" /etc/crontab
 
     echo -e "${GRAY}  ${ARROW}${NC} Restarting cron service"
-    systemctl restart cron > /dev/null 2>&1 || service cron restart > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
+    if ! { systemctl restart cron || service cron restart; } > /dev/null 2>&1; then
         echo -e "${YELLOW}${WARNING}${NC} Failed to restart cron service, changes may not apply until next reboot"
     fi
     echo -e "${GREEN}${CHECK}${NC} Cron job removed"
