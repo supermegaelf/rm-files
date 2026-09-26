@@ -58,7 +58,7 @@ prepare_environment() {
         echo -e "${YELLOW}${WARNING}${NC} Directory $SCRIPT_DIR already exists"
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} Environment preparation completed!"
+    echo -e "${GREEN}${CHECK}${NC} Environment preparation complete"
 }
 
 download_backup_script() {
@@ -82,7 +82,7 @@ download_backup_script() {
         exit 1
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} Script download completed!"
+    echo -e "${GREEN}${CHECK}${NC} Script download complete"
 }
 
 configure_backup_script() {
@@ -113,13 +113,13 @@ verify_installation() {
         echo -e "${YELLOW}${WARNING}${NC} Failed to restart cron service, changes may not apply until next reboot"
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} Installation verification completed!"
+    echo -e "${GREEN}${CHECK}${NC} Installation verification complete"
 }
 
 show_completion_summary() {
     echo
     echo -e "${PURPLE}=========================${NC}"
-    echo -e "${GREEN}${CHECK}${NC} Installation complete!"
+    echo -e "${GREEN}${CHECK}${NC} Installation complete"
     echo -e "${PURPLE}=========================${NC}"
     echo
     echo -e "${CYAN}Installation Summary:${NC}"
@@ -130,9 +130,9 @@ show_completion_summary() {
 
 perform_installation() {
     echo
-    echo -e "${PURPLE}==================${NC}"
+    echo -e "${PURPLE}====================${NC}"
     echo -e "${WHITE}Backup Installation${NC}"
-    echo -e "${PURPLE}==================${NC}"
+    echo -e "${PURPLE}====================${NC}"
     echo
 
     if [[ $EUID -ne 0 ]]; then
@@ -169,9 +169,9 @@ perform_installation() {
 
 perform_uninstall() {
     echo
-    echo -e "${PURPLE}====================${NC}"
+    echo -e "${PURPLE}======================${NC}"
     echo -e "${WHITE}Backup Uninstallation${NC}"
-    echo -e "${PURPLE}====================${NC}"
+    echo -e "${PURPLE}======================${NC}"
     echo
 
     if [[ $EUID -ne 0 ]]; then
@@ -224,7 +224,7 @@ perform_uninstall() {
 
     echo
     echo -e "${PURPLE}===========================${NC}"
-    echo -e "${GREEN}${CHECK}${NC} Uninstallation complete!"
+    echo -e "${GREEN}${CHECK}${NC} Uninstallation complete"
     echo -e "${PURPLE}===========================${NC}"
     echo
     exit 0
