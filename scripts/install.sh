@@ -26,6 +26,7 @@ SCRIPT_VERSION="1.0.0"
 PANEL_VERSION="3.2.3"
 NODE_VERSION="3.2.2"
 SUBSCRIPTION_PAGE_VERSION="7.1.8"
+POSTGRES_VERSION="17.11"
 
 #======================
 # VALIDATION FUNCTIONS
@@ -1752,7 +1753,7 @@ EOL
     cat > docker-compose.yml <<EOF
 services:
   remnawave-db:
-    image: postgres:17.6
+    image: postgres:${POSTGRES_VERSION}
     container_name: 'remnawave-db'
     hostname: remnawave-db
     restart: always
