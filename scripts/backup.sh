@@ -96,7 +96,7 @@ load_credentials() {
 configure_backup() {
     echo
     echo -e "${PURPLE}====================${NC}"
-    echo -e "${NC}Remnawave TG Backup${NC}"
+    echo -e "${NC}REMNAWAVE TG BACKUP${NC}"
     echo -e "${PURPLE}====================${NC}"
     echo
 
