@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#=============================
-# REMNAWAVE TG BACKUP MANAGER
-#=============================
+#===========================
+# REMNAWAVE TG BACKUP SETUP
+#===========================
 
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -236,9 +236,9 @@ perform_uninstall() {
 
 show_main_menu() {
     echo
-    echo -e "${PURPLE}============================${NC}"
-    echo -e "${NC}REMNAWAVE TG BACKUP MANAGER${NC}"
-    echo -e "${PURPLE}============================${NC}"
+    echo -e "${PURPLE}==========================${NC}"
+    echo -e "${NC}REMNAWAVE TG BACKUP SETUP${NC}"
+    echo -e "${PURPLE}==========================${NC}"
     echo
     echo -e "${CYAN}Please select an action:${NC}"
     echo

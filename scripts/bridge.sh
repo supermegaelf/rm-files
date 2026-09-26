@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#==============================
-# REMNAWAVE BRIDGE PROXY SETUP
-#==============================
+#==================
+# REMNAWAVE BRIDGE
+#==================
 
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
@@ -233,7 +233,6 @@ save_credentials() {
 
 load_credentials() {
     if [ -f "$CREDS_FILE" ]; then
-        # shellcheck source=/dev/null
         source "$CREDS_FILE"
         PANEL_URL="https://${PANEL_DOMAIN}"
     else

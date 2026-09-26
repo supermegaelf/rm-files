@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#===========================
-# REMNAWAVE SUB PROXY SETUP
-#===========================
+#=====================
+# REMNAWAVE SUB PROXY
+#=====================
 
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
