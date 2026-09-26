@@ -245,8 +245,8 @@ create_database_backup() {
 
     # Backup shop database (plain SQL, sent as separate file)
     if [ -n "$SHOP_CONTAINER_NAME" ] && [ -n "$SHOP_MYSQL_PASSWORD" ]; then
-        databases_shop=$(docker exec "$SHOP_CONTAINER_NAME" mariadb -h 127.0.0.1 --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" -e "SHOW DATABASES;" 2>>"$LOG_FILE" | tr -d "| " | grep -v Database)
-        if [ $? -eq 0 ]; then
+        if databases_shop=$(docker exec "$SHOP_CONTAINER_NAME" mariadb -h 127.0.0.1 --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" -e "SHOW DATABASES;" 2>>"$LOG_FILE"); then
+            databases_shop=$(echo "$databases_shop" | tr -d "| " | grep -v Database)
             for db in $databases_shop; do
                 if [[ "$db" == "shop" ]]; then
                     docker exec "$SHOP_CONTAINER_NAME" mariadb-dump -h 127.0.0.1 --force --opt --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" --databases "$db" > "$SHOP_SQL_FILE" 2>>"$LOG_FILE"
