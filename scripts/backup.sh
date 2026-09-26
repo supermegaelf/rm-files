@@ -183,7 +183,7 @@ prepare_system() {
     MAIN_BACKUP_FILE="$TEMP_DIR/remnawave_backup_${TIMESTAMP}.tar.gz"
     SHOP_SQL_FILE="$TEMP_DIR/shop_${TIMESTAMP}.sql"
 
-    echo -e "${GREEN}${CHECK}${NC} System preparation completed!"
+    echo -e "${GREEN}${CHECK}${NC} System preparation complete"
 }
 
 check_containers() {
@@ -256,7 +256,7 @@ create_database_backup() {
         echo -e "${GRAY}  ${ARROW}${NC} Skipping shop database (no container)"
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} Database backup creation completed!"
+    echo -e "${GREEN}${CHECK}${NC} Database backup creation complete"
 }
 
 create_archive() {
@@ -340,7 +340,7 @@ send_to_telegram() {
         fi
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} Upload complete!"
+    echo -e "${GREEN}${CHECK}${NC} Upload complete"
 }
 
 cleanup_files() {
@@ -356,13 +356,13 @@ cleanup_files() {
 
     rm -rf "$TEMP_DIR" > /dev/null 2>&1
 
-    echo -e "${GREEN}${CHECK}${NC} Cleanup process completed!"
+    echo -e "${GREEN}${CHECK}${NC} Cleanup process complete"
 }
 
 show_completion_summary() {
     echo
     echo -e "${PURPLE}===================${NC}"
-    echo -e "${GREEN}${CHECK}${NC} Backup complete!"
+    echo -e "${GREEN}${CHECK}${NC} Backup complete"
     echo -e "${PURPLE}===================${NC}"
 }
 
