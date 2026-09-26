@@ -22,6 +22,9 @@ readonly WARNING="!"
 readonly INFO="*"
 readonly ARROW="→"
 
+# Log file
+readonly LOG_FILE="/root/backup-output.txt"
+
 # Global variables
 POSTGRES_USER=""
 POSTGRES_PASSWORD=""
@@ -33,6 +36,34 @@ TIMESTAMP=""
 WORK_DIR=""
 MAIN_BACKUP_FILE=""
 SHOP_SQL_FILE=""
+
+#================
+# ERROR HANDLING
+#================
+
+error_exit() {
+    echo -e "${RED}${CROSS}${NC} $1"
+    SHOW_LOG_HINT=1
+    if [ -n "$TG_BOT_TOKEN" ] && [ -n "$TG_CHAT_ID" ]; then
+        curl -s --connect-timeout 10 --max-time 30 \
+            -d chat_id="$TG_CHAT_ID" \
+            -d text="❌ Remnawave backup failed: $1" \
+            "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" >> "$LOG_FILE" 2>&1
+    fi
+    exit 1
+}
+
+on_exit() {
+    [ -n "$TEMP_DIR" ] && rm -rf "$TEMP_DIR" > /dev/null 2>&1
+    if [ -n "$SHOW_LOG_HINT" ] && [ -f "$LOG_FILE" ]; then
+        echo
+        echo -e "${WHITE}View log for details:${NC}"
+        echo -e "${WHITE}cat $LOG_FILE${NC}"
+        echo
+    fi
+}
+
+trap on_exit EXIT
 
 #=====================
 # CONFIGURATION SETUP
@@ -49,8 +80,7 @@ load_credentials() {
 
     # Remnawave PostgreSQL — read from /opt/remnawave/.env
     if [ ! -f /opt/remnawave/.env ]; then
-        echo -e "${RED}${CROSS}${NC} /opt/remnawave/.env not found"
-        exit 1
+        error_exit "/opt/remnawave/.env not found"
     fi
     POSTGRES_USER=$(read_env_var /opt/remnawave/.env POSTGRES_USER)
     POSTGRES_PASSWORD=$(read_env_var /opt/remnawave/.env POSTGRES_PASSWORD)
@@ -118,23 +148,19 @@ configure_backup() {
 
 validate_configuration() {
     if [ -z "$POSTGRES_USER" ]; then
-        echo -e "${RED}${CROSS}${NC} POSTGRES_USER not found in /opt/remnawave/.env"
-        exit 1
+        error_exit "POSTGRES_USER not found in /opt/remnawave/.env"
     fi
 
     if [ -z "$POSTGRES_PASSWORD" ]; then
-        echo -e "${RED}${CROSS}${NC} POSTGRES_PASSWORD not found in /opt/remnawave/.env"
-        exit 1
+        error_exit "POSTGRES_PASSWORD not found in /opt/remnawave/.env"
     fi
 
     if [[ ! "$TG_BOT_TOKEN" =~ ^[0-9]+:[A-Za-z0-9_-]+$ ]]; then
-        echo -e "${RED}${CROSS}${NC} Invalid Telegram Bot Token format"
-        exit 1
+        error_exit "Invalid Telegram Bot Token format"
     fi
 
     if [[ ! "$TG_CHAT_ID" =~ ^-?[0-9]+$ ]]; then
-        echo -e "${RED}${CROSS}${NC} Invalid Telegram Chat ID format"
-        exit 1
+        error_exit "Invalid Telegram Chat ID format"
     fi
 }
 
@@ -154,8 +180,7 @@ prepare_system() {
 
     TEMP_DIR=$(mktemp -d)
     if [ ! -d "$TEMP_DIR" ]; then
-        echo -e "${RED}${CROSS}${NC} Failed to create temporary directory"
-        exit 1
+        error_exit "Failed to create temporary directory"
     fi
 
     TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
@@ -180,9 +205,7 @@ check_containers() {
 
     POSTGRES_CONTAINER_NAME="remnawave-db"
     if ! docker ps -q -f name="$POSTGRES_CONTAINER_NAME" | grep -q .; then
-        echo -e "${RED}${CROSS}${NC} Container $POSTGRES_CONTAINER_NAME is not running"
-        rm -rf "$TEMP_DIR"
-        exit 1
+        error_exit "Container $POSTGRES_CONTAINER_NAME is not running"
     fi
 
     # Check for shop database container
@@ -208,27 +231,26 @@ create_database_backup() {
     echo -e "${GRAY}  ${ARROW}${NC} User: ${POSTGRES_USER}"
 
     # Backup PostgreSQL — full dump compatible with db-migrate.sh restore
-    local error_log
-    error_log=$(mktemp)
-    docker exec "$POSTGRES_CONTAINER_NAME" pg_dumpall -c -U "$POSTGRES_USER" 2>"$error_log" | gzip -9 > "$WORK_DIR/dump_${TIMESTAMP}.sql.gz"
+    local dump_file="$WORK_DIR/dump_${TIMESTAMP}.sql.gz"
+    docker exec "$POSTGRES_CONTAINER_NAME" pg_dumpall -c -U "$POSTGRES_USER" 2>>"$LOG_FILE" | gzip -9 > "$dump_file"
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
-        cat "$error_log" >&2
-        rm -f "$error_log"
-        echo -e "${RED}${CROSS}${NC} Failed to backup remnawave database"
-        rm -rf "$TEMP_DIR"
-        exit 1
+        error_exit "Failed to backup remnawave database"
     fi
-    rm -f "$error_log"
+    local dump_size
+    dump_size=$(stat -c%s "$dump_file" 2>/dev/null || stat -f%z "$dump_file" 2>/dev/null || echo "0")
+    if [[ "$dump_size" -lt 1000 ]]; then
+        error_exit "Remnawave database dump is too small (${dump_size} bytes), aborting"
+    fi
     echo -e "${GRAY}  ${ARROW}${NC} Remnawave database backed up"
 
     # Backup shop database (plain SQL, sent as separate file)
     if [ -n "$SHOP_CONTAINER_NAME" ] && [ -n "$SHOP_MYSQL_PASSWORD" ]; then
-        databases_shop=$(docker exec "$SHOP_CONTAINER_NAME" mariadb -h 127.0.0.1 --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" -e "SHOW DATABASES;" 2>/dev/null | tr -d "| " | grep -v Database)
+        databases_shop=$(docker exec "$SHOP_CONTAINER_NAME" mariadb -h 127.0.0.1 --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" -e "SHOW DATABASES;" 2>>"$LOG_FILE" | tr -d "| " | grep -v Database)
         if [ $? -eq 0 ]; then
             for db in $databases_shop; do
                 if [[ "$db" == "shop" ]]; then
-                    docker exec "$SHOP_CONTAINER_NAME" mariadb-dump -h 127.0.0.1 --force --opt --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" --databases "$db" > "$SHOP_SQL_FILE" 2>/dev/null
-                    if [ $? -eq 0 ]; then
+                    docker exec "$SHOP_CONTAINER_NAME" mariadb-dump -h 127.0.0.1 --force --opt --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" --databases "$db" > "$SHOP_SQL_FILE" 2>>"$LOG_FILE"
+                    if [ $? -eq 0 ] && [ -s "$SHOP_SQL_FILE" ]; then
                         echo -e "${GRAY}  ${ARROW}${NC} Shop database backed up"
                     else
                         echo -e "${GRAY}  ${ARROW}${NC} Failed to backup shop database"
@@ -256,13 +278,12 @@ create_archive() {
     echo -e "${GRAY}  ${ARROW}${NC} Archiving /opt/remnawave"
 
     # Archive /opt/remnawave directory
-    tar -czf "$WORK_DIR/remnawave_dir_${TIMESTAMP}.tar.gz" \
+    tar --warning=no-file-changed -czf "$WORK_DIR/remnawave_dir_${TIMESTAMP}.tar.gz" \
         --exclude="*.log" --exclude="*.tmp" --exclude=".git" \
-        -C /opt remnawave > /dev/null 2>&1
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}${CROSS}${NC} Failed to archive /opt/remnawave"
-        rm -rf "$TEMP_DIR"
-        exit 1
+        -C /opt remnawave >> "$LOG_FILE" 2>&1
+    local tar_status=$?
+    if [[ $tar_status -gt 1 ]]; then
+        error_exit "Failed to archive /opt/remnawave"
     fi
     echo -e "${GRAY}  ${ARROW}${NC} Packing final archive"
 
@@ -270,11 +291,9 @@ create_archive() {
     tar -czf "$MAIN_BACKUP_FILE" \
         -C "$WORK_DIR" \
         "dump_${TIMESTAMP}.sql.gz" \
-        "remnawave_dir_${TIMESTAMP}.tar.gz" > /dev/null 2>&1
+        "remnawave_dir_${TIMESTAMP}.tar.gz" >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then
-        echo -e "${RED}${CROSS}${NC} Failed to create backup archive"
-        rm -rf "$TEMP_DIR"
-        exit 1
+        error_exit "Failed to create backup archive"
     fi
 
     echo -e "${GREEN}${CHECK}${NC} Backup archive created successfully!"
@@ -286,17 +305,32 @@ send_file_to_telegram() {
     filename=$(basename "$file")
 
     echo -e "${GRAY}  ${ARROW}${NC} ${filename}"
-    local response
-    response=$(curl -s -F chat_id="$TG_CHAT_ID" \
-        -F document=@"$file" \
-        "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendDocument")
 
-    if ! echo "$response" | grep -q '"ok":true'; then
-        local error_desc
-        error_desc=$(echo "$response" | grep -o '"description":"[^"]*"' | cut -d'"' -f4)
-        echo -e "${RED}${CROSS}${NC} Failed to send ${filename}"
-        [ -n "$error_desc" ] && echo -e "${YELLOW}${WARNING}${NC} Error: ${error_desc}"
-    fi
+    local attempt=1
+    local max_attempts=3
+    local response
+    while [[ $attempt -le $max_attempts ]]; do
+        response=$(curl -s --connect-timeout 10 --max-time 120 \
+            -F chat_id="$TG_CHAT_ID" \
+            -F document=@"$file" \
+            "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendDocument")
+        echo "$response" >> "$LOG_FILE" 2>&1
+
+        if echo "$response" | grep -q '"ok":true'; then
+            return 0
+        fi
+
+        if [[ $attempt -lt $max_attempts ]]; then
+            sleep 5
+        fi
+        ((attempt++)) || true
+    done
+
+    local error_desc
+    error_desc=$(echo "$response" | grep -o '"description":"[^"]*"' | cut -d'"' -f4)
+    echo -e "${RED}${CROSS}${NC} Failed to send ${filename}"
+    [ -n "$error_desc" ] && echo -e "${YELLOW}${WARNING}${NC} Error: ${error_desc}"
+    return 1
 }
 
 send_to_telegram() {
@@ -307,10 +341,14 @@ send_to_telegram() {
 
     echo -e "${CYAN}${INFO}${NC} Sending backups to Telegram..."
 
-    send_file_to_telegram "$MAIN_BACKUP_FILE"
+    if ! send_file_to_telegram "$MAIN_BACKUP_FILE"; then
+        error_exit "Failed to send backup archive to Telegram"
+    fi
 
     if [ -f "$SHOP_SQL_FILE" ]; then
-        send_file_to_telegram "$SHOP_SQL_FILE"
+        if ! send_file_to_telegram "$SHOP_SQL_FILE"; then
+            echo -e "${YELLOW}${WARNING}${NC} Failed to send shop database backup"
+        fi
     fi
 
     echo -e "${GREEN}${CHECK}${NC} Upload complete!"
@@ -344,6 +382,7 @@ show_completion_summary() {
 #==================
 
 main() {
+    echo "Backup log — $(date)" > "$LOG_FILE" 2>/dev/null
     configure_backup
     validate_configuration
     prepare_system
