@@ -118,9 +118,9 @@ verify_installation() {
 
 show_completion_summary() {
     echo
-    echo -e "${PURPLE}=========================${NC}"
+    echo -e "${PURPLE}========================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Installation complete"
-    echo -e "${PURPLE}=========================${NC}"
+    echo -e "${PURPLE}========================${NC}"
     echo
     echo -e "${CYAN}Installation Summary:${NC}"
     echo -e "${WHITE}• Backup script location: $SCRIPT_PATH${NC}"
@@ -223,9 +223,9 @@ perform_uninstall() {
     echo -e "${GREEN}${CHECK}${NC} Backup files removed"
 
     echo
-    echo -e "${PURPLE}===========================${NC}"
+    echo -e "${PURPLE}==========================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Uninstallation complete"
-    echo -e "${PURPLE}===========================${NC}"
+    echo -e "${PURPLE}==========================${NC}"
     echo
     exit 0
 }
