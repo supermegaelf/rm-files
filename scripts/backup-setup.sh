@@ -223,9 +223,9 @@ perform_uninstall() {
     echo -e "${GREEN}${CHECK}${NC} Backup files removed"
 
     echo
-    echo -e "${PURPLE}==========================${NC}"
+    echo -e "${PURPLE}=========================${NC}"
     echo -e "${GREEN}${CHECK}${NC} Uninstallation complete"
-    echo -e "${PURPLE}==========================${NC}"
+    echo -e "${PURPLE}=========================${NC}"
     echo
     exit 0
 }
