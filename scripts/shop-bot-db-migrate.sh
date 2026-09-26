@@ -167,24 +167,19 @@ export_database() {
     echo -e "${GRAY}  ${ARROW}${NC} Testing database connection..."
     if [ "$USE_DOCKER" = true ]; then
         if [ -z "$SOURCE_DB_PASS" ]; then
-            CONNECTION_OUTPUT=$(timeout 5 docker exec "$DB_CONTAINER" mariadb -u "$SOURCE_DB_USER" -e "SELECT 1" "$SOURCE_DB_NAME" 2>&1)
+            CONNECTION_OUTPUT=$(timeout 5 docker exec "$DB_CONTAINER" mariadb -u "$SOURCE_DB_USER" -e "SELECT 1" "$SOURCE_DB_NAME" 2>&1) && CONNECTION_EXIT_CODE=0 || CONNECTION_EXIT_CODE=$?
         else
-            export MYSQL_PWD="$SOURCE_DB_PASS"
-            CONNECTION_OUTPUT=$(timeout 5 docker exec -e MYSQL_PWD="$SOURCE_DB_PASS" "$DB_CONTAINER" mariadb -u "$SOURCE_DB_USER" -e "SELECT 1" "$SOURCE_DB_NAME" 2>&1)
-            unset MYSQL_PWD
+            CONNECTION_OUTPUT=$(timeout 5 docker exec -e MYSQL_PWD="$SOURCE_DB_PASS" "$DB_CONTAINER" mariadb -u "$SOURCE_DB_USER" -e "SELECT 1" "$SOURCE_DB_NAME" 2>&1) && CONNECTION_EXIT_CODE=0 || CONNECTION_EXIT_CODE=$?
         fi
     else
         if [ -z "$SOURCE_DB_PASS" ]; then
             echo -e "${YELLOW}${WARNING}${NC} Password is empty! Trying to connect without password..."
-            CONNECTION_OUTPUT=$(timeout 5 $MYSQL_CMD -h "$SOURCE_DB_HOST" -P "$SOURCE_DB_PORT" -u "$SOURCE_DB_USER" --connect-timeout=5 -e "SELECT 1" "$SOURCE_DB_NAME" 2>&1)
+            CONNECTION_OUTPUT=$(timeout 5 $MYSQL_CMD -h "$SOURCE_DB_HOST" -P "$SOURCE_DB_PORT" -u "$SOURCE_DB_USER" --connect-timeout=5 -e "SELECT 1" "$SOURCE_DB_NAME" 2>&1) && CONNECTION_EXIT_CODE=0 || CONNECTION_EXIT_CODE=$?
         else
-            export MYSQL_PWD="$SOURCE_DB_PASS"
-            CONNECTION_OUTPUT=$(timeout 5 $MYSQL_CMD -h "$SOURCE_DB_HOST" -P "$SOURCE_DB_PORT" -u "$SOURCE_DB_USER" --connect-timeout=5 -e "SELECT 1" "$SOURCE_DB_NAME" 2>&1)
-            unset MYSQL_PWD
+            CONNECTION_OUTPUT=$(MYSQL_PWD="$SOURCE_DB_PASS" timeout 5 $MYSQL_CMD -h "$SOURCE_DB_HOST" -P "$SOURCE_DB_PORT" -u "$SOURCE_DB_USER" --connect-timeout=5 -e "SELECT 1" "$SOURCE_DB_NAME" 2>&1) && CONNECTION_EXIT_CODE=0 || CONNECTION_EXIT_CODE=$?
         fi
     fi
-    CONNECTION_EXIT_CODE=$?
-    if [ $CONNECTION_EXIT_CODE -ne 0 ]; then
+    if [ "${CONNECTION_EXIT_CODE:-1}" -ne 0 ]; then
         echo -e "${RED}${CROSS}${NC} Database connection error"
         echo -e "${GRAY}  ${ARROW}${NC} Error: ${WHITE}${CONNECTION_OUTPUT}${NC}"
         echo
@@ -230,6 +225,10 @@ export_database() {
     echo
     echo -e "${CYAN}${INFO}${NC} Creating database dump..."
     echo -e "${GRAY}  ${ARROW}${NC} Exporting data..."
+
+    TMP_OUTPUT_FILE="${OUTPUT_FILE}.tmp.$$"
+    trap 'rm -f "$TMP_OUTPUT_FILE"' EXIT INT TERM
+
     if [ "$USE_DOCKER" = true ]; then
         if [ -z "$SOURCE_DB_PASS" ]; then
             docker exec "$DB_CONTAINER" mariadb-dump \
@@ -239,7 +238,7 @@ export_database() {
                 --triggers \
                 --events \
                 --add-drop-table \
-                "$SOURCE_DB_NAME" > "$OUTPUT_FILE"
+                "$SOURCE_DB_NAME" > "$TMP_OUTPUT_FILE" && DUMP_EXIT_CODE=0 || DUMP_EXIT_CODE=$?
         else
             docker exec -e MYSQL_PWD="$SOURCE_DB_PASS" "$DB_CONTAINER" mariadb-dump \
                 -u "$SOURCE_DB_USER" \
@@ -248,7 +247,7 @@ export_database() {
                 --triggers \
                 --events \
                 --add-drop-table \
-                "$SOURCE_DB_NAME" > "$OUTPUT_FILE"
+                "$SOURCE_DB_NAME" > "$TMP_OUTPUT_FILE" && DUMP_EXIT_CODE=0 || DUMP_EXIT_CODE=$?
         fi
     else
         DUMP_CMD="mariadb-dump"
@@ -260,7 +259,7 @@ export_database() {
                 return 1
             fi
         fi
-        
+
         if [ -z "$SOURCE_DB_PASS" ]; then
             $DUMP_CMD \
                 -h "$SOURCE_DB_HOST" \
@@ -271,10 +270,9 @@ export_database() {
                 --triggers \
                 --events \
                 --add-drop-table \
-                "$SOURCE_DB_NAME" > "$OUTPUT_FILE"
+                "$SOURCE_DB_NAME" > "$TMP_OUTPUT_FILE" && DUMP_EXIT_CODE=0 || DUMP_EXIT_CODE=$?
         else
-            export MYSQL_PWD="$SOURCE_DB_PASS"
-            $DUMP_CMD \
+            MYSQL_PWD="$SOURCE_DB_PASS" $DUMP_CMD \
                 -h "$SOURCE_DB_HOST" \
                 -P "$SOURCE_DB_PORT" \
                 -u "$SOURCE_DB_USER" \
@@ -283,17 +281,22 @@ export_database() {
                 --triggers \
                 --events \
                 --add-drop-table \
-                "$SOURCE_DB_NAME" > "$OUTPUT_FILE"
-            unset MYSQL_PWD
+                "$SOURCE_DB_NAME" > "$TMP_OUTPUT_FILE" && DUMP_EXIT_CODE=0 || DUMP_EXIT_CODE=$?
         fi
     fi
 
-    DUMP_EXIT_CODE=$?
-    if [ $DUMP_EXIT_CODE -ne 0 ]; then
+    if [ "${DUMP_EXIT_CODE:-1}" -ne 0 ]; then
         echo -e "${RED}${CROSS}${NC} Error creating dump"
-        rm -f "$OUTPUT_FILE"
+        rm -f "$TMP_OUTPUT_FILE"
         return 1
     fi
+
+    if ! mv "$TMP_OUTPUT_FILE" "$OUTPUT_FILE"; then
+        echo -e "${RED}${CROSS}${NC} Error finalizing dump file"
+        rm -f "$TMP_OUTPUT_FILE"
+        return 1
+    fi
+    trap - EXIT INT TERM
 
     DUMP_SIZE=$(du -h "$OUTPUT_FILE" | cut -f1)
     DUMP_LINES=$(wc -l < "$OUTPUT_FILE")
@@ -394,11 +397,8 @@ import_database() {
     input_target_db_user
     input_target_db_pass
     input_target_db_name
-    
-    INPUT_FILE="/root/shop.sql"
-    
-    if [ ! -f "$INPUT_FILE" ]; then
-        echo -e "${RED}${CROSS}${NC} Dump file not found: ${WHITE}$INPUT_FILE${NC}"
+
+    if ! input_dump_file; then
         return 1
     fi
 
@@ -457,22 +457,19 @@ import_database() {
     echo -e "${GRAY}  ${ARROW}${NC} Testing database connection..."
     if [ "$USE_DOCKER" = true ]; then
         if [ -z "$TARGET_DB_PASS" ]; then
-            CONNECTION_OUTPUT=$(timeout 5 docker exec "$DB_CONTAINER" mariadb -u "$TARGET_DB_USER" -e "SELECT 1" "$TARGET_DB_NAME" 2>&1)
+            CONNECTION_OUTPUT=$(timeout 5 docker exec "$DB_CONTAINER" mariadb -u "$TARGET_DB_USER" -e "SELECT 1" "$TARGET_DB_NAME" 2>&1) && CONNECTION_EXIT_CODE=0 || CONNECTION_EXIT_CODE=$?
         else
-            CONNECTION_OUTPUT=$(timeout 5 docker exec -e MYSQL_PWD="$TARGET_DB_PASS" "$DB_CONTAINER" mariadb -u "$TARGET_DB_USER" -e "SELECT 1" "$TARGET_DB_NAME" 2>&1)
+            CONNECTION_OUTPUT=$(timeout 5 docker exec -e MYSQL_PWD="$TARGET_DB_PASS" "$DB_CONTAINER" mariadb -u "$TARGET_DB_USER" -e "SELECT 1" "$TARGET_DB_NAME" 2>&1) && CONNECTION_EXIT_CODE=0 || CONNECTION_EXIT_CODE=$?
         fi
     else
         if [ -z "$TARGET_DB_PASS" ]; then
             echo -e "${YELLOW}${WARNING}${NC} Password is empty! Trying to connect without password..."
-            CONNECTION_OUTPUT=$(timeout 5 $MYSQL_CMD -h "$TARGET_DB_HOST" -P "$TARGET_DB_PORT" -u "$TARGET_DB_USER" --connect-timeout=5 -e "SELECT 1" "$TARGET_DB_NAME" 2>&1)
+            CONNECTION_OUTPUT=$(timeout 5 $MYSQL_CMD -h "$TARGET_DB_HOST" -P "$TARGET_DB_PORT" -u "$TARGET_DB_USER" --connect-timeout=5 -e "SELECT 1" "$TARGET_DB_NAME" 2>&1) && CONNECTION_EXIT_CODE=0 || CONNECTION_EXIT_CODE=$?
         else
-            export MYSQL_PWD="$TARGET_DB_PASS"
-            CONNECTION_OUTPUT=$(timeout 5 $MYSQL_CMD -h "$TARGET_DB_HOST" -P "$TARGET_DB_PORT" -u "$TARGET_DB_USER" --connect-timeout=5 -e "SELECT 1" "$TARGET_DB_NAME" 2>&1)
-            unset MYSQL_PWD
+            CONNECTION_OUTPUT=$(MYSQL_PWD="$TARGET_DB_PASS" timeout 5 $MYSQL_CMD -h "$TARGET_DB_HOST" -P "$TARGET_DB_PORT" -u "$TARGET_DB_USER" --connect-timeout=5 -e "SELECT 1" "$TARGET_DB_NAME" 2>&1) && CONNECTION_EXIT_CODE=0 || CONNECTION_EXIT_CODE=$?
         fi
     fi
-    CONNECTION_EXIT_CODE=$?
-    if [ $CONNECTION_EXIT_CODE -ne 0 ]; then
+    if [ "${CONNECTION_EXIT_CODE:-1}" -ne 0 ]; then
         echo -e "${RED}${CROSS}${NC} Database connection error"
         echo -e "${GRAY}  ${ARROW}${NC} Error: ${WHITE}${CONNECTION_OUTPUT}${NC}"
         echo
@@ -492,40 +489,44 @@ import_database() {
 
     echo -e "${CYAN}${INFO}${NC} Importing data into database..."
     echo -e "${GRAY}  ${ARROW}${NC} Importing data..."
+    IMPORT_ERROR_LOG=$(mktemp)
     if [ "$USE_DOCKER" = true ]; then
         if [ -z "$TARGET_DB_PASS" ]; then
-            docker exec -i "$DB_CONTAINER" mariadb -u "$TARGET_DB_USER" "$TARGET_DB_NAME" < "$INPUT_FILE"
+            docker exec -i "$DB_CONTAINER" mariadb -u "$TARGET_DB_USER" "$TARGET_DB_NAME" < "$INPUT_FILE" 2> "$IMPORT_ERROR_LOG" && IMPORT_EXIT_CODE=0 || IMPORT_EXIT_CODE=$?
         else
-            docker exec -i -e MYSQL_PWD="$TARGET_DB_PASS" "$DB_CONTAINER" mariadb -u "$TARGET_DB_USER" "$TARGET_DB_NAME" < "$INPUT_FILE"
+            docker exec -i -e MYSQL_PWD="$TARGET_DB_PASS" "$DB_CONTAINER" mariadb -u "$TARGET_DB_USER" "$TARGET_DB_NAME" < "$INPUT_FILE" 2> "$IMPORT_ERROR_LOG" && IMPORT_EXIT_CODE=0 || IMPORT_EXIT_CODE=$?
         fi
     else
         MYSQL_CMD="mariadb"
         if ! command -v mariadb >/dev/null 2>&1; then
             MYSQL_CMD="mysql"
         fi
-        
+
         if [ -z "$TARGET_DB_PASS" ]; then
             $MYSQL_CMD \
                 -h "$TARGET_DB_HOST" \
                 -P "$TARGET_DB_PORT" \
                 -u "$TARGET_DB_USER" \
-                "$TARGET_DB_NAME" < "$INPUT_FILE"
+                "$TARGET_DB_NAME" < "$INPUT_FILE" 2> "$IMPORT_ERROR_LOG" && IMPORT_EXIT_CODE=0 || IMPORT_EXIT_CODE=$?
         else
-            export MYSQL_PWD="$TARGET_DB_PASS"
-            $MYSQL_CMD \
+            MYSQL_PWD="$TARGET_DB_PASS" $MYSQL_CMD \
                 -h "$TARGET_DB_HOST" \
                 -P "$TARGET_DB_PORT" \
                 -u "$TARGET_DB_USER" \
-                "$TARGET_DB_NAME" < "$INPUT_FILE"
-            unset MYSQL_PWD
+                "$TARGET_DB_NAME" < "$INPUT_FILE" 2> "$IMPORT_ERROR_LOG" && IMPORT_EXIT_CODE=0 || IMPORT_EXIT_CODE=$?
         fi
     fi
 
-    IMPORT_EXIT_CODE=$?
-    if [ $IMPORT_EXIT_CODE -ne 0 ]; then
+    if [ "${IMPORT_EXIT_CODE:-1}" -ne 0 ]; then
         echo -e "${RED}${CROSS}${NC} Error importing data"
+        if [ -s "$IMPORT_ERROR_LOG" ]; then
+            echo -e "${GRAY}  ${ARROW}${NC} Error details:"
+            cat "$IMPORT_ERROR_LOG"
+        fi
+        rm -f "$IMPORT_ERROR_LOG"
         return 1
     fi
+    rm -f "$IMPORT_ERROR_LOG"
 
     echo -e "${GREEN}${CHECK}${NC} Import completed"
     echo
