@@ -107,12 +107,19 @@ do_backup() {
     for pat in $EXCLUDE_PATTERNS; do
         exclude_args+=(--exclude="$pat")
     done
-    tar -czf "$dir_archive" "${exclude_args[@]}" -C "$(dirname "$PANEL_DIR")" "$(basename "$PANEL_DIR")"
+    local tar_exit=0
+    tar --warning=no-file-changed -czf "$dir_archive" "${exclude_args[@]}" -C "$(dirname "$PANEL_DIR")" "$(basename "$PANEL_DIR")" || tar_exit=$?
+    if [[ $tar_exit -gt 1 ]]; then
+        error "Directory archiving failed."
+    fi
     echo -e "${GREEN}${CHECK}${NC} Directory archived."
     echo
     echo -e "${CYAN}${INFO}${NC} Creating final archive..."
     echo -e "${GRAY}  ${ARROW}${NC} File: ./${archive_name}"
-    tar -czf "./$archive_name" -C "$work_dir" .
+    local final_tmp="./${archive_name}.tmp"
+    trap 'rm -rf "$work_dir" "$final_tmp"' EXIT
+    tar -czf "$final_tmp" -C "$work_dir" .
+    mv -f "$final_tmp" "./$archive_name"
     trap - EXIT
     rm -rf "$work_dir"
 
@@ -153,7 +160,7 @@ do_restore() {
     echo -e "${GRAY}  ${ARROW}${NC} File: ${backup_file} (${size})"
     echo
     echo -ne "${YELLOW}Are you sure you want to continue? (y/n): ${NC}"
-    read -r confirm
+    read -r confirm < /dev/tty
 
     if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
         echo -e "${RED}${CROSS}${NC} Restore aborted by user"
@@ -209,7 +216,14 @@ do_restore() {
     echo -e "${CYAN}${INFO}${NC} Starting database container..."
     echo -e "${GRAY}  ${ARROW}${NC} Container: ${DB_CONTAINER}"
     cd "$PANEL_DIR"
-    docker compose up -d "$DB_CONTAINER" > /dev/null 2>&1
+    local up_log
+    up_log=$(mktemp)
+    if ! docker compose up -d "$DB_CONTAINER" > /dev/null 2>"$up_log"; then
+        cat "$up_log" >&2
+        rm -f "$up_log"
+        error "Failed to start database container."
+    fi
+    rm -f "$up_log"
     echo -e "${GREEN}${CHECK}${NC} Database container started."
     echo
     echo -e "${CYAN}${INFO}${NC} Waiting for database to become healthy..."
@@ -244,7 +258,13 @@ do_restore() {
     echo
     echo -e "${CYAN}${INFO}${NC} Starting all containers..."
     echo -e "${GRAY}  ${ARROW}${NC} Directory: ${PANEL_DIR}"
-    docker compose up -d > /dev/null 2>&1
+    up_log=$(mktemp)
+    if ! docker compose up -d > /dev/null 2>"$up_log"; then
+        cat "$up_log" >&2
+        rm -f "$up_log"
+        error "Failed to start containers."
+    fi
+    rm -f "$up_log"
     echo -e "${GREEN}${CHECK}${NC} All containers started."
 
     trap - EXIT
