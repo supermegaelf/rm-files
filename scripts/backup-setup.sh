@@ -1,10 +1,9 @@
 #!/bin/bash
 
-#===================================
-# REMNAWAVE TELEGRAM BACKUP MANAGER
-#===================================
+#=============================
+# REMNAWAVE TG BACKUP MANAGER
+#=============================
 
-# Color constants
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
@@ -15,30 +14,28 @@ readonly WHITE='\033[1;37m'
 readonly GRAY='\033[0;90m'
 readonly NC='\033[0m'
 
-# Status symbols
 readonly CHECK="✓"
 readonly CROSS="✗"
 readonly WARNING="!"
 readonly INFO="*"
 readonly ARROW="→"
 
-# Global variables
 SCRIPT_URL="https://raw.githubusercontent.com/supermegaelf/rm-files/main/scripts/backup.sh"
 SCRIPT_DIR="/root/scripts"
 SCRIPT_PATH="$SCRIPT_DIR/backup.sh"
 BACKUP_LOG="/root/backup-output.txt"
 
-#================
+#========
 # HELPER
-#================
+#========
 
 is_installed() {
     [ -f "$SCRIPT_PATH" ] || grep -q "$SCRIPT_PATH" /etc/crontab 2>/dev/null
 }
 
-#=====================
+#===================
 # INSTALL FUNCTIONS
-#=====================
+#===================
 
 prepare_environment() {
     echo -e "${GREEN}Environment Preparation${NC}"
@@ -106,7 +103,7 @@ verify_installation() {
     echo -e "${GRAY}  ${ARROW}${NC} Validating system integration"
 
     if grep -q "$SCRIPT_PATH" /etc/crontab; then
-        :  # Cron job found, continue silently
+        :
     else
         echo -e "${RED}${CROSS}${NC} Cron job was not added to /etc/crontab"
         exit 1
@@ -239,9 +236,9 @@ perform_uninstall() {
 
 show_main_menu() {
     echo
-    echo -e "${PURPLE}==================================${NC}"
-    echo -e "${NC}REMNAWAVE TELEGRAM BACKUP MANAGER${NC}"
-    echo -e "${PURPLE}==================================${NC}"
+    echo -e "${PURPLE}============================${NC}"
+    echo -e "${NC}Remnawave TG Backup Manager${NC}"
+    echo -e "${PURPLE}============================${NC}"
     echo
     echo -e "${CYAN}Please select an action:${NC}"
     echo
@@ -301,6 +298,5 @@ main() {
     fi
 }
 
-# Execute main function
 main "$@"
 exit 0

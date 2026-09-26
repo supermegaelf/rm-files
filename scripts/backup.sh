@@ -1,10 +1,9 @@
 #!/bin/bash
 
-#===========================
-# REMNAWAVE TELEGRAM BACKUP
-#===========================
+#=====================
+# REMNAWAVE TG BACKUP
+#=====================
 
-# Color constants
 readonly RED='\033[0;31m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
@@ -15,17 +14,14 @@ readonly WHITE='\033[1;37m'
 readonly GRAY='\033[0;90m'
 readonly NC='\033[0m'
 
-# Status symbols
 readonly CHECK="✓"
 readonly CROSS="✗"
 readonly WARNING="!"
 readonly INFO="*"
 readonly ARROW="→"
 
-# Log file
 readonly LOG_FILE="/root/backup-output.txt"
 
-# Global variables
 POSTGRES_USER=""
 POSTGRES_PASSWORD=""
 SHOP_MYSQL_USER=""
@@ -78,7 +74,6 @@ read_env_var() {
 load_credentials() {
     echo -e "${CYAN}${INFO}${NC} Loading credentials..."
 
-    # Remnawave PostgreSQL — read from /opt/remnawave/.env
     if [ ! -f /opt/remnawave/.env ]; then
         error_exit "/opt/remnawave/.env not found"
     fi
@@ -86,7 +81,6 @@ load_credentials() {
     POSTGRES_PASSWORD=$(read_env_var /opt/remnawave/.env POSTGRES_PASSWORD)
     echo -e "${GRAY}  ${ARROW}${NC} Remnawave DB: ${POSTGRES_USER}"
 
-    # Shop Bot MySQL — read from /root/shop-bot/.env (optional)
     if [ -f /root/shop-bot/.env ]; then
         SHOP_MYSQL_USER=$(read_env_var /root/shop-bot/.env DB_USER)
         SHOP_MYSQL_PASSWORD=$(read_env_var /root/shop-bot/.env DB_PASS)
@@ -101,9 +95,9 @@ load_credentials() {
 
 configure_backup() {
     echo
-    echo -e "${PURPLE}==========================${NC}"
-    echo -e "${NC}REMNAWAVE TELEGRAM BACKUP${NC}"
-    echo -e "${PURPLE}==========================${NC}"
+    echo -e "${PURPLE}====================${NC}"
+    echo -e "${NC}Remnawave TG Backup${NC}"
+    echo -e "${PURPLE}====================${NC}"
     echo
 
     load_credentials
@@ -208,7 +202,6 @@ check_containers() {
         error_exit "Container $POSTGRES_CONTAINER_NAME is not running"
     fi
 
-    # Check for shop database container
     SHOP_CONTAINER_NAME=""
     
     if docker ps -q -f name="shop-bot-db-1" | grep -q .; then
@@ -230,7 +223,6 @@ create_database_backup() {
     echo -e "${CYAN}${INFO}${NC} Creating database backups..."
     echo -e "${GRAY}  ${ARROW}${NC} User: ${POSTGRES_USER}"
 
-    # Backup PostgreSQL — full dump compatible with db-migrate.sh restore
     local dump_file="$WORK_DIR/dump_${TIMESTAMP}.sql.gz"
     docker exec "$POSTGRES_CONTAINER_NAME" pg_dumpall -c -U "$POSTGRES_USER" 2>>"$LOG_FILE" | gzip -9 > "$dump_file"
     if [[ ${PIPESTATUS[0]} -ne 0 ]]; then
@@ -243,7 +235,6 @@ create_database_backup() {
     fi
     echo -e "${GRAY}  ${ARROW}${NC} Remnawave database backed up"
 
-    # Backup shop database (plain SQL, sent as separate file)
     if [ -n "$SHOP_CONTAINER_NAME" ] && [ -n "$SHOP_MYSQL_PASSWORD" ]; then
         if databases_shop=$(docker exec "$SHOP_CONTAINER_NAME" mariadb -h 127.0.0.1 --user="$SHOP_MYSQL_USER" --password="$SHOP_MYSQL_PASSWORD" -e "SHOW DATABASES;" 2>>"$LOG_FILE"); then
             databases_shop=$(echo "$databases_shop" | tr -d "| " | grep -v Database)
@@ -277,7 +268,6 @@ create_archive() {
     echo -e "${CYAN}${INFO}${NC} Building backup archive..."
     echo -e "${GRAY}  ${ARROW}${NC} Archiving /opt/remnawave"
 
-    # Archive /opt/remnawave directory
     tar --warning=no-file-changed -czf "$WORK_DIR/remnawave_dir_${TIMESTAMP}.tar.gz" \
         --exclude="*.log" --exclude="*.tmp" --exclude=".git" \
         -C /opt remnawave >> "$LOG_FILE" 2>&1
@@ -287,7 +277,6 @@ create_archive() {
     fi
     echo -e "${GRAY}  ${ARROW}${NC} Packing final archive"
 
-    # Pack dump + dir archive into final backup (compatible with db-migrate.sh)
     tar -czf "$MAIN_BACKUP_FILE" \
         -C "$WORK_DIR" \
         "dump_${TIMESTAMP}.sql.gz" \
@@ -395,5 +384,4 @@ main() {
     echo
 }
 
-# Execute main function
 main
