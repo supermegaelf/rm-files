@@ -123,7 +123,7 @@ export_database() {
     TEST_HOST="$SOURCE_DB_HOST"
     
     if command -v docker >/dev/null 2>&1; then
-        DB_CONTAINER=$(docker ps --format "{{.Names}}" | grep -E "shop-bot.*db|shop.*db" | grep -v "beszel" | head -n 1)
+        DB_CONTAINER=$(docker ps --format "{{.Names}}" | grep -E "shop-bot.*db|shop.*db" | grep -v "beszel" | head -n 1) || DB_CONTAINER=""
         if [ -n "$DB_CONTAINER" ]; then
             if [ "$SOURCE_DB_HOST" = "db" ] || [ "$SOURCE_DB_HOST" = "127.0.0.1" ] || [ "$SOURCE_DB_HOST" = "localhost" ]; then
                 TEST_HOST="127.0.0.1"
@@ -413,7 +413,7 @@ import_database() {
     TEST_HOST="$TARGET_DB_HOST"
     
     if command -v docker >/dev/null 2>&1; then
-        DB_CONTAINER=$(docker ps --format "{{.Names}}" | grep -E "shop-bot.*db|shop.*db" | grep -v "beszel" | head -n 1)
+        DB_CONTAINER=$(docker ps --format "{{.Names}}" | grep -E "shop-bot.*db|shop.*db" | grep -v "beszel" | head -n 1) || DB_CONTAINER=""
         if [ -n "$DB_CONTAINER" ]; then
             if [ "$TARGET_DB_HOST" = "db" ] || [ "$TARGET_DB_HOST" = "127.0.0.1" ] || [ "$TARGET_DB_HOST" = "localhost" ]; then
                 TEST_HOST="127.0.0.1"
@@ -490,6 +490,7 @@ import_database() {
     echo -e "${CYAN}${INFO}${NC} Importing data into database..."
     echo -e "${GRAY}  ${ARROW}${NC} Importing data..."
     IMPORT_ERROR_LOG=$(mktemp)
+    trap 'rm -f "$IMPORT_ERROR_LOG"' EXIT INT TERM
     if [ "$USE_DOCKER" = true ]; then
         if [ -z "$TARGET_DB_PASS" ]; then
             docker exec -i "$DB_CONTAINER" mariadb -u "$TARGET_DB_USER" "$TARGET_DB_NAME" < "$INPUT_FILE" 2> "$IMPORT_ERROR_LOG" && IMPORT_EXIT_CODE=0 || IMPORT_EXIT_CODE=$?
@@ -524,9 +525,11 @@ import_database() {
             cat "$IMPORT_ERROR_LOG"
         fi
         rm -f "$IMPORT_ERROR_LOG"
+        trap - EXIT INT TERM
         return 1
     fi
     rm -f "$IMPORT_ERROR_LOG"
+    trap - EXIT INT TERM
 
     echo -e "${GREEN}${CHECK}${NC} Import completed"
     echo
