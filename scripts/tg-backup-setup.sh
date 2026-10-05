@@ -20,7 +20,7 @@ readonly WARNING="!"
 readonly INFO="*"
 readonly ARROW="→"
 
-SCRIPT_URL="https://raw.githubusercontent.com/supermegaelf/rm-files/main/scripts/backup.sh"
+SCRIPT_URL="https://raw.githubusercontent.com/supermegaelf/rm-files/main/scripts/tg-backup.sh"
 SCRIPT_DIR="/root/scripts"
 SCRIPT_PATH="$SCRIPT_DIR/backup.sh"
 BACKUP_LOG="/root/backup-output.txt"
