@@ -226,8 +226,7 @@ services:
     container_name: beszel
     restart: unless-stopped
     ports:
-      - "8090:8090"
-      - "45876:45876"
+      - "127.0.0.1:8090:8090"
     volumes:
       - ./data:/beszel_data
 EOF
@@ -314,20 +313,6 @@ start_panel_agent_container() {
         echo -e "${RED}${CROSS}${NC} Failed to start Beszel Agent"
         return 1
     fi
-}
-
-configure_panel_firewall() {
-    echo
-    echo -e "${GREEN}Firewall Configuration${NC}"
-    echo -e "${GREEN}======================${NC}"
-    echo
-
-    echo -e "${CYAN}${INFO}${NC} Configuring UFW firewall rules..."
-    echo -e "${GRAY}  ${ARROW}${NC} Adding rule for Beszel Web UI (8090)"
-    ufw allow 8090/tcp comment 'Beszel Web UI' > /dev/null 2>&1
-    echo -e "${GRAY}  ${ARROW}${NC} Adding rule for Beszel Agents (45876)"
-    ufw allow 45876/tcp comment 'Beszel Agents' > /dev/null 2>&1
-    echo -e "${GREEN}${CHECK}${NC} Firewall rules configured!"
 }
 
 backup_nginx_config() {
@@ -516,12 +501,6 @@ verify_panel_installation() {
         echo -e "${GRAY}  ${ARROW}${NC} Port 8090: ${YELLOW}Not listening${NC}"
     fi
 
-    if ss -tlnp | grep -q 45876; then
-        echo -e "${GRAY}  ${ARROW}${NC} Port 45876: ${GREEN}Listening${NC}"
-    else
-        echo -e "${GRAY}  ${ARROW}${NC} Port 45876: ${YELLOW}Not listening${NC}"
-    fi
-
     echo -e "${GRAY}  ${ARROW}${NC} Testing HTTP endpoint"
     if curl -s http://localhost:8090 > /dev/null 2>&1; then
         echo -e "${GRAY}  ${ARROW}${NC} HTTP endpoint: ${GREEN}Accessible${NC}"
@@ -572,12 +551,6 @@ rollback_panel_installation() {
                 (cd /opt/remnawave && docker compose restart remnawave-nginx > /dev/null 2>&1 || true)
             fi
         fi
-    fi
-
-    if [ "$FIREWALL_CONFIGURED" = "true" ]; then
-        echo -e "${GRAY}  ${ARROW}${NC} Removing firewall rules"
-        ufw delete allow 8090/tcp > /dev/null 2>&1 || true
-        ufw delete allow 45876/tcp > /dev/null 2>&1 || true
     fi
 
     if [ "$AGENT_STARTED" = "true" ]; then
@@ -657,10 +630,6 @@ install_panel_beszel() {
     INSTALL_STEP="Starting Agent container"
     start_panel_agent_container
     AGENT_STARTED=true
-
-    INSTALL_STEP="Configuring firewall"
-    configure_panel_firewall
-    FIREWALL_CONFIGURED=true
 
     INSTALL_STEP="Backing up nginx config"
     backup_nginx_config
