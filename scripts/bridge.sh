@@ -454,11 +454,6 @@ install_bridge() {
     echo -e "${GREEN}${CHECK}${NC} Installation complete"
     echo -e "${PURPLE}========================${NC}"
     echo
-    echo -e "${CYAN}Useful Commands:${NC}"
-    echo -e "${WHITE}• Check status: systemctl status haproxy${NC}"
-    echo -e "${WHITE}• Check logs: journalctl -u haproxy -f${NC}"
-    echo -e "${WHITE}• Restart service: systemctl restart haproxy${NC}"
-    echo
 }
 
 add_node() {
