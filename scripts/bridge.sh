@@ -292,6 +292,10 @@ update_panel_host() {
         --arg domain "$node_domain" \
         '[.response[] | select(.address == $domain or .sni == $domain)] | first | .host // ""')
 
+    HOST_REMARK=$(echo "$hosts_response" | jq -r \
+        --arg domain "$node_domain" \
+        '[.response[] | select(.address == $domain or .sni == $domain)] | first | .remark // ""')
+
     if [ -z "$host_uuid" ]; then
         echo -e "${RED}${CROSS}${NC} Host for ${node_domain} not found in panel"
         exit 1
@@ -329,6 +333,10 @@ restore_panel_host() {
     host_uuid=$(echo "$hosts_response" | jq -r \
         --arg domain "$node_domain" \
         '[.response[] | select(.sni == $domain)] | first | .uuid // empty')
+
+    HOST_REMARK=$(echo "$hosts_response" | jq -r \
+        --arg domain "$node_domain" \
+        '[.response[] | select(.sni == $domain)] | first | .remark // ""')
 
     if [ -z "$host_uuid" ]; then
         echo -e "${YELLOW}  ${WARNING}${NC} Host for ${node_domain} not found, skipping"
@@ -399,6 +407,30 @@ reload_haproxy() {
     fi
 }
 
+#=========================
+# NODE FIREWALL FUNCTIONS
+#=========================
+
+print_restrict_commands() {
+    local remark=$1
+    local node_ip=$2
+    local bridge_ip=$3
+
+    echo -e "${CYAN}On \"${remark}\" node (${node_ip}), allow port 443 only from this bridge:${NC}"
+    echo -e "${WHITE}ufw allow from ${bridge_ip} to any port 443 proto tcp comment 'Bridge'${NC}"
+    echo -e "${WHITE}ufw delete allow 443/tcp${NC}"
+}
+
+print_reopen_commands() {
+    local remark=$1
+    local node_ip=$2
+    local bridge_ip=$3
+
+    echo -e "${CYAN}On \"${remark}\" node (${node_ip}), reopen port 443 for direct access:${NC}"
+    echo -e "${WHITE}ufw allow 443/tcp comment 'HTTPS'${NC}"
+    echo -e "${WHITE}ufw delete allow from ${bridge_ip} to any port 443 proto tcp${NC}"
+}
+
 #======================
 # MAIN ENTRY FUNCTIONS
 #======================
@@ -454,6 +486,9 @@ install_bridge() {
     echo -e "${GREEN}${CHECK}${NC} Installation complete"
     echo -e "${PURPLE}========================${NC}"
     echo
+    echo -e "${YELLOW}${WARNING} Action required${NC}"
+    print_restrict_commands "${HOST_REMARK:-$NODE_DOMAIN}" "$NODE_IP" "$BRIDGE_IP"
+    echo
 }
 
 add_node() {
@@ -502,6 +537,9 @@ add_node() {
     echo -e "${GREEN}${CHECK}${NC} Node added"
     echo -e "${PURPLE}=============${NC}"
     echo
+    echo -e "${YELLOW}${WARNING} Action required${NC}"
+    print_restrict_commands "${HOST_REMARK:-$NODE_DOMAIN}" "$NODE_IP" "$BRIDGE_IP"
+    echo
 }
 
 remove_node() {
@@ -545,6 +583,10 @@ remove_node() {
     local original_host
     original_host=$(grep "^${escaped_domain}:" "$NODES_FILE" | cut -d: -f4)
 
+    local node_ip bridge_ip
+    node_ip=$(grep "^${escaped_domain}:" "$NODES_FILE" | cut -d: -f2)
+    bridge_ip=$(grep "^${escaped_domain}:" "$NODES_FILE" | cut -d: -f3)
+
     sed -i "/^${escaped_domain}:/d" "$NODES_FILE"
 
     if [ ! -s "$NODES_FILE" ]; then
@@ -553,6 +595,9 @@ remove_node() {
         restore_panel_host "$selected_node" "$original_host"
         echo
         _remove_bridge_services
+        echo -e "${YELLOW}${WARNING} Action required${NC}"
+        print_reopen_commands "${HOST_REMARK:-$selected_node}" "$node_ip" "$bridge_ip"
+        echo
         return
     fi
 
@@ -569,6 +614,9 @@ remove_node() {
     echo -e "${PURPLE}===============${NC}"
     echo -e "${GREEN}${CHECK}${NC} Node removed"
     echo -e "${PURPLE}===============${NC}"
+    echo
+    echo -e "${YELLOW}${WARNING} Action required${NC}"
+    print_reopen_commands "${HOST_REMARK:-$selected_node}" "$node_ip" "$bridge_ip"
     echo
 }
 
@@ -604,14 +652,30 @@ remove_bridge() {
     echo -e "${GREEN}===============${NC}"
     echo
 
+    local node_remarks=()
+    local node_ips=()
+    local bridge_ips=()
+
     if [ -f "$NODES_FILE" ] && [ -s "$NODES_FILE" ]; then
         while IFS=: read -r node_domain node_ip bridge_ip original_host; do
             restore_panel_host "$node_domain" "$original_host"
             echo
+            node_remarks+=("${HOST_REMARK:-$node_domain}")
+            node_ips+=("$node_ip")
+            bridge_ips+=("$bridge_ip")
         done < "$NODES_FILE"
     fi
 
     _remove_bridge_services
+
+    if [ ${#node_ips[@]} -gt 0 ]; then
+        echo -e "${YELLOW}${WARNING} Action required${NC}"
+        local i
+        for i in "${!node_ips[@]}"; do
+            print_reopen_commands "${node_remarks[$i]}" "${node_ips[$i]}" "${bridge_ips[$i]}"
+            echo
+        done
+    fi
 }
 
 #==================
