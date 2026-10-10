@@ -580,12 +580,8 @@ remove_node() {
     local escaped_domain
     escaped_domain=$(printf '%s' "$selected_node" | sed 's/[.[\*^$]/\\&/g')
 
-    local original_host
-    original_host=$(grep "^${escaped_domain}:" "$NODES_FILE" | cut -d: -f4)
-
-    local node_ip bridge_ip
-    node_ip=$(grep "^${escaped_domain}:" "$NODES_FILE" | cut -d: -f2)
-    bridge_ip=$(grep "^${escaped_domain}:" "$NODES_FILE" | cut -d: -f3)
+    local node_ip bridge_ip original_host
+    IFS=: read -r _ node_ip bridge_ip original_host < <(grep "^${escaped_domain}:" "$NODES_FILE")
 
     sed -i "/^${escaped_domain}:/d" "$NODES_FILE"
 
@@ -652,29 +648,21 @@ remove_bridge() {
     echo -e "${GREEN}===============${NC}"
     echo
 
-    local node_remarks=()
-    local node_ips=()
-    local bridge_ips=()
+    local reopen_out=""
 
     if [ -f "$NODES_FILE" ] && [ -s "$NODES_FILE" ]; then
         while IFS=: read -r node_domain node_ip bridge_ip original_host; do
             restore_panel_host "$node_domain" "$original_host"
             echo
-            node_remarks+=("${HOST_REMARK:-$node_domain}")
-            node_ips+=("$node_ip")
-            bridge_ips+=("$bridge_ip")
+            reopen_out+="$(print_reopen_commands "${HOST_REMARK:-$node_domain}" "$node_ip" "$bridge_ip")"$'\n\n'
         done < "$NODES_FILE"
     fi
 
     _remove_bridge_services
 
-    if [ ${#node_ips[@]} -gt 0 ]; then
+    if [ -n "$reopen_out" ]; then
         echo -e "${YELLOW}${WARNING} Action required${NC}"
-        local i
-        for i in "${!node_ips[@]}"; do
-            print_reopen_commands "${node_remarks[$i]}" "${node_ips[$i]}" "${bridge_ips[$i]}"
-            echo
-        done
+        printf '%s' "$reopen_out"
     fi
 }
 
