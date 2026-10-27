@@ -694,11 +694,18 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.first.text')"></p>
-                            <a class="btn my-btn-primary" href="https://apps.apple.com/ru/app/happ-lite/id6799917773"
-                                role="button" rel="noopener noreferrer" target="_blank">
-                                <svg class="bi"><use href="#download"></use></svg>
-                                <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
-                            </a>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn my-btn-primary" href="https://happ.info/ru/apple-region/?ref=rus"
+                                    role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
+                                    <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
+                                </a>
+                                <a class="btn my-btn-primary" href="https://support.apple.com/ru-ru/118283"
+                                    role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#apple"></use></svg>
+                                    <span class="fw-semibold">Apple</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                     <div class="col">
@@ -706,7 +713,7 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.second.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.second.text')"></p>
-                            <a class="btn my-btn-primary" href="https://apps.apple.com/us/app/happ-proxy-utility/id6504287215"
+                            <a class="btn my-btn-primary" href="https://apps.apple.com/app/id6504287215"
                                 role="button" rel="noopener noreferrer" target="_blank">
                                 <svg class="bi"><use href="#download"></use></svg>
                                 <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
@@ -867,11 +874,18 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.first.text')"></p>
-                            <a class="btn my-btn-primary" href="https://apps.apple.com/ru/app/happ-proxy-utility-plus/id6788279553"
-                                role="button" rel="noopener noreferrer" target="_blank">
-                                <svg class="bi"><use href="#download"></use></svg>
-                                <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
-                            </a>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a class="btn my-btn-primary" href="https://happ.info/ru/apple-region/?ref=rus"
+                                    role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
+                                    <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
+                                </a>
+                                <a class="btn my-btn-primary" href="https://support.apple.com/ru-ru/118283"
+                                    role="button" rel="noopener noreferrer" target="_blank">
+                                    <svg class="bi"><use href="#apple"></use></svg>
+                                    <span class="fw-semibold">Apple</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
                     <div class="col">
@@ -879,7 +893,7 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.second.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.second.text')"></p>
-                            <a class="btn my-btn-primary" href="https://github.com/Happ-proxy/happ-desktop/releases/latest/download/Happ.macOS.universal.dmg"
+                            <a class="btn my-btn-primary" href="https://apps.apple.com/app/id6504287215"
                                 role="button" rel="noopener noreferrer" target="_blank">
                                 <svg class="bi"><use href="#download"></use></svg>
                                 <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
@@ -891,6 +905,18 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.third.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.third.text')"></p>
+                            <a class="btn my-btn-primary" href="https://github.com/Happ-proxy/happ-desktop/releases/latest/download/Happ.macOS.universal.dmg"
+                                role="button" rel="noopener noreferrer" target="_blank">
+                                <svg class="bi"><use href="#download"></use></svg>
+                                <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="my-block-big h-100">
+                            <span class="my-step-counter mb-1"></span>
+                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.fourth.title')"></h5>
+                            <p class="my-text-content" x-html="$t('guideContent.macos.fourth.text')"></p>
                             <button class="btn my-btn-primary fw-semibold" @click="copySubscriptionLink" :disabled="isLinkCopied">
                                 <svg class="bi" x-show="!isLinkCopied"><use href="#clipboard"></use></svg>
                                 <svg class="bi" x-show="isLinkCopied"><use href="#check-lg"></use></svg>
@@ -901,15 +927,15 @@
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
-                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.fourth.title')"></h5>
-                            <p class="my-text-content mb-0" x-html="$t('guideContent.macos.fourth.text')"></p>
+                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.fifth.title')"></h5>
+                            <p class="my-text-content mb-0" x-html="$t('guideContent.macos.fifth.text')"></p>
                         </div>
                     </div>
                     <div class="col">
                         <div class="my-block-big h-100">
                             <span class="my-step-counter mb-1"></span>
-                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.fifth.title')"></h5>
-                            <p class="my-text-content" x-html="$t('guideContent.macos.fifth.text')"></p>
+                            <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.sixth.title')"></h5>
+                            <p class="my-text-content" x-html="$t('guideContent.macos.sixth.text')"></p>
                             <a class="btn my-btn-primary" href="https://t.me/surf_vpn_info/196"
                                 role="button" rel="noopener noreferrer" target="_blank">
                                 <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
@@ -1014,12 +1040,12 @@
                 guideContent: {
                     ios: {
                         first: {
-                            title: 'Download app',
-                            text: `Click button below to download app.`,
+                            title: 'Change region',
+                            text: `Click button below to open a guide on changing your region. If you have funds left on your balance, contact Apple Support to ask them to reset it. After that, you will be able to change your region.`,
                         },
                         second: {
-                            title: 'Unable to download?',
-                            text: `Click button below to download app from another source.`,
+                            title: 'Download app',
+                            text: `Click button below to download app.`,
                         },
                         third: {
                             title: 'Add subscription',
@@ -1058,22 +1084,26 @@
                     },
                     macos: {
                         first: {
+                            title: 'Change region',
+                            text: `Click button below to open a guide on changing your region. If you have funds left on your balance, contact Apple Support to ask them to reset it. After that, you will be able to change your region.`,
+                        },
+                        second: {
                             title: 'Download app',
                             text: `Click on button below to download app.`,
                         },
-                        second: {
+                        third: {
                             title: 'Unable to download?',
                             text: `Click button below to download app from another source and install it manually.`,
                         },
-                        third: {
+                        fourth: {
                             title: 'Add subscription',
                             text: `- Click button below to copy subscription link.<br>- Open installed app, click <b>«Skip»</b> (if you are launching it for the first time), and tap <b>«Clipboard»</b>.`,
                         },
-                        fourth: {
+                        fifth: {
                             title: 'Enable VPN',
                             text: `Click big round button to enable VPN.`,
                         },
-                        fifth: {
+                        sixth: {
                             title: 'Not working?',
                             text: `Click button below to open tips for fixing connection error.`,
                         },
@@ -1141,12 +1171,12 @@
                 guideContent: {
                     ios: {
                         first: {
-                            title: 'Скачайте приложение',
-                            text: `Нажмите кнопку ниже, чтобы скачать приложение.`,
+                            title: 'Смените регион',
+                            text: `Нажмите кнопку ниже, чтобы открыть инструкцию по смене региона. Если на вашем балансе остались средства, обратитесь в поддержку Apple с просьбой обнулить баланс. После этого вы сможете сменить регион.`,
                         },
                         second: {
-                            title: 'Не удалось скачать?',
-                            text: `Нажмите кнопку ниже, чтобы скачать приложение из другого источника.`,
+                            title: 'Скачайте приложение',
+                            text: `Нажмите кнопку ниже, чтобы скачать приложение.`,
                         },
                         third: {
                             title: 'Добавьте подписку',
@@ -1185,22 +1215,26 @@
                     },
                     macos: {
                         first: {
+                            title: 'Смените регион',
+                            text: `Нажмите кнопку ниже, чтобы открыть инструкцию по смене региона. Если на вашем балансе остались средства, обратитесь в поддержку Apple с просьбой обнулить баланс. После этого вы сможете сменить регион.`,
+                        },
+                        second: {
                             title: 'Скачайте приложение',
                             text: `Нажмите кнопку ниже, чтобы скачать приложение.`,
                         },
-                        second: {
+                        third: {
                             title: 'Не удалось скачать?',
                             text: `Нажмите кнопку ниже, чтобы скачать приложение из другого источника и установите его вручную.`,
                         },
-                        third: {
+                        fourth: {
                             title: 'Добавьте подписку',
                             text: `- Нажмите кнопку ниже, чтобы скопировать ссылку на подписку.<br>- Откройте установленное приложение, кликните <b>«Пропустить»</b> (если запускаете его впервые) и нажмите <b>«Из Буфера»</b>.`,
                         },
-                        fourth: {
+                        fifth: {
                             title: 'Включите VPN',
                             text: `Нажмите большую круглую кнопку, чтобы включить VPN.`,
                         },
-                        fifth: {
+                        sixth: {
                             title: 'Не работает?',
                             text: `Нажмите кнопку ниже, чтобы открыть рекомендации по устранению ошибки подключения.`,
                         },
