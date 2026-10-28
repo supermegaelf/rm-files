@@ -475,6 +475,46 @@
             color: var(--my-content-color);
         }
 
+        /* ========== LIGHTBOX ========== */
+        .my-lightbox {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 1060;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+            background-color: rgba(0, 0, 0, .85);
+            cursor: zoom-out;
+        }
+
+        .my-lightbox[hidden] {
+            display: none;
+        }
+
+        .my-lightbox img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: var(--bs-border-radius-lg);
+        }
+
+        .my-lightbox-close {
+            position: absolute;
+            top: calc(.75rem + env(safe-area-inset-top, 0px));
+            right: .75rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            border: 0;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, .15);
+            color: #fff;
+            font-size: 1.5rem;
+            line-height: 1;
+        }
+
         /* ========== MODAL ========== */
         .modal-backdrop {
             --bs-backdrop-opacity: .75;
@@ -1101,6 +1141,10 @@
             </div>
         </div>
     </div>
+    <div class="my-lightbox" id="lightbox" hidden>
+        <button class="my-lightbox-close" type="button" aria-label="Close">&times;</button>
+        <img alt="">
+    </div>
     <script>
         const SUB_URL_SCHEMES = {
             pc: happUrl,
@@ -1174,8 +1218,16 @@
 
         (function initRegionPage() {
             let openedFromPage = false;
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = lightbox.querySelector('img');
+
+            function closeLightbox() {
+                lightbox.hidden = true;
+                document.body.style.overflow = '';
+            }
 
             function showPage() {
+                closeLightbox();
                 const isRegion = location.hash === '#region';
                 document.getElementById('page-main').hidden = isRegion;
                 document.getElementById('page-region').hidden = !isRegion;
@@ -1205,6 +1257,20 @@
             document.getElementById('btn-region-instruction').addEventListener('click', () => {
                 const instruction = document.getElementById('region-instruction');
                 instruction.hidden = !instruction.hidden;
+            });
+
+            document.querySelectorAll('.my-screenshot a').forEach(link => {
+                link.addEventListener('click', event => {
+                    event.preventDefault();
+                    lightboxImg.src = link.href;
+                    lightbox.hidden = false;
+                    document.body.style.overflow = 'hidden';
+                });
+            });
+
+            lightbox.addEventListener('click', closeLightbox);
+            document.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && !lightbox.hidden) closeLightbox();
             });
 
             window.addEventListener('hashchange', showPage);
