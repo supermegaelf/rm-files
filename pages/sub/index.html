@@ -486,7 +486,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: calc(1rem + env(safe-area-inset-top, 0px)) 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+            padding: calc(4rem + env(safe-area-inset-top, 0px)) 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
             background-color: rgba(0, 0, 0, .85);
             cursor: zoom-out;
         }
@@ -505,14 +505,21 @@
             position: absolute;
             top: calc(.75rem + env(safe-area-inset-top, 0px));
             right: .75rem;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             width: 2.5rem;
             height: 2.5rem;
-            border: 0;
+            padding: 0;
+            border: 1px solid rgba(255, 255, 255, .25);
             border-radius: 50%;
-            background-color: rgba(255, 255, 255, .15);
+            background-color: rgba(0, 0, 0, .6);
             color: #fff;
-            font-size: 1.5rem;
-            line-height: 1;
+        }
+
+        .my-lightbox-close .bi {
+            font-size: 1.125rem;
         }
 
         /* ========== MODAL ========== */
@@ -597,6 +604,9 @@
         <symbol id="box-arrow-up-right" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
             <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
+        </symbol>
+        <symbol id="x-lg" viewBox="0 0 16 16">
+            <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
         </symbol>
         <symbol id="arrow-left" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
@@ -1142,7 +1152,9 @@
         </div>
     </div>
     <div class="my-lightbox" id="lightbox" hidden>
-        <button class="my-lightbox-close" type="button" aria-label="Close">&times;</button>
+        <button class="my-lightbox-close" type="button" aria-label="Close">
+            <svg class="bi"><use href="#x-lg"></use></svg>
+        </button>
         <img alt="">
     </div>
     <script>
