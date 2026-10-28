@@ -525,19 +525,36 @@
             <path fill-rule="evenodd" d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5"/>
             <path fill-rule="evenodd" d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z"/>
         </symbol>
+        <symbol id="arrow-left" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
+        </symbol>
+        <symbol id="file-text" viewBox="0 0 16 16">
+            <path d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5M5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1z"/>
+            <path d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1"/>
+        </symbol>
+        <symbol id="play-circle" viewBox="0 0 16 16">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+            <path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445"/>
+        </symbol>
     </svg>
 <header class="navbar my-navbar navbar-expand" x-data>
     <div class="container my-container px-3">
         <div class="navbar-collapse navbar-content">
             <ul class="navbar-nav w-100 gap-2">
-                <li class="nav-item">
+                <li class="nav-item" id="nav-back" hidden>
+                    <button class="nav-link my-nav-outline my-nav-secondary" id="btn-back" type="button">
+                        <svg class="bi"><use href="#arrow-left"></use></svg>
+                        <span class="my-nav-link-text" x-text="$t('back')">Назад</span>
+                    </button>
+                </li>
+                <li class="nav-item" id="nav-support">
                     <a class="nav-link my-nav-outline my-nav-secondary" href="https://t.me/surf_vpn_1"
                         rel="noopener noreferrer" target="_blank">
                         <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
                         <span class="my-nav-link-text" x-text="$t('support')">Поддержка</span>
                     </a>
                 </li>
-                <li class="nav-item dropdown my-dropdown ms-auto">
+                <li class="nav-item dropdown my-dropdown ms-auto" id="nav-guide">
                     <button class="nav-link my-nav-outline my-nav-secondary dropdown-toggle" id="btn-guide" type="button"
                         data-bs-toggle="dropdown" aria-expanded="false">
                         <svg class="bi my-nav-link-icon">
@@ -618,7 +635,7 @@
     </div>
 </header>
     <div class="container my-container px-3" x-data>
-        <div class="tab-content" role="tablist">
+        <div class="tab-content" id="page-main" role="tablist">
             <div id="tab-android" class="tab-pane my-tab-pane fade show active" aria-labelledby="btn-guide-android-tab" role="tabpanel" x-data="androidCopyLink">
                 <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
                     <div class="col">
@@ -695,8 +712,7 @@
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.first.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
-                                <a class="btn my-btn-primary" href="https://happ.info/ru/apple-region/?ref=rus"
-                                    role="button" rel="noopener noreferrer" target="_blank">
+                                <a class="btn my-btn-primary" href="#region" role="button">
                                     <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
                                     <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
                                 </a>                            </div>
@@ -869,8 +885,7 @@
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.first.text')"></p>
                             <div class="d-flex flex-wrap gap-2">
-                                <a class="btn my-btn-primary" href="https://happ.info/ru/apple-region/?ref=rus"
-                                    role="button" rel="noopener noreferrer" target="_blank">
+                                <a class="btn my-btn-primary" href="#region" role="button">
                                     <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
                                     <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
                                 </a>                            </div>
@@ -930,6 +945,75 @@
                                 <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
                             </a>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="my-tab-pane mt-3" id="page-region" hidden>
+            <div class="my-block-big pt-3">
+                <h5 class="my-text-heading fw-semibold" x-text="$t('region.title')"></h5>
+                <p class="my-text-content" x-html="$t('region.text')"></p>
+                <div class="d-flex flex-wrap gap-2">
+                    <button class="btn my-btn-primary fw-semibold" id="btn-region-instruction" type="button">
+                        <svg class="bi"><use href="#file-text"></use></svg>
+                        <span x-text="$t('region.instruction')">Инструкция</span>
+                    </button>
+                    <button class="btn my-btn-primary fw-semibold" type="button">
+                        <svg class="bi"><use href="#play-circle"></use></svg>
+                        <span x-text="$t('region.video')">Видеоинструкция</span>
+                    </button>
+                </div>
+            </div>
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3 mt-0" id="region-instruction" hidden>
+                <div class="col">
+                    <div class="my-block-big h-100">
+                        <span class="my-step-counter mb-1"></span>
+                        <h5 class="my-text-heading fw-semibold" x-text="$t('region.steps.first.title')"></h5>
+                        <p class="my-text-content mb-0" x-html="$t('region.steps.first.text')"></p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="my-block-big h-100">
+                        <span class="my-step-counter mb-1"></span>
+                        <h5 class="my-text-heading fw-semibold" x-text="$t('region.steps.second.title')"></h5>
+                        <p class="my-text-content mb-0" x-html="$t('region.steps.second.text')"></p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="my-block-big h-100">
+                        <span class="my-step-counter mb-1"></span>
+                        <h5 class="my-text-heading fw-semibold" x-text="$t('region.steps.third.title')"></h5>
+                        <p class="my-text-content mb-0" x-html="$t('region.steps.third.text')"></p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="my-block-big h-100">
+                        <span class="my-step-counter mb-1"></span>
+                        <h5 class="my-text-heading fw-semibold" x-text="$t('region.steps.fourth.title')"></h5>
+                        <p class="my-text-content mb-0" x-html="$t('region.steps.fourth.text')"></p>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="my-block-big h-100">
+                        <span class="my-step-counter mb-1"></span>
+                        <h5 class="my-text-heading fw-semibold" x-text="$t('region.steps.fifth.title')"></h5>
+                        <p class="my-text-content" x-html="$t('region.steps.fifth.text')"></p>
+                        <a class="btn my-btn-primary" href="https://apps.apple.com/app/id6504287215"
+                            role="button" rel="noopener noreferrer" target="_blank">
+                            <svg class="bi"><use href="#download"></use></svg>
+                            <span class="fw-semibold" x-text="$t('downloadApp')">Скачать</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="my-block-big h-100 pt-3">
+                        <h5 class="my-text-heading fw-semibold" x-text="$t('region.help.title')"></h5>
+                        <p class="my-text-content" x-html="$t('region.help.text')"></p>
+                        <a class="btn my-btn-primary" href="https://support.apple.com/ru-ru/118283"
+                            role="button" rel="noopener noreferrer" target="_blank">
+                            <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
+                            <span class="fw-semibold" x-text="$t('region.help.more')">Подробнее</span>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -1005,6 +1089,42 @@
                 }
             }
         })();
+
+        (function initRegionPage() {
+            let openedFromPage = false;
+
+            function showPage() {
+                const isRegion = location.hash === '#region';
+                document.getElementById('page-main').hidden = isRegion;
+                document.getElementById('page-region').hidden = !isRegion;
+                document.getElementById('nav-support').hidden = isRegion;
+                document.getElementById('nav-guide').hidden = isRegion;
+                document.getElementById('nav-back').hidden = !isRegion;
+                window.scrollTo(0, 0);
+            }
+
+            document.querySelectorAll('a[href="#region"]').forEach(link => {
+                link.addEventListener('click', () => { openedFromPage = true; });
+            });
+
+            document.getElementById('btn-back').addEventListener('click', () => {
+                if (openedFromPage) {
+                    openedFromPage = false;
+                    history.back();
+                } else {
+                    history.replaceState(null, '', location.pathname + location.search);
+                    showPage();
+                }
+            });
+
+            document.getElementById('btn-region-instruction').addEventListener('click', () => {
+                const instruction = document.getElementById('region-instruction');
+                instruction.hidden = !instruction.hidden;
+            });
+
+            window.addEventListener('hashchange', showPage);
+            showPage();
+        })();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous" defer
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"></script>
@@ -1025,6 +1145,40 @@
                 downloadApp: 'Download',
                 addSubscription: 'Add subscription',
                 fixInstr: 'Open',
+                back: 'Back',
+                region: {
+                    title: 'To install or update the app, follow the guide',
+                    text: `Choose a convenient format: step-by-step guide or video.`,
+                    instruction: 'Guide',
+                    video: 'Video guide',
+                    steps: {
+                        first: {
+                            title: 'Open account settings',
+                            text: `<b>On iPhone / iPad:</b> open App Store → tap profile icon → tap account name → <b>«Country/Region»</b>. Confirm sign-in if needed.<br><br><b>Also via «Settings»:</b> your name → <b>«Media & Purchases»</b> → <b>«View Account»</b> → <b>«Country/Region»</b>.<br><br><b>On Mac:</b> open Apple Music → <b>«Account»</b> → <b>«Account Settings»</b> → <b>«Country/Region»</b> or <b>«Change Country or Region»</b>.`,
+                        },
+                        second: {
+                            title: 'Select Kazakhstan or Belarus',
+                            text: `Tap <b>«Change Country or Region»</b> if this option is shown, select <b>«Kazakhstan»</b> or <b>«Belarus»</b> and tap <b>«Continue»</b>. The steps are the same for both countries.`,
+                        },
+                        third: {
+                            title: 'Accept terms',
+                            text: `Read Apple terms and tap <b>«Agree»</b>.`,
+                        },
+                        fourth: {
+                            title: 'Fill in details',
+                            text: `Enter address and payment details for the selected country. If payment method <b>«None»</b> is available, you can select it. Save changes with <b>«Next»</b> or <b>«Done»</b>.`,
+                        },
+                        fifth: {
+                            title: 'Install app',
+                            text: `Open App Store again and install Happ. If app is already installed, tap <b>«Open»</b>.`,
+                        },
+                    },
+                    help: {
+                        title: 'Region does not change?',
+                        text: `Check remaining balance, subscriptions, pending purchases and Family Sharing. Subscriptions that block region change must be canceled and allowed to expire.`,
+                        more: 'Learn more',
+                    },
+                },
                 guideContent: {
                     ios: {
                         first: {
@@ -1156,6 +1310,40 @@
                 downloadApp: 'Скачать',
                 addSubscription: 'Добавить',
                 fixInstr: 'Открыть',
+                back: 'Назад',
+                region: {
+                    title: 'Для установки или обновления приложения следуйте инструкции',
+                    text: `Выберите удобный формат: пошаговая инструкция или видео.`,
+                    instruction: 'Инструкция',
+                    video: 'Видеоинструкция',
+                    steps: {
+                        first: {
+                            title: 'Откройте настройки аккаунта',
+                            text: `<b>На iPhone / iPad:</b> откройте App Store → нажмите на значок профиля → нажмите на имя аккаунта → <b>«Страна/регион»</b>. При необходимости подтвердите вход.<br><br><b>Также через «Настройки»:</b> ваше имя → <b>«Медиаматериалы и покупки»</b> (или <b>«Контент и покупки»</b>) → <b>«Просмотреть»</b> → <b>«Страна/регион»</b>.<br><br><b>На Mac:</b> откройте Apple Music → <b>«Учётная запись»</b> → <b>«Настройки учётной записи»</b> → <b>«Страна/регион»</b> или <b>«Изменить страну или регион»</b>.`,
+                        },
+                        second: {
+                            title: 'Выберите Казахстан или Беларусь',
+                            text: `Нажмите <b>«Изменить страну или регион»</b>, если этот пункт отображается, выберите <b>«Казахстан»</b> или <b>«Беларусь»</b> и нажмите <b>«Продолжить»</b>. Для обеих стран шаги одинаковые.`,
+                        },
+                        third: {
+                            title: 'Примите условия',
+                            text: `Ознакомьтесь с условиями Apple и нажмите <b>«Принять»</b> или <b>«Принимаю»</b>.`,
+                        },
+                        fourth: {
+                            title: 'Заполните данные',
+                            text: `Укажите адрес и платёжные данные для выбранной страны. Если доступен способ оплаты <b>«Нет»</b> (None), можно выбрать его. Сохраните изменения кнопкой <b>«Далее»</b> или <b>«Готово»</b>.`,
+                        },
+                        fifth: {
+                            title: 'Установите приложение',
+                            text: `Откройте App Store заново и установите Happ. Если приложение уже установлено, нажмите <b>«Открыть»</b> (Open).`,
+                        },
+                    },
+                    help: {
+                        title: 'Регион не меняется?',
+                        text: `Проверьте остаток на балансе, подписки, незавершённые покупки и участие в семейном доступе. Подписки, блокирующие смену региона, нужно отменить и дождаться их окончания.`,
+                        more: 'Подробнее',
+                    },
+                },
                 guideContent: {
                     ios: {
                         first: {
