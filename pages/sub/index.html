@@ -442,6 +442,39 @@
             }
         }
 
+        /* ========== SCREENSHOTS ========== */
+        .my-screenshots {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .my-screenshot {
+            flex: 0 0 calc(50% - .5rem);
+            margin: 0;
+        }
+
+        @media (min-width: 576px) {
+            .my-screenshot {
+                flex-basis: 180px;
+            }
+        }
+
+        .my-screenshot img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border: 1px solid var(--my-alpha-dark-gray-color);
+            border-radius: var(--bs-border-radius-lg);
+        }
+
+        .my-screenshot figcaption {
+            margin-top: .5rem;
+            font-size: .875rem;
+            color: var(--my-content-color);
+        }
+
         /* ========== MODAL ========== */
         .modal-backdrop {
             --bs-backdrop-opacity: .75;
@@ -970,6 +1003,26 @@
                         <span class="my-step-counter mb-1"></span>
                         <h5 class="my-text-heading fw-semibold" x-text="$t('region.steps.first.title')"></h5>
                         <p class="my-text-content mb-0" x-html="$t('region.steps.first.text')"></p>
+                        <div class="my-screenshots">
+                            <figure class="my-screenshot">
+                                <a href="/media/01-appstore-profile.png" target="_blank" rel="noopener noreferrer">
+                                    <img src="/media/01-appstore-profile.png" alt="" width="576" height="1192" loading="lazy" decoding="async">
+                                </a>
+                                <figcaption x-text="$t('region.steps.first.shot1')"></figcaption>
+                            </figure>
+                            <figure class="my-screenshot">
+                                <a href="/media/02-account.png" target="_blank" rel="noopener noreferrer">
+                                    <img src="/media/02-account.png" alt="" width="576" height="1192" loading="lazy" decoding="async">
+                                </a>
+                                <figcaption x-text="$t('region.steps.first.shot2')"></figcaption>
+                            </figure>
+                            <figure class="my-screenshot">
+                                <a href="/media/03-country-row.png" target="_blank" rel="noopener noreferrer">
+                                    <img src="/media/03-country-row.png" alt="" width="576" height="1192" loading="lazy" decoding="async">
+                                </a>
+                                <figcaption x-text="$t('region.steps.first.shot3')"></figcaption>
+                            </figure>
+                        </div>
                     </div>
                 </div>
                 <div class="col">
@@ -977,6 +1030,20 @@
                         <span class="my-step-counter mb-1"></span>
                         <h5 class="my-text-heading fw-semibold" x-text="$t('region.steps.second.title')"></h5>
                         <p class="my-text-content mb-0" x-html="$t('region.steps.second.text')"></p>
+                        <div class="my-screenshots">
+                            <figure class="my-screenshot">
+                                <a href="/media/04-kazakhstan.png" target="_blank" rel="noopener noreferrer">
+                                    <img src="/media/04-kazakhstan.png" alt="" width="576" height="1192" loading="lazy" decoding="async">
+                                </a>
+                                <figcaption x-text="$t('region.steps.second.shot1')"></figcaption>
+                            </figure>
+                            <figure class="my-screenshot">
+                                <a href="/media/05-continue.png" target="_blank" rel="noopener noreferrer">
+                                    <img src="/media/05-continue.png" alt="" width="576" height="1192" loading="lazy" decoding="async">
+                                </a>
+                                <figcaption x-text="$t('region.steps.second.shot2')"></figcaption>
+                            </figure>
+                        </div>
                     </div>
                 </div>
                 <div class="col">
@@ -984,6 +1051,14 @@
                         <span class="my-step-counter mb-1"></span>
                         <h5 class="my-text-heading fw-semibold" x-text="$t('region.steps.third.title')"></h5>
                         <p class="my-text-content mb-0" x-html="$t('region.steps.third.text')"></p>
+                        <div class="my-screenshots">
+                            <figure class="my-screenshot">
+                                <a href="/media/06-terms.png" target="_blank" rel="noopener noreferrer">
+                                    <img src="/media/06-terms.png" alt="" width="576" height="1192" loading="lazy" decoding="async">
+                                </a>
+                                <figcaption x-text="$t('region.steps.third.shot1')"></figcaption>
+                            </figure>
+                        </div>
                     </div>
                 </div>
                 <div class="col">
@@ -991,6 +1066,14 @@
                         <span class="my-step-counter mb-1"></span>
                         <h5 class="my-text-heading fw-semibold" x-text="$t('region.steps.fourth.title')"></h5>
                         <p class="my-text-content mb-0" x-html="$t('region.steps.fourth.text')"></p>
+                        <div class="my-screenshots">
+                            <figure class="my-screenshot">
+                                <a href="/media/07-payment-none.png" target="_blank" rel="noopener noreferrer">
+                                    <img src="/media/07-payment-none.png" alt="" width="576" height="1192" loading="lazy" decoding="async">
+                                </a>
+                                <figcaption x-text="$t('region.steps.fourth.shot1')"></figcaption>
+                            </figure>
+                        </div>
                     </div>
                 </div>
                 <div class="col">
@@ -1157,18 +1240,25 @@
                         first: {
                             title: 'Open account settings',
                             text: `<b>On iPhone / iPad:</b> open App Store → tap profile icon → tap account name → <b>«Country/Region»</b>. Confirm sign-in if needed.<br><br><b>On Mac / MacBook:</b> open Apple Music → <b>«Account»</b> → <b>«Account Settings»</b> → <b>«Country/Region»</b> or <b>«Change Country or Region»</b>.`,
+                            shot1: 'Open App Store and tap profile icon.',
+                            shot2: 'Tap account name.',
+                            shot3: 'Select «Country/Region».',
                         },
                         second: {
                             title: 'Select Kazakhstan or Belarus',
                             text: `Tap <b>«Change Country or Region»</b> if this option is shown, select <b>«Kazakhstan»</b> or <b>«Belarus»</b> and tap <b>«Continue»</b>. The steps are the same for both countries.`,
+                            shot1: 'Find and select Kazakhstan or Belarus.',
+                            shot2: 'Tap «Continue».',
                         },
                         third: {
                             title: 'Accept terms',
                             text: `Read Apple terms and tap <b>«Agree»</b>.`,
+                            shot1: 'Read terms and accept them.',
                         },
                         fourth: {
                             title: 'Fill in details',
                             text: `Enter address and payment details for the selected country. If payment method <b>«None»</b> is available, you can select it. Save changes with <b>«Next»</b> or <b>«Done»</b>.`,
+                            shot1: 'Select payment method and fill in address for the selected country.',
                         },
                         fifth: {
                             title: 'Continue installation',
@@ -1322,18 +1412,25 @@
                         first: {
                             title: 'Откройте настройки аккаунта',
                             text: `<b>На iPhone / iPad:</b> откройте App Store → нажмите на значок профиля → нажмите на имя аккаунта → <b>«Страна/регион»</b>. При необходимости подтвердите вход.<br><br><b>На Mac / MacBook:</b> откройте Apple Music → <b>«Учётная запись»</b> → <b>«Настройки учётной записи»</b> → <b>«Страна/регион»</b> или <b>«Изменить страну или регион»</b>.`,
+                            shot1: 'Откройте App Store и нажмите на значок профиля.',
+                            shot2: 'Нажмите на имя аккаунта.',
+                            shot3: 'Выберите «Страна/регион».',
                         },
                         second: {
                             title: 'Выберите Казахстан или Беларусь',
                             text: `Нажмите <b>«Изменить страну или регион»</b>, если этот пункт отображается, выберите <b>«Казахстан»</b> или <b>«Беларусь»</b> и нажмите <b>«Продолжить»</b>. Для обеих стран шаги одинаковые.`,
+                            shot1: 'Найдите и выберите Казахстан или Беларусь.',
+                            shot2: 'Нажмите «Продолжить».',
                         },
                         third: {
                             title: 'Примите условия',
                             text: `Ознакомьтесь с условиями Apple и нажмите <b>«Принять»</b> или <b>«Принимаю»</b>.`,
+                            shot1: 'Ознакомьтесь с условиями и примите их.',
                         },
                         fourth: {
                             title: 'Заполните данные',
                             text: `Укажите адрес и платёжные данные для выбранной страны. Если доступен способ оплаты <b>«Нет»</b> (None), можно выбрать его. Сохраните изменения кнопкой <b>«Далее»</b> или <b>«Готово»</b>.`,
+                            shot1: 'Выберите способ оплаты и заполните адрес для выбранной страны.',
                         },
                         fifth: {
                             title: 'Продолжите установку',
