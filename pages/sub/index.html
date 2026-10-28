@@ -1026,7 +1026,7 @@
                 <h5 class="my-text-heading fw-semibold" x-text="$t('region.title')"></h5>
                 <p class="my-text-content" x-html="$t('region.text')"></p>
                 <div class="d-flex flex-wrap gap-2">
-                    <button class="btn my-btn-primary fw-semibold" id="btn-region-instruction" type="button">
+                    <button class="btn my-btn-primary fw-semibold" id="btn-region-instruction" type="button" aria-pressed="false">
                         <svg class="bi"><use href="#file-text"></use></svg>
                         <span x-text="$t('region.instruction')">Инструкция</span>
                     </button>
@@ -1264,9 +1264,11 @@
             document.getElementById('btn-back').addEventListener('click', goBack);
             document.getElementById('btn-back-step').addEventListener('click', goBack);
 
-            document.getElementById('btn-region-instruction').addEventListener('click', () => {
+            document.getElementById('btn-region-instruction').addEventListener('click', event => {
                 const instruction = document.getElementById('region-instruction');
                 instruction.hidden = !instruction.hidden;
+                event.currentTarget.classList.toggle('active', !instruction.hidden);
+                event.currentTarget.setAttribute('aria-pressed', String(!instruction.hidden));
             });
 
             document.querySelectorAll('.my-screenshot a').forEach(link => {
