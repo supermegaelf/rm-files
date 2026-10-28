@@ -951,7 +951,8 @@
         </div>
         <div class="my-tab-pane mt-3" id="page-region" hidden>
             <div class="my-block-big pt-3">
-                <h5 class="my-text-heading fw-semibold mb-3" x-text="$t('region.title')"></h5>
+                <h5 class="my-text-heading fw-semibold" x-text="$t('region.title')"></h5>
+                <p class="my-text-content" x-html="$t('region.text')"></p>
                 <div class="d-flex flex-wrap gap-2">
                     <button class="btn my-btn-primary fw-semibold" id="btn-region-instruction" type="button">
                         <svg class="bi"><use href="#file-text"></use></svg>
@@ -1146,7 +1147,8 @@
                 fixInstr: 'Open',
                 back: 'Back',
                 region: {
-                    title: 'Choose a convenient format: step-by-step guide or video',
+                    title: 'To install or update the app, follow the guide',
+                    text: `Choose a convenient format: step-by-step guide with screenshots or video.`,
                     instruction: 'Guide',
                     video: 'Video guide',
                     steps: {
@@ -1310,7 +1312,8 @@
                 fixInstr: 'Открыть',
                 back: 'Назад',
                 region: {
-                    title: 'Выберите удобный формат: пошаговая инструкция или видео',
+                    title: 'Для установки или обновления приложения следуйте инструкции',
+                    text: `Выберите удобный формат: пошаговая инструкция со скриншотами или видео.`,
                     instruction: 'Инструкция',
                     video: 'Видеоинструкция',
                     steps: {
