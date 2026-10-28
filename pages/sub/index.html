@@ -476,6 +476,7 @@
             padding: calc(4rem + env(safe-area-inset-top, 0px)) 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
             background-color: rgba(0, 0, 0, .85);
             cursor: zoom-out;
+            overscroll-behavior: contain;
         }
 
         .my-lightbox[hidden] {
@@ -594,6 +595,9 @@
         </symbol>
         <symbol id="x-lg" viewBox="0 0 16 16">
             <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+        </symbol>
+        <symbol id="arrow-right" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8"/>
         </symbol>
         <symbol id="arrow-left" viewBox="0 0 16 16">
             <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8"/>
@@ -781,11 +785,10 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.ios.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.ios.first.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <a class="btn my-btn-primary" href="#region" role="button">
-                                    <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
-                                    <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
-                                </a>                            </div>
+                            <a class="btn my-btn-primary" href="#region" role="button">
+                                <svg class="bi"><use href="#arrow-right"></use></svg>
+                                <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
+                            </a>
                         </div>
                     </div>
                     <div class="col">
@@ -954,11 +957,10 @@
                             <span class="my-step-counter mb-1"></span>
                             <h5 class="my-text-heading fw-semibold" x-text="$t('guideContent.macos.first.title')"></h5>
                             <p class="my-text-content" x-html="$t('guideContent.macos.first.text')"></p>
-                            <div class="d-flex flex-wrap gap-2">
-                                <a class="btn my-btn-primary" href="#region" role="button">
-                                    <svg class="bi"><use href="#box-arrow-up-right"></use></svg>
-                                    <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
-                                </a>                            </div>
+                            <a class="btn my-btn-primary" href="#region" role="button">
+                                <svg class="bi"><use href="#arrow-right"></use></svg>
+                                <span class="fw-semibold" x-text="$t('fixInstr')">Открыть</span>
+                            </a>
                         </div>
                     </div>
                     <div class="col">
@@ -1220,13 +1222,22 @@
             const lightbox = document.getElementById('lightbox');
             const lightboxImg = lightbox.querySelector('img');
 
-            function closeLightbox() {
+            function hideLightbox() {
                 lightbox.hidden = true;
+                lightboxImg.removeAttribute('src');
                 document.body.style.overflow = '';
             }
 
+            function closeLightbox() {
+                if (history.state && history.state.lightbox) {
+                    history.back();
+                } else {
+                    hideLightbox();
+                }
+            }
+
             function showPage() {
-                closeLightbox();
+                hideLightbox();
                 const isRegion = location.hash === '#region';
                 document.getElementById('page-main').hidden = isRegion;
                 document.getElementById('page-region').hidden = !isRegion;
@@ -1264,10 +1275,14 @@
                     lightboxImg.src = link.href;
                     lightbox.hidden = false;
                     document.body.style.overflow = 'hidden';
+                    history.pushState({ lightbox: true }, '');
                 });
             });
 
             lightbox.addEventListener('click', closeLightbox);
+            window.addEventListener('popstate', () => {
+                if (!lightbox.hidden) hideLightbox();
+            });
             document.addEventListener('keydown', event => {
                 if (event.key === 'Escape' && !lightbox.hidden) closeLightbox();
             });
