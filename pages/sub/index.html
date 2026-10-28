@@ -491,6 +491,8 @@
         }
 
         .my-lightbox video {
+            height: 100%;
+            aspect-ratio: 9 / 16;
             background-color: #000;
             cursor: auto;
         }
@@ -1151,7 +1153,7 @@
             <svg class="bi"><use href="#x-lg"></use></svg>
         </button>
         <img alt="" hidden>
-        <video controls playsinline preload="none" hidden></video>
+        <video controls playsinline muted preload="none" hidden></video>
     </div>
     <script>
         const SUB_URL_SCHEMES = {
@@ -1242,11 +1244,16 @@
             }
 
             function openLightbox(media, src) {
+                if (!lightbox.hidden) return;
                 media.src = src;
                 media.hidden = false;
                 lightbox.hidden = false;
                 document.body.style.overflow = 'hidden';
                 history.pushState({ lightbox: true }, '');
+                if (media === lightboxVideo) {
+                    media.focus();
+                    media.play().catch(() => {});
+                }
             }
 
             function closeLightbox() {
@@ -1301,7 +1308,6 @@
 
             document.getElementById('btn-region-video').addEventListener('click', () => {
                 openLightbox(lightboxVideo, '/media/happ-instrukciya-720x1280-web.mp4');
-                lightboxVideo.play().catch(() => {});
             });
 
             lightbox.addEventListener('click', event => {
