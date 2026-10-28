@@ -997,7 +997,11 @@
                     <div class="my-block-big h-100">
                         <span class="my-step-counter mb-1"></span>
                         <h5 class="my-text-heading fw-semibold" x-text="$t('region.steps.fifth.title')"></h5>
-                        <p class="my-text-content mb-0" x-html="$t('region.steps.fifth.text')"></p>
+                        <p class="my-text-content" x-html="$t('region.steps.fifth.text')"></p>
+                        <button class="btn my-btn-primary fw-semibold" id="btn-back-step" type="button">
+                            <svg class="bi"><use href="#arrow-left"></use></svg>
+                            <span x-text="$t('back')">Назад</span>
+                        </button>
                     </div>
                 </div>
                 <div class="col">
@@ -1102,7 +1106,7 @@
                 link.addEventListener('click', () => { openedFromPage = true; });
             });
 
-            document.getElementById('btn-back').addEventListener('click', () => {
+            function goBack() {
                 if (openedFromPage) {
                     openedFromPage = false;
                     history.back();
@@ -1110,7 +1114,10 @@
                     history.replaceState(null, '', location.pathname + location.search);
                     showPage();
                 }
-            });
+            }
+
+            document.getElementById('btn-back').addEventListener('click', goBack);
+            document.getElementById('btn-back-step').addEventListener('click', goBack);
 
             document.getElementById('btn-region-instruction').addEventListener('click', () => {
                 const instruction = document.getElementById('region-instruction');
@@ -1165,7 +1172,7 @@
                         },
                         fifth: {
                             title: 'Continue installation',
-                            text: `Return to the previous page by tapping <b>«Back»</b> at the top, and continue from step 2.`,
+                            text: `Tap button below and continue installation from step 2.`,
                         },
                     },
                     help: {
@@ -1330,7 +1337,7 @@
                         },
                         fifth: {
                             title: 'Продолжите установку',
-                            text: `Вернитесь на предыдущую страницу, нажав кнопку <b>«Назад»</b> сверху, и продолжите выполнение со 2 пункта.`,
+                            text: `Нажмите на кнопку ниже и продолжите установку со 2 пункта.`,
                         },
                     },
                     help: {
