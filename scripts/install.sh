@@ -1843,6 +1843,7 @@ services:
       - /etc/letsencrypt/live/${PANEL_CERT_DOMAIN}/privkey.pem:/etc/nginx/ssl/${PANEL_CERT_DOMAIN}/privkey.pem:ro
       - /etc/letsencrypt/live/${SUB_CERT_DOMAIN}/fullchain.pem:/etc/nginx/ssl/${SUB_CERT_DOMAIN}/fullchain.pem:ro
       - /etc/letsencrypt/live/${SUB_CERT_DOMAIN}/privkey.pem:/etc/nginx/ssl/${SUB_CERT_DOMAIN}/privkey.pem:ro
+      - ./media:/var/www/media:ro
     network_mode: host
     depends_on:
       - remnawave
@@ -1904,7 +1905,15 @@ start_panel_services() {
     echo -e "${CYAN}${INFO}${NC} Setting up Remnawave infrastructure..."
 
 echo -e "${GRAY}  ${ARROW}${NC} Downloading custom sub page"
-wget -P /opt/remnawave/ https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/sub/index.html > /dev/null 2>&1
+wget -O /opt/remnawave/index.html https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/sub/index.html > /dev/null 2>&1 \
+    || echo -e "${YELLOW}${WARNING}${NC} Failed to download index.html"
+
+echo -e "${GRAY}  ${ARROW}${NC} Downloading sub page media"
+mkdir -p /opt/remnawave/media
+for f in 01-appstore-profile.png 02-account.png 03-country-row.png 04-kazakhstan.png 05-continue.png 06-terms.png 07-payment-none.png happ-instrukciya-720x1280-web.mp4; do
+    wget -O "/opt/remnawave/media/$f" "https://raw.githubusercontent.com/supermegaelf/rm-files/main/pages/sub/media/$f" > /dev/null 2>&1 \
+        || echo -e "${YELLOW}${WARNING}${NC} Failed to download $f"
+done
 
     echo -e "${GRAY}  ${ARROW}${NC} Configuring SSL and proxy settings"
     cat > /opt/remnawave/nginx.conf <<EOL
@@ -2093,6 +2102,10 @@ server {
         proxy_busy_buffers_size 64k;
         proxy_intercept_errors on;
         error_page 400 404 500 502 @redirect;
+    }
+
+    location /media/ {
+        alias /var/www/media/;
     }
 
     location @redirect {
