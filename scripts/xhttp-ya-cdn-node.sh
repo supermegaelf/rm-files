@@ -110,6 +110,13 @@ log_entry() {
     exec > >(tee -a "$LOGFILE") 2>&1
 }
 
+write_shell_assignment() {
+    local name="$1"
+    local value="$2"
+    value=${value//\'/\'\\\'\'}
+    printf "%s='%s'\n" "$name" "$value"
+}
+
 add_cron_rule() {
     local rule="$1"
     local logged_rule="${rule} >> ${DIR_REMNAWAVE}cron_jobs.log 2>&1"
@@ -134,12 +141,12 @@ pause_step() {
 #======================
 
 input_cloudflare_api_key() {
-    echo -ne "${CYAN}Cloudflare API Key: ${NC}"
+    echo -ne "${CYAN}Cloudflare API Token or Global API Key: ${NC}"
     read -r CLOUDFLARE_API_KEY
     while [[ -z "$CLOUDFLARE_API_KEY" ]]; do
-        echo -e "${RED}${CROSS}${NC} Cloudflare API Key cannot be empty!"
+        echo -e "${RED}${CROSS}${NC} Cloudflare API credential cannot be empty!"
         echo
-        echo -ne "${CYAN}Cloudflare API Key: ${NC}"
+        echo -ne "${CYAN}Cloudflare API Token or Global API Key: ${NC}"
         read -r CLOUDFLARE_API_KEY
     done
 }
@@ -234,7 +241,7 @@ input_node_api_token() {
 
 input_node_name() {
     echo -ne "${CYAN}Node name (e.g., DE-CDN, NL-CDN, FI-CDN): ${NC}"
-    read NODE_NAME
+    read -r NODE_NAME
     while [[ -z "$NODE_NAME" ]]; do
         echo -e "${RED}${CROSS}${NC} Node name cannot be empty!"
         echo
@@ -245,7 +252,7 @@ input_node_name() {
 
 input_host_remark() {
     echo -ne "${CYAN}Host remark (e.g., 🇩🇪 Германия (CDN), 🇳🇱 Нидерланды (CDN), 🇫🇮 Финляндия (CDN)): ${NC}"
-    read HOST_REMARK
+    read -r HOST_REMARK
     while [[ -z "$HOST_REMARK" ]]; do
         echo -e "${RED}${CROSS}${NC} Host remark cannot be empty!"
         echo
@@ -258,8 +265,13 @@ NODE_CREDS_FILE="/opt/remnanode/rm-node-config.env"
 
 save_node_credentials() {
     mkdir -p /opt/remnanode
-    printf 'PANEL_NODE_DOMAIN="%s"\nPANEL_NODE_TOKEN="%s"\nPANEL_IP="%s"\nSELFSTEAL_DOMAIN="%s"\nCDN_DOMAIN="%s"\nCDN_IP="%s"\nCDN_HOST_UUID="%s"\n' \
-        "$PANEL_NODE_DOMAIN" "$PANEL_NODE_TOKEN" "$PANEL_IP" "$SELFSTEAL_DOMAIN" "$CDN_DOMAIN" "$CDN_IP" "${CDN_HOST_UUID:-}" > "$NODE_CREDS_FILE"
+    (
+        umask 077
+        local name
+        for name in PANEL_NODE_DOMAIN PANEL_NODE_TOKEN PANEL_IP SELFSTEAL_DOMAIN CDN_DOMAIN CDN_IP CDN_HOST_UUID NODE_UUID; do
+            write_shell_assignment "$name" "${!name}"
+        done > "$NODE_CREDS_FILE"
+    ) || error "Failed to save node credentials"
     chmod 600 "$NODE_CREDS_FILE"
 }
 
@@ -281,21 +293,19 @@ load_saved_node_credentials() {
 save_node_variables_to_file() {
     echo -e "${CYAN}${INFO}${NC} Saving node configuration variables..."
     echo -e "${GRAY}  ${ARROW}${NC} Creating variables file"
-    cat > remnawave-node-vars.sh << EOF
-# User provided node configuration
-export SELFSTEAL_DOMAIN="$SELFSTEAL_DOMAIN"
-export CDN_DOMAIN="$CDN_DOMAIN"
-export CDN_IP="$CDN_IP"
-export PANEL_IP="$PANEL_IP"
-export PANEL_NODE_DOMAIN="$PANEL_NODE_DOMAIN"
-export PANEL_NODE_TOKEN="$PANEL_NODE_TOKEN"
-export PANEL_NODE_URL="https://${PANEL_NODE_DOMAIN}"
-export NODE_NAME="$NODE_NAME"
-export HOST_REMARK="$HOST_REMARK"
-EOF
+    NODE_VARS_FILE="$PWD/remnawave-node-vars.sh"
+    (
+        umask 077
+        local name
+        for name in SELFSTEAL_DOMAIN CDN_DOMAIN CDN_IP PANEL_IP PANEL_NODE_DOMAIN PANEL_NODE_TOKEN PANEL_NODE_URL NODE_NAME HOST_REMARK; do
+            printf 'export '
+            write_shell_assignment "$name" "${!name}"
+        done > "$NODE_VARS_FILE"
+    ) || error "Failed to save node configuration variables"
+    chmod 600 "$NODE_VARS_FILE"
 
     echo -e "${GRAY}  ${ARROW}${NC} Loading environment variables"
-    source remnawave-node-vars.sh
+    source "$NODE_VARS_FILE"
     echo -e "${GREEN}${CHECK}${NC} Variables saved to remnawave-node-vars.sh"
 }
 
@@ -303,8 +313,9 @@ move_variables_file() {
     echo -e "${CYAN}${INFO}${NC} Moving configuration files..."
     echo -e "${GRAY}  ${ARROW}${NC} Moving variables file to project directory"
     mkdir -p "$APP_DIR"
-    if [ -f /root/remnawave-node-vars.sh ]; then
-        mv /root/remnawave-node-vars.sh "$APP_DIR/"
+    if [ -f "$NODE_VARS_FILE" ] && [ "$NODE_VARS_FILE" != "$APP_DIR/remnawave-node-vars.sh" ]; then
+        mv "$NODE_VARS_FILE" "$APP_DIR/"
+        NODE_VARS_FILE="$APP_DIR/remnawave-node-vars.sh"
     fi
     echo -e "${GREEN}${CHECK}${NC} Configuration files moved"
 }
@@ -451,7 +462,16 @@ install_system_packages() {
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Configuring UFW firewall"
-    if ! ufw allow 22/tcp comment 'SSH' > /dev/null 2>&1 || ! ufw allow 443/tcp comment 'Yandex CDN origin (nginx XHTTP)' > /dev/null 2>&1 || ! ufw --force enable > /dev/null 2>&1; then
+    local ssh_port="${SSH_CONNECTION##* }"
+    if [ -z "$ssh_port" ]; then
+        ssh_port=$(sshd -T 2>/dev/null | awk '$1 == "port" { print $2; exit }')
+    fi
+    if ! [[ "$ssh_port" =~ ^[0-9]+$ ]] || [ "$ssh_port" -lt 1 ] || [ "$ssh_port" -gt 65535 ]; then
+        echo -e "${RED}${CROSS}${NC} Failed to determine the SSH port; firewall unchanged"
+        return 1
+    fi
+    echo -e "${GRAY}  ${ARROW}${NC} Allowing SSH on port $ssh_port"
+    if ! ufw allow "$ssh_port/tcp" comment 'SSH' > /dev/null 2>&1 || ! ufw allow 443/tcp comment 'Yandex CDN origin (nginx XHTTP)' > /dev/null 2>&1 || ! ufw --force enable > /dev/null 2>&1; then
         echo -e "${RED}${CROSS}${NC} Failed to configure UFW"
         return 1
     fi
@@ -557,27 +577,35 @@ check_domain() {
 check_api() {
     local attempts=3
     local attempt=1
+    local api_response auth_method
+    local headers
 
     while [ $attempt -le $attempts ]; do
-        if [[ $CLOUDFLARE_API_KEY =~ [A-Z] ]]; then
-            api_response=$(curl --silent --request GET --url https://api.cloudflare.com/client/v4/zones --header "Authorization: Bearer ${CLOUDFLARE_API_KEY}" --header "Content-Type: application/json")
-        else
-            api_response=$(curl --silent --request GET --url https://api.cloudflare.com/client/v4/zones --header "X-Auth-Key: ${CLOUDFLARE_API_KEY}" --header "X-Auth-Email: ${CLOUDFLARE_EMAIL}" --header "Content-Type: application/json")
-        fi
-
-        if echo "$api_response" | grep -q '"success":true'; then
-            echo -e "${GRAY}  ${ARROW}${NC} Cloudflare API key and email are valid"
-            return 0
-        else
-            echo -e "${RED}Invalid Cloudflare API key or email. Attempt $attempt of $attempts.${NC}"
-            if [ $attempt -lt $attempts ]; then
-                echo -ne "${CYAN}Enter your Cloudflare API token or global API key: ${NC}"
-                read CLOUDFLARE_API_KEY
-                echo -ne "${CYAN}Enter your Cloudflare registered email: ${NC}"
-                read CLOUDFLARE_EMAIL
+        for auth_method in token key; do
+            if [ "$auth_method" = token ]; then
+                headers=(--header "Authorization: Bearer ${CLOUDFLARE_API_KEY}")
+            else
+                headers=(--header "X-Auth-Key: ${CLOUDFLARE_API_KEY}" --header "X-Auth-Email: ${CLOUDFLARE_EMAIL}")
             fi
-            attempt=$((attempt + 1))
+            if api_response=$(curl --silent --show-error --connect-timeout 10 --max-time 30 \
+                --request GET --url https://api.cloudflare.com/client/v4/zones \
+                "${headers[@]}" --header "Content-Type: application/json"); then
+                if echo "$api_response" | jq -e '.success == true' > /dev/null 2>&1; then
+                    CLOUDFLARE_AUTH_METHOD="$auth_method"
+                    echo -e "${GRAY}  ${ARROW}${NC} Cloudflare API credentials are valid"
+                    return 0
+                fi
+            fi
+        done
+
+        echo -e "${RED}Invalid Cloudflare API credential or email. Attempt $attempt of $attempts.${NC}"
+        if [ $attempt -lt $attempts ]; then
+            echo -ne "${CYAN}Enter your Cloudflare API token or global API key: ${NC}"
+            read -r CLOUDFLARE_API_KEY
+            echo -ne "${CYAN}Enter your Cloudflare registered email: ${NC}"
+            read -r CLOUDFLARE_EMAIL
         fi
+        attempt=$((attempt + 1))
     done
     echo -e "${RED}Invalid Cloudflare API token or email after $attempts attempts.${NC}"
     exit 1
@@ -594,10 +622,12 @@ setup_certificate() {
 
         echo -e "${GRAY}  ${ARROW}${NC} Writing Cloudflare credentials"
         mkdir -p ~/.secrets/certbot > /dev/null 2>&1
-        cat > ~/.secrets/certbot/cloudflare.ini <<EOF
-dns_cloudflare_email = $CLOUDFLARE_EMAIL
-dns_cloudflare_api_key = $CLOUDFLARE_API_KEY
-EOF
+        if [ "$CLOUDFLARE_AUTH_METHOD" = token ]; then
+            printf 'dns_cloudflare_api_token = %s\n' "$CLOUDFLARE_API_KEY" > ~/.secrets/certbot/cloudflare.ini
+        else
+            printf 'dns_cloudflare_email = %s\ndns_cloudflare_api_key = %s\n' \
+                "$CLOUDFLARE_EMAIL" "$CLOUDFLARE_API_KEY" > ~/.secrets/certbot/cloudflare.ini
+        fi
         chmod 600 ~/.secrets/certbot/cloudflare.ini
 
         echo -e "${GRAY}  ${ARROW}${NC} Requesting certificate for $SELFSTEAL_DOMAIN"
@@ -607,7 +637,8 @@ EOF
             --dns-cloudflare-propagation-seconds 30 \
             -d "$SELFSTEAL_DOMAIN" -d "*.$SELFSTEAL_DOMAIN" \
             --email "$CLOUDFLARE_EMAIL" --agree-tos --non-interactive \
-            --key-type ecdsa --elliptic-curve secp384r1 > /dev/null 2>&1; then
+            --key-type ecdsa --elliptic-curve secp384r1 > /tmp/.certbot.log 2>&1; then
+            cat /tmp/.certbot.log
             echo -e "${RED}${CROSS}${NC} Failed to obtain certificate for $SELFSTEAL_DOMAIN"
             exit 1
         fi
@@ -619,7 +650,7 @@ EOF
         sed -i '/^renew_hook/d' "$conf"
         echo "renew_hook = sh -c 'cd /opt/remnanode && docker compose up -d --force-recreate --no-deps remnawave-nginx'" >> "$conf"
     fi
-    add_cron_rule "0 5 1 */2 * /usr/bin/certbot renew --quiet"
+    add_cron_rule "0 5 * * * /usr/bin/certbot renew --quiet"
 
     echo -e "${GREEN}${CHECK}${NC} Certificate ready"
 }
@@ -634,13 +665,13 @@ make_panel_api_request() {
     local data=${3:-}
 
     if [ -n "$data" ]; then
-        curl -s -X "$method" "${PANEL_NODE_URL}${path}" \
+        curl -sS --connect-timeout 10 --max-time 30 -X "$method" "${PANEL_NODE_URL}${path}" \
             -H "Authorization: Bearer $PANEL_NODE_TOKEN" \
             -H "Content-Type: application/json" \
             -H "X-Remnawave-Client-Type: browser" \
             -d "$data"
     else
-        curl -s -X "$method" "${PANEL_NODE_URL}${path}" \
+        curl -sS --connect-timeout 10 --max-time 30 -X "$method" "${PANEL_NODE_URL}${path}" \
             -H "Authorization: Bearer $PANEL_NODE_TOKEN" \
             -H "Content-Type: application/json" \
             -H "X-Remnawave-Client-Type: browser"
@@ -858,14 +889,23 @@ create_node_in_panel() {
         local error_code
         error_code=$(echo "$node_response" | jq -r '.errorCode // empty')
         if [ "$error_code" = "A033" ]; then
-            local nodes_response
+            local nodes_response existing_node
             nodes_response=$(make_panel_api_request GET "/api/nodes")
-            NODE_UUID=$(echo "$nodes_response" | jq -r --arg name "$NODE_NAME" '.response[] | select(.name == $name) | .uuid')
+            existing_node=$(echo "$nodes_response" | jq -c --arg name "$NODE_NAME" \
+                '[.response[] | select(.name == $name)] | if length == 1 then .[0] else null end')
+            if ! echo "$existing_node" | jq -e \
+                --arg address "$SELFSTEAL_DOMAIN" --arg profile_uuid "$PROFILE_UUID" --arg inbound_uuid "$XHTTP_INBOUND_UUID" \
+                '.address == $address and .port == 2222 and .isDisabled == false and
+                    .configProfile.activeConfigProfileUuid == $profile_uuid and
+                    ([.configProfile.activeInbounds[]?.uuid] == [$inbound_uuid])' > /dev/null 2>&1; then
+                error "Node name '$NODE_NAME' belongs to a different address or configuration"
+            fi
+            NODE_UUID=$(echo "$existing_node" | jq -r '.uuid')
             if [ -z "$NODE_UUID" ] || [ "$NODE_UUID" = "null" ]; then
                 echo -e "${RED}${CROSS}${NC} Failed to find existing node '$NODE_NAME'"
                 exit 1
             fi
-            echo -e "${GREEN}${CHECK}${NC} Node created"
+            echo -e "${GREEN}${CHECK}${NC} Existing node reused"
         else
             echo -e "${RED}${CROSS}${NC} Failed to create node: $node_response"
             exit 1
@@ -873,6 +913,7 @@ create_node_in_panel() {
     else
         echo -e "${GREEN}${CHECK}${NC} Node created"
     fi
+    save_node_credentials
     echo
     echo -e "${CYAN}Enter the node's Secret Key from the panel and press \"Enter\" twice:${NC}"
     CERTIFICATE=""
@@ -939,11 +980,15 @@ create_cdn_host_in_panel() {
     local max_attempts=10
     local attempt=1
     local cdn_up=false
+    local http_code
     while [ $attempt -le $max_attempts ]; do
         echo -e "${GRAY}  ${ARROW}${NC} Attempt $attempt of $max_attempts"
-        if curl -sI --max-time 10 --resolve "$CDN_DOMAIN:443:$CDN_IP" "https://$CDN_DOMAIN/" | grep -qiE 'HTTP/'; then
-            cdn_up=true
-            break
+        if http_code=$(curl -sS --max-time 10 --resolve "$CDN_DOMAIN:443:$CDN_IP" \
+            -o /dev/null -w '%{http_code}' "https://$CDN_DOMAIN/"); then
+            if [[ "$http_code" =~ ^[23][0-9][0-9]$ ]]; then
+                cdn_up=true
+                break
+            fi
         fi
         sleep 15
         ((attempt++))
@@ -953,15 +998,6 @@ create_cdn_host_in_panel() {
         echo -e "${YELLOW}${WARNING}${NC} CDN did not respond at https://$CDN_DOMAIN ($CDN_IP)"
         echo -e "${YELLOW}Verify the Yandex certificate import, CDN resource and the cdn CNAME record, then re-run the host step.${NC}"
         exit 1
-    fi
-
-    local hosts_response
-    hosts_response=$(make_panel_api_request GET "/api/hosts")
-    resolve_cdn_host_uuid "$hosts_response"
-    if [ -n "$CDN_HOST_UUID" ]; then
-        echo -e "${GRAY}  ${ARROW}${NC} CDN host already exists, skipping"
-        echo -e "${GREEN}${CHECK}${NC} Host step skipped"
-        return 0
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Building host config"
@@ -1005,6 +1041,22 @@ create_cdn_host_in_panel() {
                 configProfileInboundUuid: $inbound_uuid
             }
         }')
+
+    local hosts_response
+    hosts_response=$(make_panel_api_request GET "/api/hosts")
+    resolve_cdn_host_uuid "$hosts_response"
+    if [ -n "$CDN_HOST_UUID" ]; then
+        if ! echo "$hosts_response" | jq -e --arg uuid "$CDN_HOST_UUID" --argjson expected "$host_data" \
+            '.response[] | select(.uuid == $uuid) | . as $actual |
+                (.muxParams == null) and ((.pinnedPeerCertSha256 // "") == "") and
+                all($expected | del(.remark, .pinnedPeerCertSha256) | to_entries[];
+                    $actual[.key] == .value)' > /dev/null 2>&1; then
+            error "Existing CDN host does not match the required TLS and XHTTP configuration"
+        fi
+        echo -e "${GRAY}  ${ARROW}${NC} CDN host already exists, skipping"
+        echo -e "${GREEN}${CHECK}${NC} Host step skipped"
+        return 0
+    fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
     local host_response
@@ -1141,6 +1193,17 @@ services:
         max-file: '5'
 EOF
 
+    echo -e "${GRAY}  ${ARROW}${NC} Configuring ownCloud domains and HTTPS"
+    mkdir -p /var/www/owncloud/config
+    cat > /var/www/owncloud/config/zz-remnawave-proxy.config.php <<EOF
+<?php
+\$CONFIG = array (
+    'trusted_domains' => array ('$SELFSTEAL_DOMAIN', '$CDN_DOMAIN'),
+    'overwriteprotocol' => 'https',
+);
+EOF
+    chmod 644 /var/www/owncloud/config/zz-remnawave-proxy.config.php
+
     echo -e "${GREEN}${CHECK}${NC} Node configuration written"
 }
 
@@ -1148,18 +1211,39 @@ start_cdn_services() {
     echo -e "${CYAN}${INFO}${NC} Starting node services..."
 
     echo -e "${GRAY}  ${ARROW}${NC} Allowing panel IP to node port"
-    ufw allow from $PANEL_IP to any port 2222 > /dev/null 2>&1
+    ufw allow from "$PANEL_IP" to any port 2222 > /dev/null 2>&1
     ufw reload > /dev/null 2>&1
 
     echo -e "${GRAY}  ${ARROW}${NC} Launching containers"
     sleep 3
-    cd /opt/remnanode
+    cd /opt/remnanode || error "Failed to enter node directory"
     if ! docker_compose_up; then
         echo -e "${RED}${CROSS}${NC} Failed to start Docker containers:"
         cat /tmp/.compose.log
         exit 1
     fi
     echo -e "${GREEN}${CHECK}${NC} Docker containers started successfully"
+    echo
+
+    echo -e "${CYAN}${INFO}${NC} Checking node connection to panel..."
+    local node_response
+    local attempt=1
+    local max_attempts=5
+    while [ "$attempt" -le "$max_attempts" ]; do
+        echo -e "${GRAY}  ${ARROW}${NC} Attempt $attempt of $max_attempts"
+        if node_response=$(make_panel_api_request GET "/api/nodes/$NODE_UUID"); then
+            if echo "$node_response" | jq -e --arg uuid "$NODE_UUID" \
+                '.response | .uuid == $uuid and .isConnected == true and (.xrayUptime // 0) > 0' > /dev/null 2>&1; then
+                break
+            fi
+        fi
+        if [ "$attempt" -eq "$max_attempts" ]; then
+            error "Node did not connect to panel or Xray did not start; check the Secret Key and node logs"
+        fi
+        sleep 15
+        attempt=$((attempt + 1))
+    done
+    echo -e "${GREEN}${CHECK}${NC} Node connected and Xray running"
     echo
 
     echo -e "${CYAN}${INFO}${NC} Checking origin connection..."
@@ -1170,7 +1254,11 @@ start_cdn_services() {
 
     while [ $attempt -le $max_attempts ]; do
         echo -e "${GRAY}  ${ARROW}${NC} Attempt $attempt of $max_attempts"
-        http_code=$(curl -sk --max-time 10 -o /dev/null -w '%{http_code}' "https://$SELFSTEAL_DOMAIN/") || true
+        http_code=""
+        if ! http_code=$(curl -sS --max-time 10 --resolve "$SELFSTEAL_DOMAIN:443:127.0.0.1" \
+            -o /dev/null -w '%{http_code}' "https://$SELFSTEAL_DOMAIN/"); then
+            http_code=""
+        fi
         if [[ "$http_code" =~ ^[23][0-9][0-9]$ ]]; then
             echo -e "${GREEN}${CHECK}${NC} Origin connection established successfully"
             break
@@ -1192,8 +1280,15 @@ docker_compose_up() {
     local max_attempts=3
     local attempt=1
 
+    if ! docker compose config -q > /tmp/.compose.log 2>&1; then
+        return 1
+    fi
+
     while [ $attempt -le $max_attempts ]; do
-        docker compose pull > /tmp/.compose.log 2>&1 || true
+        docker compose pull >> /tmp/.compose.log 2>&1 || true
+        if ! docker compose run --rm --no-deps remnawave-nginx nginx -t >> /tmp/.compose.log 2>&1; then
+            return 1
+        fi
         if docker compose up -d --pull never >> /tmp/.compose.log 2>&1; then
             return 0
         fi
@@ -1238,6 +1333,9 @@ find_node_to_delete() {
     fi
 
     DELETE_NODE_UUID=$(echo "$selected" | jq -r '.uuid')
+    if [ -n "${NODE_UUID:-}" ] && [ "$DELETE_NODE_UUID" != "$NODE_UUID" ]; then
+        error "Saved node UUID does not match the panel node; refusing deletion"
+    fi
     DELETE_NODE_NAME=$(echo "$selected" | jq -r '.name')
     DELETE_NODE_ADDRESS=$(echo "$selected" | jq -r '.address')
     PROFILE_UUID=$(echo "$selected" | jq -r '.configProfile.activeConfigProfileUuid // empty')
@@ -1270,10 +1368,10 @@ delete_node_host_from_panel() {
     local delete_response
     delete_response=$(make_panel_api_request DELETE "/api/hosts/$CDN_HOST_UUID")
 
-    if echo "$delete_response" | jq -e '.response.isDeleted' > /dev/null 2>&1; then
+    if echo "$delete_response" | jq -e '.response.isDeleted == true' > /dev/null 2>&1; then
         echo -e "${GREEN}${CHECK}${NC} Host removed"
     else
-        echo -e "${YELLOW}${WARNING}${NC} Host delete response unexpected: $delete_response"
+        error "Failed to delete host: $delete_response"
     fi
 }
 
@@ -1284,7 +1382,7 @@ delete_node_from_panel() {
     local delete_response
     delete_response=$(make_panel_api_request DELETE "/api/nodes/$DELETE_NODE_UUID")
 
-    if echo "$delete_response" | jq -e '.response.isDeleted' > /dev/null 2>&1; then
+    if echo "$delete_response" | jq -e '.response.isDeleted == true' > /dev/null 2>&1; then
         echo -e "${GREEN}${CHECK}${NC} Node deleted from panel"
     else
         echo -e "${RED}${CROSS}${NC} Failed to delete node: $delete_response"
@@ -1298,53 +1396,59 @@ remove_xhttp_inbound_if_unused() {
     echo -e "${GRAY}  ${ARROW}${NC} Checking remaining nodes"
     local nodes_response in_use
     nodes_response=$(make_panel_api_request GET "/api/nodes")
-    in_use=$(echo "$nodes_response" | jq -r --arg tag "$XHTTP_INBOUND_TAG" '[.response[] | select(.configProfile.activeInbounds[]?.tag == $tag)] | length')
-    if [ -n "$in_use" ] && [ "$in_use" != "null" ] && [ "$in_use" -gt 0 ]; then
+    if ! echo "$nodes_response" | jq -e '.response | type == "array"' > /dev/null 2>&1; then
+        error "Failed to read remaining nodes; shared inbound kept"
+    fi
+    in_use=$(echo "$nodes_response" | jq -r --arg uuid "$XHTTP_INBOUND_UUID" \
+        '[.response[] | select(any(.configProfile.activeInbounds[]?; .uuid == $uuid))] | length')
+    if [ "$in_use" -gt 0 ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Still used by $in_use node(s), keeping it"
         echo -e "${GREEN}${CHECK}${NC} Inbound kept"
         return 0
     fi
 
-    echo -e "${GRAY}  ${ARROW}${NC} Removing inbound from ${SQUAD_NAME}"
-    local squads_response squad_uuid
-    squads_response=$(make_panel_api_request GET "/api/internal-squads")
-    squad_uuid=$(echo "$squads_response" | jq -r --arg n "$SQUAD_NAME" '.response.internalSquads[] | select(.name == $n) | .uuid' | head -n1)
-    if [ -n "$squad_uuid" ] && [ "$squad_uuid" != "null" ]; then
-        local squad_inbounds squad_patch
-        squad_inbounds=$(echo "$squads_response" | jq -c --arg n "$SQUAD_NAME" --arg tag "$XHTTP_INBOUND_TAG" '[.response.internalSquads[] | select(.name == $n) | .inbounds[] | select(.tag != $tag) | .uuid]')
-        squad_patch=$(jq -n --arg uuid "$squad_uuid" --argjson inbounds "$squad_inbounds" '{ uuid: $uuid, inbounds: $inbounds }')
-        make_panel_api_request PATCH "/api/internal-squads" "$squad_patch" > /dev/null 2>&1 || true
+    echo -e "${GRAY}  ${ARROW}${NC} Reading this node's config profile"
+    local full_profile config inbound_tag
+    full_profile=$(make_panel_api_request GET "/api/config-profiles/$PROFILE_UUID")
+    if ! echo "$full_profile" | jq -e '.response.config | type == "object"' > /dev/null 2>&1; then
+        error "Failed to read config profile; shared inbound kept"
     fi
-
-    echo -e "${GRAY}  ${ARROW}${NC} Locating ${PROFILE_NAME} profile"
-    local profiles_response profile_uuid
-    profiles_response=$(make_panel_api_request GET "/api/config-profiles")
-    profile_uuid=$(echo "$profiles_response" | jq -r --arg n "$PROFILE_NAME" '.response.configProfiles[] | select(.name == $n) | .uuid' | head -n1)
-    if [ -z "$profile_uuid" ] || [ "$profile_uuid" = "null" ]; then
-        echo -e "${GRAY}  ${ARROW}${NC} Profile ${PROFILE_NAME} not found"
-        echo -e "${GREEN}${CHECK}${NC} Nothing to remove"
-        return 0
-    fi
-
-    local full_profile config
-    full_profile=$(make_panel_api_request GET "/api/config-profiles/$profile_uuid")
     config=$(echo "$full_profile" | jq -c '.response.config')
-    if ! echo "$config" | jq -e --arg tag "$XHTTP_INBOUND_TAG" '.inbounds[] | select(.tag == $tag)' > /dev/null 2>&1; then
+    inbound_tag=$(echo "$full_profile" | jq -r --arg uuid "$XHTTP_INBOUND_UUID" \
+        '.response.inbounds[]? | select(.uuid == $uuid) | .tag')
+    if [ -z "$inbound_tag" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Inbound already absent"
         echo -e "${GREEN}${CHECK}${NC} Nothing to remove"
         return 0
     fi
+    if [ "$inbound_tag" != "$XHTTP_INBOUND_TAG" ]; then
+        error "Inbound UUID belongs to a different configuration; shared inbound kept"
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Removing inbound from squads"
+    local squads_response squad squad_uuid squad_inbounds squad_patch response
+    squads_response=$(make_panel_api_request GET "/api/internal-squads")
+    if ! echo "$squads_response" | jq -e '.response.internalSquads | type == "array"' > /dev/null 2>&1; then
+        error "Failed to read squads; shared inbound kept"
+    fi
+    while IFS= read -r squad; do
+        squad_uuid=$(echo "$squad" | jq -r '.uuid')
+        squad_inbounds=$(echo "$squad" | jq -c --arg uuid "$XHTTP_INBOUND_UUID" '[.inbounds[] | select(.uuid != $uuid) | .uuid]')
+        squad_patch=$(jq -n --arg uuid "$squad_uuid" --argjson inbounds "$squad_inbounds" '{ uuid: $uuid, inbounds: $inbounds }')
+        response=$(make_panel_api_request PATCH "/api/internal-squads" "$squad_patch")
+        if ! echo "$response" | jq -e '.response.uuid' > /dev/null 2>&1; then
+            error "Failed to remove inbound from squad; shared inbound kept"
+        fi
+    done < <(echo "$squads_response" | jq -c --arg uuid "$XHTTP_INBOUND_UUID" \
+        '.response.internalSquads[] | select(any(.inbounds[]?; .uuid == $uuid))')
 
     echo -e "${GRAY}  ${ARROW}${NC} Removing inbound from profile"
-    local updated_config patch_data response
-    updated_config=$(echo "$config" | jq -c --arg tag "$XHTTP_INBOUND_TAG" 'del(.inbounds[] | select(.tag == $tag))')
-    patch_data=$(jq -n --arg uuid "$profile_uuid" --argjson config "$updated_config" '{ uuid: $uuid, config: $config }')
-
-    echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
+    local updated_config patch_data
+    updated_config=$(echo "$config" | jq -c --arg tag "$inbound_tag" 'del(.inbounds[] | select(.tag == $tag))')
+    patch_data=$(jq -n --arg uuid "$PROFILE_UUID" --argjson config "$updated_config" '{ uuid: $uuid, config: $config }')
     response=$(make_panel_api_request PATCH "/api/config-profiles" "$patch_data")
     if ! echo "$response" | jq -e '.response.uuid' > /dev/null 2>&1; then
-        echo -e "${YELLOW}${WARNING}${NC} Failed to remove inbound: $response"
-        return 0
+        error "Failed to remove inbound: $response"
     fi
 
     echo -e "${GREEN}${CHECK}${NC} ${XHTTP_INBOUND_TAG} inbound removed (last node)"
@@ -1355,7 +1459,10 @@ cleanup_node_server() {
 
     if [ -f /opt/remnanode/docker-compose.yml ]; then
         echo -e "${GRAY}  ${ARROW}${NC} Stopping Docker containers"
-        (cd /opt/remnanode && docker compose down > /dev/null 2>&1 || true)
+        if ! (cd /opt/remnanode && docker compose down > /tmp/.compose.log 2>&1); then
+            cat /tmp/.compose.log
+            error "Failed to stop node containers; files and ownCloud data kept"
+        fi
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Removing node directory"
@@ -1467,6 +1574,7 @@ install_node() {
     echo
 
     move_variables_file
+    save_node_credentials
 
     echo
     echo -e "${GREEN}Obtaining certificate${NC}"
@@ -1528,9 +1636,9 @@ install_node() {
 #==================
 
 main() {
+    check_root
     log_entry
     exec < /dev/tty
-    check_root
     check_os
 
     show_main_menu
