@@ -1522,10 +1522,6 @@ install_node() {
     echo -e "${WHITE}• ssh -L 8800:127.0.0.1:8800 root@${server_ip}${NC}"
     echo -e "${WHITE}• Create the admin account at http://127.0.0.1:8800/${NC}"
     echo
-    echo -e "${CYAN}Useful Commands:${NC}"
-    echo -e "${WHITE}• Check logs: cd /opt/remnanode && docker compose logs -f${NC}"
-    echo -e "${WHITE}• Restart service: cd /opt/remnanode && docker compose restart${NC}"
-    echo
 }
 
 #==================
