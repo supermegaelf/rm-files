@@ -262,7 +262,7 @@ save_node_credentials() {
     (
         umask 077
         local name
-        for name in PANEL_NODE_DOMAIN PANEL_NODE_TOKEN PANEL_IP SELFSTEAL_DOMAIN CDN_DOMAIN CDN_IP CDN_HOST_UUID NODE_UUID; do
+        for name in PANEL_NODE_DOMAIN PANEL_NODE_TOKEN PANEL_IP SELFSTEAL_DOMAIN CDN_DOMAIN CDN_IP CDN_HOST_UUID NODE_UUID PROFILE_UUID XHTTP_INBOUND_UUID; do
             write_shell_assignment "$name" "${!name}"
         done > "$NODE_CREDS_FILE"
     ) || error "Failed to save node credentials"
@@ -1081,13 +1081,17 @@ create_cdn_node() {
     echo -e "${CYAN}${INFO}${NC} Writing node configuration..."
 
     echo -e "${GRAY}  ${ARROW}${NC} Creating .env-node"
-    cat > .env-node <<EOL
+    (
+        umask 077
+        cat > .env-node <<EOL
 ### APP ###
 NODE_PORT=2222
 
 ### XRAY ###
 SECRET_KEY=$CERTIFICATE
 EOL
+    ) || error "Failed to write .env-node"
+    chmod 600 .env-node
 
     echo -e "${GRAY}  ${ARROW}${NC} Creating nginx.conf"
     cat > /opt/remnanode/nginx.conf <<EOF
@@ -1318,12 +1322,24 @@ find_node_to_delete() {
 
     echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
     local nodes_response selected
-    nodes_response=$(make_panel_api_request GET "/api/nodes")
-    selected=$(echo "$nodes_response" | jq -c --arg addr "$SELFSTEAL_DOMAIN" '[.response[] | select(.address == $addr)] | .[0] // empty')
+    if ! nodes_response=$(make_panel_api_request GET "/api/nodes"); then
+        error "Failed to read nodes from panel; refusing deletion"
+    fi
+    if ! selected=$(echo "$nodes_response" | jq -c --arg addr "$SELFSTEAL_DOMAIN" --arg uuid "${NODE_UUID:-}" \
+        '.response | if type == "array" then
+            [.[] | select(.address == $addr or ($uuid != "" and .uuid == $uuid))] |
+                if length > 1 then error("Multiple matching nodes") else .[0] // empty end
+        else error("Invalid nodes response") end'); then
+        error "Failed to identify this node in panel; refusing deletion"
+    fi
 
     if [ -z "$selected" ] || [ "$selected" = "null" ]; then
-        echo -e "${RED}${CROSS}${NC} No node found for $SELFSTEAL_DOMAIN"
-        exit 1
+        DELETE_NODE_UUID=""
+        DELETE_NODE_NAME="$SELFSTEAL_DOMAIN"
+        DELETE_NODE_ADDRESS="$SELFSTEAL_DOMAIN"
+        echo -e "${GRAY}  ${ARROW}${NC} Node already absent from panel, continuing cleanup"
+        echo -e "${GREEN}${CHECK}${NC} Node lookup complete"
+        return 0
     fi
 
     DELETE_NODE_UUID=$(echo "$selected" | jq -r '.uuid')
@@ -1345,6 +1361,15 @@ find_node_to_delete() {
 
 delete_node_host_from_panel() {
     echo -e "${CYAN}${INFO}${NC} Removing host from panel..."
+
+    if [ -z "${PROFILE_UUID:-}" ] || [ -z "${XHTTP_INBOUND_UUID:-}" ]; then
+        if [ -n "${CDN_HOST_UUID:-}" ]; then
+            error "Cannot identify the saved host's profile and inbound; refusing deletion"
+        fi
+        echo -e "${GRAY}  ${ARROW}${NC} No saved host binding, skipping"
+        echo -e "${GREEN}${CHECK}${NC} Host step skipped"
+        return 0
+    fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Fetching hosts list"
     local hosts_response
@@ -1372,6 +1397,12 @@ delete_node_host_from_panel() {
 delete_node_from_panel() {
     echo -e "${CYAN}${INFO}${NC} Deleting node from panel..."
 
+    if [ -z "$DELETE_NODE_UUID" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Node already absent from panel, skipping"
+        echo -e "${GREEN}${CHECK}${NC} Node step skipped"
+        return 0
+    fi
+
     echo -e "${GRAY}  ${ARROW}${NC} Sending delete request"
     local delete_response
     delete_response=$(make_panel_api_request DELETE "/api/nodes/$DELETE_NODE_UUID")
@@ -1386,6 +1417,12 @@ delete_node_from_panel() {
 
 remove_xhttp_inbound_if_unused() {
     echo -e "${CYAN}${INFO}${NC} Checking Vless XHTTP Yandex inbound usage..."
+
+    if [ -z "${PROFILE_UUID:-}" ] || [ -z "${XHTTP_INBOUND_UUID:-}" ]; then
+        echo -e "${GRAY}  ${ARROW}${NC} Profile or inbound UUID unknown, keeping shared configuration"
+        echo -e "${GREEN}${CHECK}${NC} Inbound cleanup skipped"
+        return 0
+    fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Checking remaining nodes"
     local nodes_response in_use
@@ -1459,9 +1496,6 @@ cleanup_node_server() {
         fi
     fi
 
-    echo -e "${GRAY}  ${ARROW}${NC} Removing node directory"
-    rm -rf /opt/remnanode
-
     echo -e "${GRAY}  ${ARROW}${NC} Removing ownCloud data"
     rm -rf /var/www/owncloud
 
@@ -1469,6 +1503,9 @@ cleanup_node_server() {
     ufw delete allow from "$PANEL_IP" to any port 2222 > /dev/null 2>&1 || true
     ufw delete allow 443/tcp > /dev/null 2>&1 || true
     ufw reload > /dev/null 2>&1 || true
+
+    echo -e "${GRAY}  ${ARROW}${NC} Removing node directory"
+    rm -rf /opt/remnanode
 
     echo -e "${GREEN}${CHECK}${NC} Server cleanup complete"
 }
@@ -1502,6 +1539,11 @@ delete_node() {
         echo
         exit 0
     fi
+
+    if [ -n "$DELETE_NODE_UUID" ]; then
+        NODE_UUID="$DELETE_NODE_UUID"
+    fi
+    save_node_credentials
 
     echo
     echo -e "${GREEN}Removing from panel${NC}"
