@@ -23,12 +23,6 @@ DIR_REMNAWAVE="/usr/local/remnawave_reverse/"
 
 SCRIPT_VERSION="1.0.0"
 NODE_VERSION="3.4.1"
-NGINX_VERSION="1.30"
-PROFILE_NAME="StealConfig"
-XHTTP_INBOUND_TAG="Vless XHTTP Yandex"
-XHTTP_INBOUND_PORT=10000
-XHTTP_PATH="/api/v1/stream"
-SQUAD_NAME="Default-Squad"
 
 #======================
 # VALIDATION FUNCTIONS
@@ -696,12 +690,12 @@ resolve_xhttp_inbound_uuid() {
     local profiles_response
     profiles_response=$(make_panel_api_request GET "/api/config-profiles")
     XHTTP_INBOUND_UUID=$(echo "$profiles_response" | jq -r \
-        --arg u "$PROFILE_UUID" --arg tag "$XHTTP_INBOUND_TAG" \
+        --arg u "$PROFILE_UUID" --arg tag "Vless XHTTP Yandex" \
         '.response.configProfiles[] | select(.uuid == $u) | .inbounds[] | select(.tag == $tag) | .uuid' | head -n1)
 }
 
 generate_xhttp_server_settings() {
-    jq -n --arg path "$XHTTP_PATH" '{
+    jq -n --arg path "/api/v1/stream" '{
         mode: "packet-up",
         path: $path,
         xPaddingKey: "_q",
@@ -718,14 +712,14 @@ generate_xhttp_server_settings() {
 }
 
 ensure_xhttp_inbound_in_profile() {
-    echo -e "${CYAN}${INFO}${NC} Ensuring ${XHTTP_INBOUND_TAG} inbound in ${PROFILE_NAME} profile..."
+    echo -e "${CYAN}${INFO}${NC} Ensuring Vless XHTTP Yandex inbound in StealConfig profile..."
 
-    echo -e "${GRAY}  ${ARROW}${NC} Locating ${PROFILE_NAME} profile"
+    echo -e "${GRAY}  ${ARROW}${NC} Locating StealConfig profile"
     local profiles_response
     profiles_response=$(make_panel_api_request GET "/api/config-profiles")
-    PROFILE_UUID=$(echo "$profiles_response" | jq -r --arg n "$PROFILE_NAME" '.response.configProfiles[] | select(.name == $n) | .uuid' | head -n1)
+    PROFILE_UUID=$(echo "$profiles_response" | jq -r --arg n "StealConfig" '.response.configProfiles[] | select(.name == $n) | .uuid' | head -n1)
     if [ -z "$PROFILE_UUID" ] || [ "$PROFILE_UUID" = "null" ]; then
-        echo -e "${RED}${CROSS}${NC} Config profile '${PROFILE_NAME}' not found in panel"
+        echo -e "${RED}${CROSS}${NC} Config profile 'StealConfig' not found in panel"
         exit 1
     fi
 
@@ -733,18 +727,18 @@ ensure_xhttp_inbound_in_profile() {
     full_profile=$(make_panel_api_request GET "/api/config-profiles/$PROFILE_UUID")
     config=$(echo "$full_profile" | jq -c '.response.config')
     if [ -z "$config" ] || [ "$config" = "null" ]; then
-        echo -e "${RED}${CROSS}${NC} Failed to read config of profile '${PROFILE_NAME}'"
+        echo -e "${RED}${CROSS}${NC} Failed to read config of profile 'StealConfig'"
         exit 1
     fi
 
     local xhttp_settings
     xhttp_settings=$(generate_xhttp_server_settings)
 
-    if echo "$config" | jq -e --arg tag "$XHTTP_INBOUND_TAG" '.inbounds[] | select(.tag == $tag)' > /dev/null 2>&1; then
-        echo -e "${YELLOW}${WARNING}${NC} Inbound '${XHTTP_INBOUND_TAG}' already exists in '${PROFILE_NAME}', checking compatibility"
+    if echo "$config" | jq -e --arg tag "Vless XHTTP Yandex" '.inbounds[] | select(.tag == $tag)' > /dev/null 2>&1; then
+        echo -e "${YELLOW}${WARNING}${NC} Inbound 'Vless XHTTP Yandex' already exists in 'StealConfig', checking compatibility"
         if ! echo "$config" | jq -e \
-            --arg tag "$XHTTP_INBOUND_TAG" \
-            --argjson port "$XHTTP_INBOUND_PORT" \
+            --arg tag "Vless XHTTP Yandex" \
+            --argjson port "10000" \
             --argjson xhttp_settings "$xhttp_settings" \
             '.inbounds[] | select(.tag == $tag) |
                 .protocol == "vless" and .listen == "127.0.0.1" and .port == $port and
@@ -760,12 +754,12 @@ ensure_xhttp_inbound_in_profile() {
             echo -e "${RED}${CROSS}${NC} Failed to resolve existing inbound UUID"
             exit 1
         fi
-        echo -e "${GREEN}${CHECK}${NC} Reusing existing ${XHTTP_INBOUND_TAG} inbound"
+        echo -e "${GREEN}${CHECK}${NC} Reusing existing Vless XHTTP Yandex inbound"
         return 0
     fi
 
-    if echo "$config" | jq -e --argjson port "$XHTTP_INBOUND_PORT" '.inbounds[] | select(.port == $port)' > /dev/null 2>&1; then
-        echo -e "${YELLOW}${WARNING}${NC} Port ${XHTTP_INBOUND_PORT} is already used by another inbound in '${PROFILE_NAME}'"
+    if echo "$config" | jq -e --argjson port "10000" '.inbounds[] | select(.port == $port)' > /dev/null 2>&1; then
+        echo -e "${YELLOW}${WARNING}${NC} Port 10000 is already used by another inbound in 'StealConfig'"
         echo -e "${YELLOW}Resolve the port conflict manually, then re-run.${NC}"
         exit 1
     fi
@@ -779,12 +773,12 @@ ensure_xhttp_inbound_in_profile() {
         exit 1
     fi
 
-    echo -e "${GRAY}  ${ARROW}${NC} Appending ${XHTTP_INBOUND_TAG} inbound"
+    echo -e "${GRAY}  ${ARROW}${NC} Appending Vless XHTTP Yandex inbound"
     local decryption updated_config
     decryption="mlkem768x25519plus.native.600s.$private_key"
     updated_config=$(echo "$config" | jq -c \
-        --arg tag "$XHTTP_INBOUND_TAG" \
-        --argjson port "$XHTTP_INBOUND_PORT" \
+        --arg tag "Vless XHTTP Yandex" \
+        --argjson port "10000" \
         --arg dec "$decryption" \
         --argjson xhttp_settings "$xhttp_settings" \
         '.inbounds += [{
@@ -817,30 +811,30 @@ ensure_xhttp_inbound_in_profile() {
         exit 1
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} ${XHTTP_INBOUND_TAG} inbound added to ${PROFILE_NAME}"
+    echo -e "${GREEN}${CHECK}${NC} Vless XHTTP Yandex inbound added to StealConfig"
 }
 
 activate_inbound_in_squad() {
-    echo -e "${CYAN}${INFO}${NC} Activating ${XHTTP_INBOUND_TAG} inbound in ${SQUAD_NAME}..."
+    echo -e "${CYAN}${INFO}${NC} Activating Vless XHTTP Yandex inbound in Default-Squad..."
 
-    echo -e "${GRAY}  ${ARROW}${NC} Locating ${SQUAD_NAME}"
+    echo -e "${GRAY}  ${ARROW}${NC} Locating Default-Squad"
     local squads_response squad_uuid
     squads_response=$(make_panel_api_request GET "/api/internal-squads")
-    squad_uuid=$(echo "$squads_response" | jq -r --arg n "$SQUAD_NAME" '.response.internalSquads[] | select(.name == $n) | .uuid' | head -n1)
+    squad_uuid=$(echo "$squads_response" | jq -r --arg n "Default-Squad" '.response.internalSquads[] | select(.name == $n) | .uuid' | head -n1)
 
     if [ -z "$squad_uuid" ] || [ "$squad_uuid" = "null" ]; then
-        error "Internal squad '${SQUAD_NAME}' not found in panel"
+        error "Internal squad 'Default-Squad' not found in panel"
     fi
 
-    if echo "$squads_response" | jq -e --arg n "$SQUAD_NAME" --arg u "$XHTTP_INBOUND_UUID" '.response.internalSquads[] | select(.name == $n) | .inbounds[] | select(.uuid == $u)' > /dev/null 2>&1; then
-        echo -e "${GRAY}  ${ARROW}${NC} Inbound already active in ${SQUAD_NAME}"
-        echo -e "${GREEN}${CHECK}${NC} Inbound active in ${SQUAD_NAME}"
+    if echo "$squads_response" | jq -e --arg n "Default-Squad" --arg u "$XHTTP_INBOUND_UUID" '.response.internalSquads[] | select(.name == $n) | .inbounds[] | select(.uuid == $u)' > /dev/null 2>&1; then
+        echo -e "${GRAY}  ${ARROW}${NC} Inbound already active in Default-Squad"
+        echo -e "${GREEN}${CHECK}${NC} Inbound active in Default-Squad"
         return 0
     fi
 
     echo -e "${GRAY}  ${ARROW}${NC} Adding inbound to squad"
     local inbounds_json patch_data
-    inbounds_json=$(echo "$squads_response" | jq -c --arg n "$SQUAD_NAME" --arg u "$XHTTP_INBOUND_UUID" '[(.response.internalSquads[] | select(.name == $n) | .inbounds[].uuid), $u] | unique')
+    inbounds_json=$(echo "$squads_response" | jq -c --arg n "Default-Squad" --arg u "$XHTTP_INBOUND_UUID" '[(.response.internalSquads[] | select(.name == $n) | .inbounds[].uuid), $u] | unique')
     patch_data=$(jq -n --arg uuid "$squad_uuid" --argjson inbounds "$inbounds_json" '{ uuid: $uuid, inbounds: $inbounds }')
 
     echo -e "${GRAY}  ${ARROW}${NC} Sending request to panel"
@@ -850,7 +844,7 @@ activate_inbound_in_squad() {
         error "Failed to activate XHTTP inbound in squad: $response"
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} Inbound active in ${SQUAD_NAME}"
+    echo -e "${GREEN}${CHECK}${NC} Inbound active in Default-Squad"
 }
 
 create_node_in_panel() {
@@ -1007,7 +1001,7 @@ create_cdn_host_in_panel() {
         --arg address "$CDN_IP" \
         --arg sni "$CDN_DOMAIN" \
         --arg reqhost "$CDN_DOMAIN" \
-        --arg path "$XHTTP_PATH" \
+        --arg path "/api/v1/stream" \
         --arg profile_uuid "$PROFILE_UUID" \
         --arg inbound_uuid "$XHTTP_INBOUND_UUID" \
         '{
@@ -1120,8 +1114,8 @@ server {
         proxy_set_header X-Forwarded-Proto https;
     }
 
-    location $XHTTP_PATH {
-        proxy_pass http://127.0.0.1:$XHTTP_INBOUND_PORT;
+    location /api/v1/stream {
+        proxy_pass http://127.0.0.1:10000;
         proxy_http_version 1.1;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
@@ -1158,7 +1152,7 @@ services:
         max-file: '5'
 
   remnawave-nginx:
-    image: nginx:${NGINX_VERSION}
+    image: nginx:1.30
     container_name: remnawave-nginx
     hostname: remnawave-nginx
     restart: always
@@ -1339,7 +1333,7 @@ find_node_to_delete() {
     DELETE_NODE_NAME=$(echo "$selected" | jq -r '.name')
     DELETE_NODE_ADDRESS=$(echo "$selected" | jq -r '.address')
     PROFILE_UUID=$(echo "$selected" | jq -r '.configProfile.activeConfigProfileUuid // empty')
-    XHTTP_INBOUND_UUID=$(echo "$selected" | jq -r --arg tag "$XHTTP_INBOUND_TAG" \
+    XHTTP_INBOUND_UUID=$(echo "$selected" | jq -r --arg tag "Vless XHTTP Yandex" \
         '[.configProfile.activeInbounds[]? | select(.tag == $tag) | .uuid] |
             if length == 1 then .[0] else empty end')
     if [ -z "$PROFILE_UUID" ] || [ -z "$XHTTP_INBOUND_UUID" ]; then
@@ -1391,7 +1385,7 @@ delete_node_from_panel() {
 }
 
 remove_xhttp_inbound_if_unused() {
-    echo -e "${CYAN}${INFO}${NC} Checking ${XHTTP_INBOUND_TAG} inbound usage..."
+    echo -e "${CYAN}${INFO}${NC} Checking Vless XHTTP Yandex inbound usage..."
 
     echo -e "${GRAY}  ${ARROW}${NC} Checking remaining nodes"
     local nodes_response in_use
@@ -1421,7 +1415,7 @@ remove_xhttp_inbound_if_unused() {
         echo -e "${GREEN}${CHECK}${NC} Nothing to remove"
         return 0
     fi
-    if [ "$inbound_tag" != "$XHTTP_INBOUND_TAG" ]; then
+    if [ "$inbound_tag" != "Vless XHTTP Yandex" ]; then
         error "Inbound UUID belongs to a different configuration; shared inbound kept"
     fi
 
@@ -1451,7 +1445,7 @@ remove_xhttp_inbound_if_unused() {
         error "Failed to remove inbound: $response"
     fi
 
-    echo -e "${GREEN}${CHECK}${NC} ${XHTTP_INBOUND_TAG} inbound removed (last node)"
+    echo -e "${GREEN}${CHECK}${NC} Vless XHTTP Yandex inbound removed (last node)"
 }
 
 cleanup_node_server() {
