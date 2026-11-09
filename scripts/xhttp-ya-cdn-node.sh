@@ -1668,7 +1668,7 @@ install_node() {
     echo -e "${WHITE}• Select the template for the CDN host in the panel manually${NC}"
     echo
     echo -e "${CYAN}ownCloud:${NC}"
-    echo -e "${WHITE}• Create the admin account at https://${CDN_DOMAIN}/${NC}"
+    echo -e "${WHITE}• Create the admin account at https://${SELFSTEAL_DOMAIN}/${NC}"
     echo
 }
 
