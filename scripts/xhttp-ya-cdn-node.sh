@@ -1044,7 +1044,6 @@ SECRET_KEY=$CERTIFICATE
 EOL
 
     echo -e "${GRAY}  ${ARROW}${NC} Creating nginx.conf"
-    mkdir -p /var/www/html
     cat > /opt/remnanode/nginx.conf <<EOF
 server {
     server_name $SELFSTEAL_DOMAIN $CDN_DOMAIN;
@@ -1060,11 +1059,13 @@ server {
     error_log /dev/stderr warn;
     large_client_header_buffers 8 32k;
 
-    root /var/www/html;
-    index index.html;
-
     location / {
-        try_files \$uri \$uri/ =404;
+        proxy_pass http://127.0.0.1:8800;
+        proxy_http_version 1.1;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
     }
 
     location $XHTTP_PATH {
@@ -1111,13 +1112,13 @@ services:
     restart: always
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - /var/www/html:/var/www/html:ro
       - /etc/letsencrypt/live/$SELFSTEAL_DOMAIN/fullchain.pem:/etc/nginx/ssl/$SELFSTEAL_DOMAIN/fullchain.pem:ro
       - /etc/letsencrypt/live/$SELFSTEAL_DOMAIN/privkey.pem:/etc/nginx/ssl/$SELFSTEAL_DOMAIN/privkey.pem:ro
     command: sh -c 'sed -ri "s/worker_connections[[:space:]]+[0-9]+;/worker_connections 8192;/" /etc/nginx/nginx.conf && nginx -g "daemon off;"'
     network_mode: host
     depends_on:
       - remnanode
+      - owncloud
     logging:
       driver: 'json-file'
       options:
@@ -1165,17 +1166,19 @@ start_cdn_services() {
     local max_attempts=5
     local attempt=1
     local delay=15
+    local http_code
 
     while [ $attempt -le $max_attempts ]; do
         echo -e "${GRAY}  ${ARROW}${NC} Attempt $attempt of $max_attempts"
-        if curl -skI --max-time 10 "https://$SELFSTEAL_DOMAIN/" | grep -qiE 'HTTP/'; then
+        http_code=$(curl -sk --max-time 10 -o /dev/null -w '%{http_code}' "https://$SELFSTEAL_DOMAIN/") || true
+        if [[ "$http_code" =~ ^[23][0-9][0-9]$ ]]; then
             echo -e "${GREEN}${CHECK}${NC} Origin connection established successfully"
             break
         else
             echo -e "${GRAY}  ${ARROW}${NC} Origin unavailable on attempt $attempt"
             if [ $attempt -eq $max_attempts ]; then
                 echo -e "${RED}${CROSS}${NC} Origin connection failed"
-                echo -e "${YELLOW}${WARNING}${NC} Check the remnawave-nginx container, the certificate, and that $SELFSTEAL_DOMAIN has an A record pointing to this node"
+                echo -e "${YELLOW}${WARNING}${NC} Check the remnawave-nginx and owncloud containers, the certificate, and that $SELFSTEAL_DOMAIN has an A record pointing to this node"
                 echo
                 exit 1
             fi
@@ -1512,15 +1515,11 @@ install_node() {
     echo -e "${GREEN}${CHECK}${NC} Installation complete"
     echo -e "${PURPLE}========================${NC}"
     echo
-    local server_ip
-    server_ip=$(curl -s -4 ifconfig.me || curl -s -4 api.ipify.org || curl -s -4 ipinfo.io/ip)
-
     echo -e "${CYAN}Xray JSON template:${NC}"
     echo -e "${WHITE}• Select the template for the CDN host in the panel manually${NC}"
     echo
-    echo -e "${CYAN}ownCloud (SSH tunnel):${NC}"
-    echo -e "${WHITE}• ssh -L 8800:127.0.0.1:8800 root@${server_ip}${NC}"
-    echo -e "${WHITE}• Create the admin account at http://127.0.0.1:8800/${NC}"
+    echo -e "${CYAN}ownCloud:${NC}"
+    echo -e "${WHITE}• Create the admin account at https://${CDN_DOMAIN}/${NC}"
     echo
 }
 
