@@ -183,7 +183,7 @@ input_cdn_domain() {
 }
 
 input_cdn_ip() {
-    echo -ne "${CYAN}CDN connection IPv4 address (e.g., 1.2.3.4): ${NC}"
+    echo -ne "${CYAN}CDN connection IPv4 address (e.g., 188.72.103.4): ${NC}"
     read -r CDN_IP
     while [ -z "$CDN_IP" ] || ! validate_ip "$CDN_IP"; do
         echo -e "${RED}${CROSS}${NC} Invalid IP! Please enter a valid IPv4 address."
@@ -323,6 +323,7 @@ ensure_panel_api_dependencies() {
         return 0
     fi
 
+    echo
     echo -e "${CYAN}${INFO}${NC} Preparing panel API dependencies..."
     echo -e "${GRAY}  ${ARROW}${NC} Updating package lists"
     if ! apt-get update -y > /dev/null 2>&1; then
