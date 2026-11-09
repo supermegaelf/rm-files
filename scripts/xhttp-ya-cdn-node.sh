@@ -742,6 +742,10 @@ ensure_xhttp_inbound_in_profile() {
             --argjson xhttp_settings "$xhttp_settings" \
             '.inbounds[] | select(.tag == $tag) |
                 .protocol == "vless" and .listen == "127.0.0.1" and .port == $port and
+                (.settings.decryption // "" |
+                    test("\\Amlkem768x25519plus[.]native[.]600s[.][A-Za-z0-9_-]{43}\\z")) and
+                .sniffing.enabled == true and .sniffing.routeOnly == true and
+                (.sniffing.destOverride | sort) == ["http", "quic", "tls"] and
                 .streamSettings.network == "xhttp" and
                 (.streamSettings.security // "none") == "none" and
                 (.streamSettings.xhttpSettings as $actual |
