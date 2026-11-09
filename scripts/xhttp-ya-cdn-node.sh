@@ -258,8 +258,8 @@ NODE_CREDS_FILE="/opt/remnanode/rm-node-config.env"
 
 save_node_credentials() {
     mkdir -p /opt/remnanode
-    printf 'PANEL_NODE_DOMAIN="%s"\nPANEL_NODE_TOKEN="%s"\nPANEL_IP="%s"\nSELFSTEAL_DOMAIN="%s"\nCDN_DOMAIN="%s"\nCDN_IP="%s"\n' \
-        "$PANEL_NODE_DOMAIN" "$PANEL_NODE_TOKEN" "$PANEL_IP" "$SELFSTEAL_DOMAIN" "$CDN_DOMAIN" "$CDN_IP" > "$NODE_CREDS_FILE"
+    printf 'PANEL_NODE_DOMAIN="%s"\nPANEL_NODE_TOKEN="%s"\nPANEL_IP="%s"\nSELFSTEAL_DOMAIN="%s"\nCDN_DOMAIN="%s"\nCDN_IP="%s"\nCDN_HOST_UUID="%s"\n' \
+        "$PANEL_NODE_DOMAIN" "$PANEL_NODE_TOKEN" "$PANEL_IP" "$SELFSTEAL_DOMAIN" "$CDN_DOMAIN" "$CDN_IP" "${CDN_HOST_UUID:-}" > "$NODE_CREDS_FILE"
     chmod 600 "$NODE_CREDS_FILE"
 }
 
@@ -312,6 +312,27 @@ move_variables_file() {
 #===============================
 # SYSTEM INSTALLATION FUNCTIONS
 #===============================
+
+ensure_panel_api_dependencies() {
+    if command -v curl >/dev/null 2>&1 && [ -s /etc/ssl/certs/ca-certificates.crt ]; then
+        return 0
+    fi
+
+    echo -e "${CYAN}${INFO}${NC} Preparing panel API dependencies..."
+    echo -e "${GRAY}  ${ARROW}${NC} Updating package lists"
+    if ! apt-get update -y > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to update package list"
+        return 1
+    fi
+
+    echo -e "${GRAY}  ${ARROW}${NC} Installing curl and CA certificates"
+    if ! apt-get install -y curl ca-certificates > /dev/null 2>&1; then
+        echo -e "${RED}${CROSS}${NC} Failed to install panel API dependencies"
+        return 1
+    fi
+
+    echo -e "${GREEN}${CHECK}${NC} Panel API dependencies ready"
+}
 
 install_system_packages() {
     echo -e "${CYAN}${INFO}${NC} Installing basic packages..."
@@ -648,6 +669,23 @@ resolve_xhttp_inbound_uuid() {
         '.response.configProfiles[] | select(.uuid == $u) | .inbounds[] | select(.tag == $tag) | .uuid' | head -n1)
 }
 
+generate_xhttp_server_settings() {
+    jq -n --arg path "$XHTTP_PATH" '{
+        mode: "packet-up",
+        path: $path,
+        xPaddingKey: "_q",
+        uplinkDataKey: "X-Data",
+        xPaddingHeader: "X-Cache",
+        xPaddingMethod: "tokenish",
+        uplinkHTTPMethod: "GET",
+        xPaddingObfsMode: true,
+        xPaddingPlacement: "queryInHeader",
+        scMaxEachPostBytes: 65536,
+        uplinkDataPlacement: "auto",
+        serverMaxHeaderBytes: 262144
+    }'
+}
+
 ensure_xhttp_inbound_in_profile() {
     echo -e "${CYAN}${INFO}${NC} Ensuring ${XHTTP_INBOUND_TAG} inbound in ${PROFILE_NAME} profile..."
 
@@ -668,18 +706,22 @@ ensure_xhttp_inbound_in_profile() {
         exit 1
     fi
 
+    local xhttp_settings
+    xhttp_settings=$(generate_xhttp_server_settings)
+
     if echo "$config" | jq -e --arg tag "$XHTTP_INBOUND_TAG" '.inbounds[] | select(.tag == $tag)' > /dev/null 2>&1; then
         echo -e "${YELLOW}${WARNING}${NC} Inbound '${XHTTP_INBOUND_TAG}' already exists in '${PROFILE_NAME}', checking compatibility"
         if ! echo "$config" | jq -e \
             --arg tag "$XHTTP_INBOUND_TAG" \
             --argjson port "$XHTTP_INBOUND_PORT" \
-            --arg path "$XHTTP_PATH" \
+            --argjson xhttp_settings "$xhttp_settings" \
             '.inbounds[] | select(.tag == $tag) |
                 .protocol == "vless" and .listen == "127.0.0.1" and .port == $port and
                 .streamSettings.network == "xhttp" and
-                .streamSettings.xhttpSettings.mode == "packet-up" and
-                .streamSettings.xhttpSettings.path == $path' > /dev/null 2>&1; then
-            echo -e "${RED}${CROSS}${NC} Existing inbound does not match the XHTTP listener, mode or path"
+                (.streamSettings.security // "none") == "none" and
+                (.streamSettings.xhttpSettings as $actual |
+                    all($xhttp_settings | to_entries[]; $actual[.key] == .value))' > /dev/null 2>&1; then
+            echo -e "${RED}${CROSS}${NC} Existing inbound does not match the required XHTTP configuration"
             exit 1
         fi
         resolve_xhttp_inbound_uuid
@@ -713,7 +755,7 @@ ensure_xhttp_inbound_in_profile() {
         --arg tag "$XHTTP_INBOUND_TAG" \
         --argjson port "$XHTTP_INBOUND_PORT" \
         --arg dec "$decryption" \
-        --arg path "$XHTTP_PATH" \
+        --argjson xhttp_settings "$xhttp_settings" \
         '.inbounds += [{
             tag: $tag,
             port: $port,
@@ -723,20 +765,7 @@ ensure_xhttp_inbound_in_profile() {
             sniffing: { enabled: true, routeOnly: true, destOverride: ["http", "tls", "quic"] },
             streamSettings: {
                 network: "xhttp",
-                xhttpSettings: {
-                    mode: "packet-up",
-                    path: $path,
-                    xPaddingKey: "_q",
-                    uplinkDataKey: "X-Data",
-                    xPaddingHeader: "X-Cache",
-                    xPaddingMethod: "tokenish",
-                    uplinkHTTPMethod: "GET",
-                    xPaddingObfsMode: true,
-                    xPaddingPlacement: "queryInHeader",
-                    scMaxEachPostBytes: 65536,
-                    uplinkDataPlacement: "auto",
-                    serverMaxHeaderBytes: 262144
-                }
+                xhttpSettings: $xhttp_settings
             }
         }]')
 
@@ -867,6 +896,42 @@ create_node_in_panel() {
     fi
 }
 
+resolve_cdn_host_uuid() {
+    local hosts_response="$1"
+    local saved_uuid="${2:-}"
+    local host_matches
+
+    if [ -z "${PROFILE_UUID:-}" ] || [ -z "${XHTTP_INBOUND_UUID:-}" ]; then
+        error "Cannot identify the CDN host without its profile and inbound UUIDs"
+    fi
+
+    if ! host_matches=$(echo "$hosts_response" | jq -ce \
+        --arg uuid "$saved_uuid" --arg domain "$CDN_DOMAIN" \
+        --arg profile_uuid "$PROFILE_UUID" --arg inbound_uuid "$XHTTP_INBOUND_UUID" \
+        '.response | if type == "array" then
+            [.[] | select(if $uuid != "" then .uuid == $uuid else
+                (.sni == $domain or .host == $domain) and
+                .inbound.configProfileUuid == $profile_uuid and
+                .inbound.configProfileInboundUuid == $inbound_uuid
+            end)]
+        else error("Invalid hosts response") end'); then
+        error "Failed to read CDN hosts from panel"
+    fi
+
+    if [ "$(echo "$host_matches" | jq 'length')" -gt 1 ]; then
+        error "Multiple matching CDN hosts found; refusing to select one"
+    fi
+
+    if ! echo "$host_matches" | jq -e \
+        --arg profile_uuid "$PROFILE_UUID" --arg inbound_uuid "$XHTTP_INBOUND_UUID" \
+        'length == 0 or (.[0].inbound.configProfileUuid == $profile_uuid and
+            .[0].inbound.configProfileInboundUuid == $inbound_uuid)' > /dev/null 2>&1; then
+        error "Saved CDN host does not match this node's profile and inbound"
+    fi
+
+    CDN_HOST_UUID=$(echo "$host_matches" | jq -r '.[0].uuid // empty')
+}
+
 create_cdn_host_in_panel() {
     echo -e "${CYAN}${INFO}${NC} Creating CDN host in panel..."
 
@@ -890,12 +955,10 @@ create_cdn_host_in_panel() {
         exit 1
     fi
 
-    local hosts_response existing_uuid
+    local hosts_response
     hosts_response=$(make_panel_api_request GET "/api/hosts")
-    existing_uuid=$(echo "$hosts_response" | jq -r \
-        --arg domain "$CDN_DOMAIN" --arg inbound_uuid "$XHTTP_INBOUND_UUID" \
-        '(.response // [])[] | select((.sni == $domain or .host == $domain) and .inbound.configProfileInboundUuid == $inbound_uuid) | .uuid' | head -n 1)
-    if [ -n "$existing_uuid" ] && [ "$existing_uuid" != "null" ]; then
+    resolve_cdn_host_uuid "$hosts_response"
+    if [ -n "$CDN_HOST_UUID" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} CDN host already exists, skipping"
         echo -e "${GREEN}${CHECK}${NC} Host step skipped"
         return 0
@@ -951,6 +1014,8 @@ create_cdn_host_in_panel() {
         echo -e "${RED}${CROSS}${NC} Failed to create host: $host_response"
         exit 1
     fi
+
+    CDN_HOST_UUID=$(echo "$host_response" | jq -r '.response.uuid')
 
     echo -e "${GREEN}${CHECK}${NC} Host created"
 }
@@ -1172,6 +1237,13 @@ find_node_to_delete() {
     DELETE_NODE_UUID=$(echo "$selected" | jq -r '.uuid')
     DELETE_NODE_NAME=$(echo "$selected" | jq -r '.name')
     DELETE_NODE_ADDRESS=$(echo "$selected" | jq -r '.address')
+    PROFILE_UUID=$(echo "$selected" | jq -r '.configProfile.activeConfigProfileUuid // empty')
+    XHTTP_INBOUND_UUID=$(echo "$selected" | jq -r --arg tag "$XHTTP_INBOUND_TAG" \
+        '[.configProfile.activeInbounds[]? | select(.tag == $tag) | .uuid] |
+            if length == 1 then .[0] else empty end')
+    if [ -z "$PROFILE_UUID" ] || [ -z "$XHTTP_INBOUND_UUID" ]; then
+        error "Failed to identify this node's XHTTP profile and inbound"
+    fi
 
     echo -e "${GREEN}${CHECK}${NC} Found node $DELETE_NODE_NAME"
 }
@@ -1183,12 +1255,9 @@ delete_node_host_from_panel() {
     local hosts_response
     hosts_response=$(make_panel_api_request GET "/api/hosts")
 
-    local host_uuid
-    host_uuid=$(echo "$hosts_response" | jq -r \
-        --arg domain "$CDN_DOMAIN" \
-        '.response[] | select(.sni == $domain or .host == $domain) | .uuid' | head -n 1)
+    resolve_cdn_host_uuid "$hosts_response" "${CDN_HOST_UUID:-}"
 
-    if [ -z "$host_uuid" ] || [ "$host_uuid" = "null" ]; then
+    if [ -z "$CDN_HOST_UUID" ]; then
         echo -e "${GRAY}  ${ARROW}${NC} No host found for this node, skipping"
         echo -e "${GREEN}${CHECK}${NC} Host step skipped"
         return 0
@@ -1196,7 +1265,7 @@ delete_node_host_from_panel() {
 
     echo -e "${GRAY}  ${ARROW}${NC} Deleting host"
     local delete_response
-    delete_response=$(make_panel_api_request DELETE "/api/hosts/$host_uuid")
+    delete_response=$(make_panel_api_request DELETE "/api/hosts/$CDN_HOST_UUID")
 
     if echo "$delete_response" | jq -e '.response.isDeleted' > /dev/null 2>&1; then
         echo -e "${GREEN}${CHECK}${NC} Host removed"
@@ -1365,6 +1434,8 @@ install_node() {
     INSTALL_DIR="/opt"
     APP_NAME="remnanode"
     APP_DIR="$INSTALL_DIR/$APP_NAME"
+
+    ensure_panel_api_dependencies
 
     echo
     echo -e "${GREEN}Checking panel${NC}"
