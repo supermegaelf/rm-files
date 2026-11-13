@@ -162,44 +162,56 @@ show_main_menu() {
         echo -e "${YELLOW}2.${NC} Exit"
     fi
     echo
-    echo -ne "${CYAN}Enter your choice: ${NC}"
 }
 
 #=================
 # INPUT FUNCTIONS
 #=================
 
+read_input() {
+    local variable_name="$1"
+    local prompt="$2"
+    local prompt_color="${3:-$CYAN}"
+    local input_value
+    local LC_ALL=C.UTF-8
+
+    printf -v prompt '\001%b\002%s\001%b\002' "$prompt_color" "$prompt" "$NC"
+    if ! IFS= read -r -e -p "$prompt" input_value; then
+        echo
+        echo -e "${RED}${CROSS}${NC} Failed to read input"
+        exit 1
+    fi
+
+    input_value="${input_value#"${input_value%%[![:space:]]*}"}"
+    input_value="${input_value%"${input_value##*[![:space:]]}"}"
+    printf -v "$variable_name" '%s' "$input_value"
+}
+
 input_panel_url() {
-    echo -ne "${CYAN}Panel domain (e.g., example.com): ${NC}"
-    read -r PANEL_DOMAIN
+    read_input PANEL_DOMAIN "Panel domain (e.g., example.com): "
     while [[ -z "$PANEL_DOMAIN" ]] || ! validate_domain "$PANEL_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
-        echo -ne "${CYAN}Panel domain: ${NC}"
-        read -r PANEL_DOMAIN
+        read_input PANEL_DOMAIN "Panel domain: "
     done
     PANEL_URL="https://${PANEL_DOMAIN}"
 }
 
 input_api_token() {
-    echo -ne "${CYAN}API token (e.g., eyJhbGciOi...): ${NC}"
-    read -r API_TOKEN
+    read_input API_TOKEN "API token (e.g., eyJhbGciOi...): "
     while [[ -z "$API_TOKEN" ]]; do
         echo -e "${RED}${CROSS}${NC} API token cannot be empty!"
         echo
-        echo -ne "${CYAN}API token (e.g., eyJhbGciOi...): ${NC}"
-        read -r API_TOKEN
+        read_input API_TOKEN "API token (e.g., eyJhbGciOi...): "
     done
 }
 
 input_node_domain() {
-    echo -ne "${CYAN}Node self-steal domain (e.g., example.com): ${NC}"
-    read -r NODE_DOMAIN
+    read_input NODE_DOMAIN "Node self-steal domain (e.g., example.com): "
     while [[ -z "$NODE_DOMAIN" ]] || ! validate_domain "$NODE_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain."
         echo
-        echo -ne "${CYAN}Node selfsteal domain: ${NC}"
-        read -r NODE_DOMAIN
+        read_input NODE_DOMAIN "Node selfsteal domain: "
     done
 }
 
@@ -212,13 +224,11 @@ get_bridge_ip() {
 }
 
 input_node_ip() {
-    echo -ne "${CYAN}Node IP address: ${NC}"
-    read -r NODE_IP
+    read_input NODE_IP "Node IP address: "
     while [[ -z "$NODE_IP" ]] || ! validate_ip "$NODE_IP"; do
         echo -e "${RED}${CROSS}${NC} Invalid IP! Please enter a valid IPv4 address (e.g., 1.2.3.4)."
         echo
-        echo -ne "${CYAN}Node IP address: ${NC}"
-        read -r NODE_IP
+        read_input NODE_IP "Node IP address: "
     done
 }
 
@@ -565,8 +575,7 @@ remove_node() {
         i=$((i + 1))
     done < "$NODES_FILE"
     echo
-    echo -ne "${CYAN}Select node to remove (1-${#node_domains[@]}): ${NC}"
-    read -r selection
+    read_input selection "Select node to remove (1-${#node_domains[@]}): "
     echo
 
     if ! [[ "$selection" =~ ^[0-9]+$ ]] || [ "$selection" -lt 1 ] || [ "$selection" -gt "${#node_domains[@]}" ]; then
@@ -676,7 +685,7 @@ main() {
     check_root
 
     show_main_menu
-    read -r SETUP_TYPE
+    read_input SETUP_TYPE "Enter your choice: "
 
     if [ "$HAPROXY_INSTALLED" = true ]; then
         case $SETUP_TYPE in
@@ -686,9 +695,7 @@ main() {
                 load_credentials
                 echo
                 echo -e "${YELLOW}${WARNING}${NC} This will restore all node hosts in the panel and remove HAProxy."
-                echo -ne "${YELLOW}Are you sure? (y/n): ${NC}"
-                read -r confirm
-                confirm=$(printf '%s' "$confirm" | tr -cd 'a-zA-Z')
+                read_input confirm "Are you sure? (y/n): " "$YELLOW"
                 if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
                     echo -e "${YELLOW}${WARNING}${NC} Cancelled"
                     exit 0
