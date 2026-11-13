@@ -99,36 +99,52 @@ check_bridge_installed() {
 # INPUT VALIDATION FUNCTIONS
 #============================
 
+read_input() {
+    local variable_name="$1"
+    local input_value
+    local LC_ALL=C.UTF-8
+
+    if ! IFS= read -r -e input_value; then
+        echo
+        echo -e "${RED}${CROSS}${NC} Failed to read input"
+        exit 1
+    fi
+
+    input_value="${input_value#"${input_value%%[![:space:]]*}"}"
+    input_value="${input_value%"${input_value##*[![:space:]]}"}"
+    printf -v "$variable_name" '%s' "$input_value"
+}
+
 input_panel_ip() {
     echo -ne "${CYAN}Panel IP address: ${NC}"
-    read PANEL_IP
+    read_input PANEL_IP
     while [[ -z "$PANEL_IP" ]] || ! validate_ip "$PANEL_IP"; do
         echo -e "${RED}${CROSS}${NC} Invalid IP! Please enter a valid IPv4 address (e.g., 1.2.3.4)."
         echo
         echo -ne "${CYAN}Panel IP address: ${NC}"
-        read PANEL_IP
+        read_input PANEL_IP
     done
 }
 
 input_monitor_domain() {
     echo -ne "${CYAN}Panel monitoring domain (e.g., monitoring.example.com): ${NC}"
-    read MONITOR_DOMAIN
+    read_input MONITOR_DOMAIN
     while [[ -z "$MONITOR_DOMAIN" ]] || ! validate_domain "$MONITOR_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain (e.g., monitoring.example.com)."
         echo
         echo -ne "${CYAN}Panel monitoring domain: ${NC}"
-        read MONITOR_DOMAIN
+        read_input MONITOR_DOMAIN
     done
 }
 
 input_hub_domain() {
     echo -ne "${CYAN}Panel monitoring domain (e.g., monitoring.example.com): ${NC}"
-    read HUB_DOMAIN
+    read_input HUB_DOMAIN
     while [[ -z "$HUB_DOMAIN" ]] || ! validate_domain "$HUB_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain (e.g., monitoring.example.com)."
         echo
         echo -ne "${CYAN}Panel monitoring domain: ${NC}"
-        read HUB_DOMAIN
+        read_input HUB_DOMAIN
     done
 }
 
@@ -169,12 +185,12 @@ input_hub_public_key() {
     echo -e "${WHITE}ssh-keygen -y -f /opt/beszel/data/id_ed25519${NC}"
     echo
     echo -ne "${CYAN}Hub public key (ssh-ed25519 AAAA...): ${NC}"
-    read -r HUB_PUBLIC_KEY
+    read_input HUB_PUBLIC_KEY
     while [[ -z "$HUB_PUBLIC_KEY" ]] || [[ "$HUB_PUBLIC_KEY" != ssh-* ]]; do
         echo -e "${RED}${CROSS}${NC} Invalid key! Key must start with 'ssh-ed25519 AAAA...'."
         echo
         echo -ne "${CYAN}Hub public key: ${NC}"
-        read -r HUB_PUBLIC_KEY
+        read_input HUB_PUBLIC_KEY
     done
 }
 
@@ -654,7 +670,7 @@ install_panel_beszel() {
 uninstall_panel_beszel() {
     echo
     echo -ne "${YELLOW}Are you sure you want to uninstall Beszel from panel? (y/N): ${NC}"
-    read -r CONFIRM
+    read_input CONFIRM
 
     if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
         echo
@@ -940,7 +956,7 @@ install_node_beszel() {
 uninstall_node_beszel() {
     echo
     echo -ne "${YELLOW}Are you sure you want to uninstall Beszel Agent? (y/N): ${NC}"
-    read -r CONFIRM
+    read_input CONFIRM
 
     if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
         echo
@@ -1253,7 +1269,7 @@ install_bridge_beszel() {
 uninstall_bridge_beszel() {
     echo
     echo -ne "${YELLOW}Are you sure you want to uninstall Beszel Agent? (y/N): ${NC}"
-    read -r CONFIRM
+    read_input CONFIRM
 
     if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
         echo
@@ -1366,7 +1382,7 @@ handle_user_choice() {
 
     while true; do
         echo -ne "${CYAN}Enter your choice (1-4): ${NC}"
-        read CHOICE
+        read_input CHOICE
 
         case $CHOICE in
             1)
