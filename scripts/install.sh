@@ -2458,6 +2458,10 @@ services:
     container_name: remnanode
     hostname: remnanode
     restart: always
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
     cap_add:
       - NET_ADMIN
     network_mode: host
