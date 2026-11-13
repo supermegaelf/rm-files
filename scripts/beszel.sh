@@ -101,10 +101,13 @@ check_bridge_installed() {
 
 read_input() {
     local variable_name="$1"
+    local prompt="$2"
+    local prompt_color="${3:-$CYAN}"
     local input_value
     local LC_ALL=C.UTF-8
 
-    if ! IFS= read -r -e input_value; then
+    printf -v prompt '\001%b\002%s\001%b\002' "$prompt_color" "$prompt" "$NC"
+    if ! IFS= read -r -e -p "$prompt" input_value; then
         echo
         echo -e "${RED}${CROSS}${NC} Failed to read input"
         exit 1
@@ -116,35 +119,29 @@ read_input() {
 }
 
 input_panel_ip() {
-    echo -ne "${CYAN}Panel IP address: ${NC}"
-    read_input PANEL_IP
+    read_input PANEL_IP "Panel IP address: "
     while [[ -z "$PANEL_IP" ]] || ! validate_ip "$PANEL_IP"; do
         echo -e "${RED}${CROSS}${NC} Invalid IP! Please enter a valid IPv4 address (e.g., 1.2.3.4)."
         echo
-        echo -ne "${CYAN}Panel IP address: ${NC}"
-        read_input PANEL_IP
+        read_input PANEL_IP "Panel IP address: "
     done
 }
 
 input_monitor_domain() {
-    echo -ne "${CYAN}Panel monitoring domain (e.g., monitoring.example.com): ${NC}"
-    read_input MONITOR_DOMAIN
+    read_input MONITOR_DOMAIN "Panel monitoring domain (e.g., monitoring.example.com): "
     while [[ -z "$MONITOR_DOMAIN" ]] || ! validate_domain "$MONITOR_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain (e.g., monitoring.example.com)."
         echo
-        echo -ne "${CYAN}Panel monitoring domain: ${NC}"
-        read_input MONITOR_DOMAIN
+        read_input MONITOR_DOMAIN "Panel monitoring domain: "
     done
 }
 
 input_hub_domain() {
-    echo -ne "${CYAN}Panel monitoring domain (e.g., monitoring.example.com): ${NC}"
-    read_input HUB_DOMAIN
+    read_input HUB_DOMAIN "Panel monitoring domain (e.g., monitoring.example.com): "
     while [[ -z "$HUB_DOMAIN" ]] || ! validate_domain "$HUB_DOMAIN"; do
         echo -e "${RED}${CROSS}${NC} Invalid domain! Please enter a valid domain (e.g., monitoring.example.com)."
         echo
-        echo -ne "${CYAN}Panel monitoring domain: ${NC}"
-        read_input HUB_DOMAIN
+        read_input HUB_DOMAIN "Panel monitoring domain: "
     done
 }
 
@@ -184,13 +181,11 @@ input_hub_public_key() {
     echo -e "${WHITE}Run this command on your panel server and paste the output:${NC}"
     echo -e "${WHITE}ssh-keygen -y -f /opt/beszel/data/id_ed25519${NC}"
     echo
-    echo -ne "${CYAN}Hub public key (ssh-ed25519 AAAA...): ${NC}"
-    read_input HUB_PUBLIC_KEY
+    read_input HUB_PUBLIC_KEY "Hub public key (ssh-ed25519 AAAA...): "
     while [[ -z "$HUB_PUBLIC_KEY" ]] || [[ "$HUB_PUBLIC_KEY" != ssh-* ]]; do
         echo -e "${RED}${CROSS}${NC} Invalid key! Key must start with 'ssh-ed25519 AAAA...'."
         echo
-        echo -ne "${CYAN}Hub public key: ${NC}"
-        read_input HUB_PUBLIC_KEY
+        read_input HUB_PUBLIC_KEY "Hub public key: "
     done
 }
 
@@ -669,8 +664,7 @@ install_panel_beszel() {
 
 uninstall_panel_beszel() {
     echo
-    echo -ne "${YELLOW}Are you sure you want to uninstall Beszel from panel? (y/N): ${NC}"
-    read_input CONFIRM
+    read_input CONFIRM "Are you sure you want to uninstall Beszel from panel? (y/N): " "$YELLOW"
 
     if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
         echo
@@ -955,8 +949,7 @@ install_node_beszel() {
 
 uninstall_node_beszel() {
     echo
-    echo -ne "${YELLOW}Are you sure you want to uninstall Beszel Agent? (y/N): ${NC}"
-    read_input CONFIRM
+    read_input CONFIRM "Are you sure you want to uninstall Beszel Agent? (y/N): " "$YELLOW"
 
     if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
         echo
@@ -1268,8 +1261,7 @@ install_bridge_beszel() {
 
 uninstall_bridge_beszel() {
     echo
-    echo -ne "${YELLOW}Are you sure you want to uninstall Beszel Agent? (y/N): ${NC}"
-    read_input CONFIRM
+    read_input CONFIRM "Are you sure you want to uninstall Beszel Agent? (y/N): " "$YELLOW"
 
     if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
         echo
@@ -1381,8 +1373,7 @@ handle_user_choice() {
     local bridge_installed=$(check_bridge_installed)
 
     while true; do
-        echo -ne "${CYAN}Enter your choice (1-4): ${NC}"
-        read_input CHOICE
+        read_input CHOICE "Enter your choice (1-4): "
 
         case $CHOICE in
             1)
