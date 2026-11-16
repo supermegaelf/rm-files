@@ -1267,7 +1267,10 @@ create_config_profile() {
         config: {
             log: { loglevel: "warning" },
             dns: {
-                servers: [{ address: "https://8.8.8.8/dns-query", skipFallback: false }],
+                servers: [
+                    { address: "https://1.1.1.1/dns-query", skipFallback: false },
+                    { address: "https://8.8.8.8/dns-query", skipFallback: false }
+                ],
                 queryStrategy: "UseIPv4"
             },
             inbounds: [{
