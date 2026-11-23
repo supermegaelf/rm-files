@@ -183,7 +183,7 @@ input_cdn_domain() {
 }
 
 input_cdn_ip() {
-    echo -ne "${CYAN}CDN connection IPv4 address (e.g., 188.72.103.4): ${NC}"
+    echo -ne "${CYAN}CDN connection IPv4 address (e.g., 188.72.112.1): ${NC}"
     read -r CDN_IP
     while [ -z "$CDN_IP" ] || ! validate_ip "$CDN_IP"; do
         echo -e "${RED}${CROSS}${NC} Invalid IP! Please enter a valid IPv4 address."
